@@ -1,0 +1,2 @@
+java -jar server.jar -h
+java -jar server.jar -c "java  src/main/java/org/agents/SearchClient.java" -l "levels/MAExample.lvl" -g
