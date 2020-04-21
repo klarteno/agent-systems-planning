@@ -13,6 +13,8 @@
 .mtj.tmp/
 
 # Package Files #
+*.jar    #Exclude all jars
+!server.jar #Except for server.jar
 *.war
 *.nar
 *.ear
