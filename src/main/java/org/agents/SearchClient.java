@@ -4,11 +4,11 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Vector;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class SearchClient {
 
+public class SearchClient {
+    BufferedReader serverMessages;
     enum ParsingState {
         NOTHING,
         COLORS,
@@ -18,8 +18,12 @@ public class SearchClient {
     };
 
     public SearchClient(BufferedReader serverMessages) throws Exception {
+        this.serverMessages = serverMessages;
+    }
+
+
+    public void parse() throws Exception {
         Pattern pattern_text_headers = Pattern.compile("^[#]?[a-z]+$");
-        Matcher matcher_text_headers = pattern_text_headers.matcher("foo");
         Pattern pattern_colors_headers = Pattern.compile("^[#]?color[a-z]*$");
         Pattern pattern_initial_map_headers = Pattern.compile("^[#]?init[a-z]*$");
         Pattern pattern_goal_map_headers = Pattern.compile("^[#]?goal[a-z]*$");
@@ -31,12 +35,12 @@ public class SearchClient {
         ParsingState parsingState = ParsingState.NOTHING;
 
         //color for object parsed from the map
-        HashMap<String, String> colors 	= new HashMap<>();
+        HashMap<String, Color>colors 	= new HashMap<>();
 
         int maxCol_map = 0;
 
         int row_map_no_ = 0;
-        var rows_init_map_marks = new Vector<char[]>(3);
+        Vector<char[]> rows_init_map_marks = new Vector<char[]>(3);
         Vector<char[]> goal_map_marks = new Vector<char[]>(3);;
 
 
@@ -90,10 +94,12 @@ public class SearchClient {
                 continue;
             }
  */
-            if(parsingState==ParsingState.COLORS){
+            if(parsingState == ParsingState.COLORS){
                 String[] strings_parsed = line.split("[:,]");
+                Color color = Color.geFromName(strings_parsed[0].trim());
+
                 for (int i = 1; i < strings_parsed.length; i++) {
-                    colors.put(strings_parsed[i],strings_parsed[0]);
+                    colors.put(strings_parsed[i].trim(), color);
                 }
 
                 continue;
@@ -117,21 +123,27 @@ public class SearchClient {
 
                 continue;
             }
-        /*
+
             if(parsingState == ParsingState.END){
+                initObjects( maxCol_map, rows_init_map_marks, goal_map_marks, colors);
                 System.out.println("# end map"+line.toString());
 
                 continue;
-            }*/
+            }
         }
 
+
+    }
+
+
+    public void initObjects(int maxCol_map, Vector<char[]> rows_init_map_marks, Vector<char[]> goal_map_marks, HashMap<String, Color> colors){
         MapFixedObjects.MAX_COL = maxCol_map;
+
         MapFixedObjects.MAX_ROW = rows_init_map_marks.size();
         MapFixedObjects.walls = new boolean[MapFixedObjects.MAX_ROW][MapFixedObjects.MAX_COL];
 
         var box_marks = new Vector<Box>();
         var agent_marks = new Vector<Agent>();
-
         //var goals_marks = new Vector<Goal>();
 
         int row = 0;
@@ -140,18 +152,19 @@ public class SearchClient {
                 if (cs[j] == '+') {// Wall
                     MapFixedObjects.walls[row][j] = true;
                 } else if ('A' <= goal_map_marks.get(row)[j] && goal_map_marks.get(row)[j] <= 'Z') { // Goal Box.
-                    MapFixedObjects.goals.put(goal_map_marks.get(row)[j],new int[]{row, j});
+                    char character = goal_map_marks.get(row)[j];
+                    MapFixedObjects.goals.put(character,new int[]{row, j});
                     //goals_marks.add(new Goal(row, j, cs[j]));
                 } else if ('0' <= goal_map_marks.get(row)[j] && goal_map_marks.get(row)[j] <= '9') { // Goal Agent.
                     MapFixedObjects.goals.put(goal_map_marks.get(row)[j],new int[]{row, j});
                 } else if ('A' <= cs[j] && cs[j] <= 'Z') { // Box.
-                    Box box = new Box(cs[j], Integer.getInteger(colors.remove(Character.toString(cs[j]))));
+                    Box box = new Box(cs[j], Color.getColorCoded(colors.remove(Character.toString(cs[j]))));
                     box.setRowPosition(row);
                     box.setColumnPosition(j);
                     box_marks.add(box);
                 } else if ('0' <= cs[j] && cs[j] <= '9') { // Agent.
-                    Integer color_mark = Integer.getInteger(colors.remove(Character.toString(cs[j])));
-                    Integer number_mark = Integer.getInteger(Character.toString(cs[j]));
+                    Integer color_mark = Color.getColorCoded(colors.get(Character.toString(cs[j])));
+                    Integer number_mark = Character.getNumericValue(cs[j]);
                     Agent agent = new Agent(number_mark, color_mark);
                     agent.setRowPosition(row);
                     agent.setColumnPosition(j);
@@ -170,7 +183,7 @@ public class SearchClient {
                     }
                 }
             }
-            if ('0' <= key && key <= '9'){
+            else if ('0' <= key && key <= '9'){
                 for (Agent agent : agent_marks) {
                     if (agent.getNumberMark() == Character.getNumericValue(key)) {
                         agent.setGoalPosition(coordinates[0], coordinates[1]);
@@ -178,7 +191,7 @@ public class SearchClient {
                 }
             }
             else {
-                System.err.println("Character key: MapFixedObjects.goals.keySet() error");
+                System.out.println("#Character key: MapFixedObjects.goals.keySet() error");
             }
         }
 
@@ -188,7 +201,8 @@ public class SearchClient {
     }
 
 
-    private static int parse_map_data(int maxCol_map_no, Vector<char[]> rows_map_marks, String line) {
+
+    private int parse_map_data(int maxCol_map_no, Vector<char[]> rows_map_marks, String line) {
         //System.out.println("# got from map"+line.toString());
 
         int columns = line.length();
@@ -218,20 +232,6 @@ public class SearchClient {
             maxCol_map_no = columns;
 
         return maxCol_map_no;
-    }
-
-
-
-    public static void main(String[] args) throws Exception {
-        BufferedReader serverMessages = new BufferedReader(new InputStreamReader(System.in));
-        // Use stderr to print to console
-        System.err.println("SearchClient initializing. I am sending this using the error output stream.");
-
-        // Read level and create the initial state of the problem
-        SearchClient client = new SearchClient(serverMessages);
-
-        System.out.println("testing testing .... :  " + client.toString());
-
     }
 
 

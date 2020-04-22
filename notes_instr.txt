@@ -1,2 +1,7 @@
 java -jar server.jar -h
-java -jar server.jar -c "java  src/main/java/org/agents/SearchClient.java" -l "levels/MAExample.lvl" -g
+
+--jar with dependencies working
+ java -jar server.jar -c "java -jar target/mas-agent-systems-planning.jar" -l "levels/MAExample.lvl" -g
+
+--jar with dependencies not working
+ java -jar server.jar -c "java -jar target/mas-agent-systems-planning-1.0-SNAPSHOT.jar" -l "levels/MAExample.lvl" -g

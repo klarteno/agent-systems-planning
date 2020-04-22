@@ -22,8 +22,8 @@ public final class Agent {
     }
 
     public void setGoalPosition(int goal_row, int goal_column) {
-        this.agent_object[ObjectsMarks.AgentField.GOAL_ROW.ordinal()]= Character.getNumericValue(goal_row);
-        this.agent_object[ObjectsMarks.AgentField.GOAL_COLUMN.ordinal()]= Character.getNumericValue(goal_column);
+        this.agent_object[ObjectsMarks.AgentField.GOAL_ROW.ordinal()]= goal_row;
+        this.agent_object[ObjectsMarks.AgentField.GOAL_COLUMN.ordinal()]= goal_column;
     }
 
     public int[] getGoalPosition() {

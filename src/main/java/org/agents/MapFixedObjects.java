@@ -13,4 +13,4 @@ public class MapFixedObjects {
 
         public static Box[] boxes;
         public static Agent[] agents;
-        }
+}

@@ -21,8 +21,8 @@ public final class Box {
     }
 
     public void setGoalPosition(int goal_row, int goal_column) {
-        this.box_object[ObjectsMarks.BoxField.GOAL_ROW.ordinal()]= Character.getNumericValue(goal_row);
-        this.box_object[ObjectsMarks.BoxField.GOAL_COLUMN.ordinal()]= Character.getNumericValue(goal_column);
+        this.box_object[ObjectsMarks.BoxField.GOAL_ROW.ordinal()]= goal_row;
+        this.box_object[ObjectsMarks.BoxField.GOAL_COLUMN.ordinal()]= goal_column;
     }
 
     public int[] getGoalPosition() {

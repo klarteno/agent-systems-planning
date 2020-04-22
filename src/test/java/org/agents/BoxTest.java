@@ -6,7 +6,7 @@ import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class BoardTest {
+public class BoxTest {
 
     @Test
     public void testConstructor() throws Exception {
