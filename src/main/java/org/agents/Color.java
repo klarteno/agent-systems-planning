@@ -1,30 +1,35 @@
 package org.agents;
 
-public enum Color {
+import java.io.Serializable;
+
+public enum Color implements Serializable {
 	Blue, 
-	Red, 
-	Green, 
-	Cyan, 
-	Magenta, 
-	Orange, 
-	Pink, 
-	Yellow;
+	Red,
+	Cyan,
+	Purple,
+	Green,
+	Orange,
+	Pink,
+	Grey,
+	Lightblue,
+	Brown;
 
 	public static Color geFromName(String color_name)
 	{
-		if (color_name == null) return Color.Blue;
-		
 		switch (color_name)
 		{
-		case "red":			return Color.Red;
-		case "green":		return Color.Green;
-		case "cyan":		return Color.Cyan;
-		case "magenta":		return Color.Magenta;
-		case "orange":		return Color.Orange;
-		case "pink": 		return Color.Pink;
-		case "yellow":		return Color.Yellow;
-		case "blue":
-		default: 			return Color.Blue;
+		case "blue":			return Color.Blue;
+		case "red":				return Color.Red;
+		case "cyan":			return Color.Cyan;
+		case "purple":			return Color.Purple;
+		case "green":			return Color.Green;
+		case "orange":			return Color.Orange;
+		case "pink":			return Color.Pink;
+		case "grey":			return Color.Grey;
+		case "lightblue":		return Color.Lightblue;
+		case "brown":			return Color.Brown;
+
+		default: 			return Color.Lightblue;
 		}
 	}
 	
@@ -33,32 +38,37 @@ public enum Color {
 		switch (color_code)
 		{
 		case 1:  return Color.Blue;
-		case 2:  return Color.Cyan;
-		case 3:  return Color.Green;
-		case 4:  return Color.Magenta;
-		case 5:  return Color.Orange;
-		case 6:  return Color.Pink;
-		case 7:  return Color.Red;
-		case 8:  return Color.Yellow;
-		default: return Color.Blue;
+		case 2:  return Color.Red;
+		case 3:  return Color.Cyan;
+		case 4:  return Color.Purple;
+		case 5:  return Color.Green;
+		case 6:  return Color.Orange;
+		case 7:  return Color.Pink;
+		case 8:  return Color.Grey;
+		case 9: return Color.Lightblue;
+		case 10: return Color.Brown;
+
+		default: 	return Color.Lightblue;
 		}
 	}
 	
 	public static int getColorCoded(Color color)
 	{
-		if (color == null) return 1;
-		
 		switch (color)
 		{
 		case Blue: 		return 1;
-		case Cyan:     	return 2;                           
-		case Green:    	return 3;                           
-		case Magenta:  	return 4;                           
-		case Orange: 	return 5;                           
-		case Pink:		return 6;                           
-		case Red:		return 7;                           
-		case Yellow: 	return 8;                           
-		default: 		return 1;                           
+		case Red:     	return 2;
+		case Cyan:    	return 3;
+		case Purple:  	return 4;
+		case Green: 	return 5;
+		case Orange:	return 6;
+		case Pink:		return 7;
+		case Grey: 		return 8;
+		case Lightblue: return 9;
+		case Brown: 	return 10;
+
+		default: 	return 9;
+
 		}
 	}
 }

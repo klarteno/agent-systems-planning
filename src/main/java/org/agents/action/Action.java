@@ -4,6 +4,7 @@ package org.agents.action;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Stack;
 
 public abstract class Action {
 
@@ -15,10 +16,10 @@ public abstract class Action {
 	}
 	
 	private ActionType type;
-	private Location agentLocation,
+	private int[] agentLocation,
 					 newAgentLocation;
 	
-	protected Action(ActionType type, Location agentLocation, Location newAgentLocation)
+	protected Action(ActionType type, int[] agentLocation, int[] newAgentLocation)
 	{
 		this.type 				= type;
 		this.agentLocation  	= agentLocation;
@@ -30,45 +31,45 @@ public abstract class Action {
 		return this.type;
 	}
 	
-	public Location getAgentLocation()
+	public int[] getAgentLocation()
 	{
 		return this.agentLocation;
 	}
 	
-	public Location getNewAgentLocation()
+	public int[] getNewAgentLocation()
 	{
 		return this.newAgentLocation;
 	}
 	
-	public static List<Action> EveryMove(Location agentLocation, Action agentAction)
+	public static Stack<Action> EveryMove(int[] agentLocation, Action exceptAction)
 	{
-		LinkedList<Action> actions = new LinkedList<Action>();
+		Stack<Action> actions = new Stack<Action>();
 		for (Direction dir : Direction.EVERY) 
 			actions.add(new MoveAction(dir, agentLocation));
 		
-		if (agentAction != null)
+		if (exceptAction != null)
 		{
-			actions.remove(agentAction.getOpposite());
+			actions.remove(exceptAction.getOpposite());
 		}
 		return actions;
 	}
 	
-	public static List<Action> EveryBox(Location agentLocation, Action agentAction)
+	public static List<Action> EveryBox(int[]  agentLocation, Action exceptAction)
 	{
-		LinkedList<Action> actions = new LinkedList<Action>();
-		for (Direction d1 : Direction.EVERY) 
-			for (Direction d2 : Direction.EVERY) 
-				if (!Direction.isOpposite(d1, d2)) 
-					actions.add(new PushAction(d1, d2, agentLocation));
+		Stack<Action> actions = new Stack<Action>();
+		for (Direction dir1 : Direction.EVERY)
+			for (Direction dir2 : Direction.EVERY)
+				if (!Direction.isOpposite(dir1, dir2))
+					actions.add(new PushAction(dir1, dir2, agentLocation));
 		
-		for (Direction d1 : Direction.EVERY) 
-			for (Direction d2 : Direction.EVERY)
-				if (d1 != d2) 
-					actions.add(new PullAction(d1, d2, agentLocation));
+		for (Direction dir1 : Direction.EVERY)
+			for (Direction dir2 : Direction.EVERY)
+				if (dir1 != dir2)
+					actions.add(new PullAction(dir1, dir2, agentLocation));
 		
-		if (agentAction != null)
+		if (exceptAction != null)
 		{
-			actions.remove(agentAction.getOpposite());
+			actions.remove(exceptAction.getOpposite());
 		}
 		return actions;
 	}
@@ -79,32 +80,5 @@ public abstract class Action {
 	
 	@Override
 	public abstract String toString();
-	
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((agentLocation == null) ? 0 : agentLocation.hashCode());
-		result = prime * result + ((type == null) ? 0 : type.hashCode());
-		return result;
-	}
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		Action other = (Action) obj;
-		if (agentLocation == null) {
-			if (other.agentLocation != null)
-				return false;
-		} else if (!agentLocation.equals(other.agentLocation))
-			return false;
-		if (type != other.type)
-			return false;
-		return true;
-	}
 }

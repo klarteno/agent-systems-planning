@@ -3,7 +3,7 @@ package org.agents.action;
 
 public class SkipAction extends Action {
 
-	public SkipAction(Location location)
+	public SkipAction(int[] location)
 	{
 		super(ActionType.SKIP, location, location);
 	}

@@ -1,11 +1,11 @@
 package org.agents;
 
-public final class ObjectsMarks {
+import java.io.Serializable;
+
+public final class ObjectsMarks implements Serializable {
     enum BoxField {
         LETTER_MARK_INDEX,
         COLOR_MARK_INDEX,
-        GOAL_ROW,
-        GOAL_COLUMN,
         SOLVED_STATUS;
     };
 
@@ -17,8 +17,6 @@ public final class ObjectsMarks {
     enum AgentField {
         NUMBER_MARK_INDEX,
         COLOR_MARK_INDEX,
-        GOAL_ROW,
-        GOAL_COLUMN,
         SOLVED_STATUS;
     };
 }

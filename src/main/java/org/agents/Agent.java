@@ -1,7 +1,9 @@
 package org.agents;
 
 
-public final class Agent {
+import java.io.Serializable;
+
+public final class Agent implements Serializable {
     //TO DO decapsulation of a new data strucure like a primitive array
     //TO DO bits for every field
     private final int not_solved = 0;
@@ -9,6 +11,7 @@ public final class Agent {
 
     private final int[] agent_object;
     private final int[] agent_object_coordinates;
+    private int[] agent_goal_coordinates;
 
     public Agent(int number_mark, int color_mark) {
         this.agent_object = new int[ObjectsMarks.AgentField.values().length];
@@ -22,12 +25,13 @@ public final class Agent {
     }
 
     public void setGoalPosition(int goal_row, int goal_column) {
-        this.agent_object[ObjectsMarks.AgentField.GOAL_ROW.ordinal()]= goal_row;
-        this.agent_object[ObjectsMarks.AgentField.GOAL_COLUMN.ordinal()]= goal_column;
+        this.agent_goal_coordinates = new int[ObjectsMarks.CoordinatesField.values().length];
+        this.agent_goal_coordinates[ObjectsMarks.CoordinatesField.ROW_POS.ordinal()]= goal_row;
+        this.agent_goal_coordinates[ObjectsMarks.CoordinatesField.COLUMN_POS.ordinal()]= goal_column;
     }
 
     public int[] getGoalPosition() {
-        return  new int[]{ this.agent_object[ObjectsMarks.AgentField.GOAL_ROW.ordinal()],this.agent_object[ObjectsMarks.AgentField.GOAL_COLUMN.ordinal()]};
+        return  this.agent_goal_coordinates;
     }
 
     public void setRowPosition(int pos){
@@ -40,17 +44,18 @@ public final class Agent {
             this.agent_object_coordinates[ObjectsMarks.CoordinatesField.COLUMN_POS.ordinal()]= pos;
     }
 
-    public int getRowPosition(int pos){
-        if(this.valid(pos))
+    public int getRowPosition(){
             return this.agent_object_coordinates[ObjectsMarks.CoordinatesField.ROW_POS.ordinal()];
-        throw new IndexOutOfBoundsException(-1);
     }
 
-    public int getColumnPosition(int pos){
-        if(this.valid(pos))
+    public int getColumnPosition(){
             return this.agent_object_coordinates[ObjectsMarks.CoordinatesField.COLUMN_POS.ordinal()];
-        throw new IndexOutOfBoundsException(-1);
     }
+
+    public int[] getCoordinates(){
+        return this.agent_object_coordinates;
+    }
+
 
     public boolean setSolvedStatus(){
         //change also the coordinates to be equlal to the goal position ?????
@@ -64,6 +69,10 @@ public final class Agent {
 
     public int getNumberMark(){
         return this.agent_object[ObjectsMarks.AgentField.NUMBER_MARK_INDEX.ordinal()];
+    }
+
+    public int getColor(){
+        return this.agent_object[ObjectsMarks.AgentField.COLOR_MARK_INDEX.ordinal()];
     }
 
     private boolean valid(int pos) {
