@@ -9,7 +9,7 @@ import org.agents.action.Direction;
 import java.util.*;
 import java.util.stream.Stream;
 
-public class PathProcessing {
+public final class PathProcessing {
     public static final String MoveAction = "Move";
     public static final String PushAction = "Push";
     public static final String PullAction = "Pull";
@@ -20,11 +20,11 @@ public class PathProcessing {
         mapFixedObjects = new MapFixedObjects();
     }
 
-    private ArrayList<String> getMoves(Stack<int[]> path){
-        assert path!=null;
+    private ArrayList<String> getMoves(ArrayDeque<int[]> path){
+        assert path != null;
         ArrayList<String> agent_moves = new ArrayList<>();
         int[] next_cell = path.pop();
-        while (!path.empty()){
+        while (!path.isEmpty()){
             int[] prev_cell = path.pop();
             Direction next_direction = Direction.getDirectionsFrom(prev_cell, next_cell);
             agent_moves.add(MoveAction + "(" + next_direction.toString() + ")" );
@@ -33,7 +33,7 @@ public class PathProcessing {
         return agent_moves;
     }
 
-    private ArrayList<String> getBoxMoves(Agent agent, int[] agent_cell, Stack<int[]> box_path){
+    private ArrayList<String> getBoxMoves(Agent agent, int[] agent_cell, ArrayDeque<int[]> box_path){
         assert agent_cell != null;
 
         ArrayList<String> agent_moves = new ArrayList<>();
@@ -46,7 +46,7 @@ public class PathProcessing {
             next_cell = iter.next();
             Direction position = Direction.getDirectionsFrom(agent_cell, prev_cell);
             if(Arrays.equals(next_cell,agent_cell)){
-                Stack<int[]> cells = mapFixedObjects.getNeighbours(agent_cell, agent.getColor());
+                ArrayDeque<int[]> cells = mapFixedObjects.getNeighbours(agent_cell, agent.getColor());
                 Stream<int[]> next_neighbours = cells.stream().filter(box_path::contains);//to optimize and abstract
                 int[] cell = this.selectCellForAgent(next_neighbours);
                 Direction agent_dir = Direction.getDirectionsFrom(agent_cell, cell);
@@ -86,13 +86,15 @@ public class PathProcessing {
             System.exit(-1);
         }
 
-        Stack<int[]> agent_path = searchEngine.runAstar(mapFixedObjects, agent.getColor(), agent.getCoordinates(), box_to_search.getCoordinates());
+        searchEngine.runAstar(mapFixedObjects, agent.getNumberMark(), agent.getColor(), agent.getCoordinates(), box_to_search.getCoordinates());
+        ArrayDeque<int[]> agent_path = searchEngine.getPath();
         int[] agent_goal = agent_path.pop();
         assert Arrays.equals(agent_goal, box_to_search.getCoordinates());
         int[] agent_end_path = agent_path.peek();
         ArrayList<String> agent_moves = this.getMoves(agent_path);
 
-        Stack<int[]> box_path = searchEngine.runAstar(mapFixedObjects, box_to_search.getColor(), box_to_search.getCoordinates(), box_to_search.getGoalPosition());
+        searchEngine.runAstar(mapFixedObjects, box_to_search.getLetterMark(), box_to_search.getColor(), box_to_search.getCoordinates(), box_to_search.getGoalPosition());
+        ArrayDeque<int[]> box_path = searchEngine.getPath();
         ArrayList<String> box_moves = this.getBoxMoves(agent, agent_end_path, box_path);
 
         box_moves.addAll(agent_moves);

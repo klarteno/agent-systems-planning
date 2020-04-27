@@ -9,7 +9,7 @@ import java.util.Vector;
 import java.util.regex.Pattern;
 
 
-public class SearchClient {
+public final class SearchClient {
     BufferedReader serverMessages;
 
     enum ParsingState {
@@ -132,10 +132,10 @@ public class SearchClient {
     public MapFixedObjects initObjects(){
         MapFixedObjects mapFixedObjects = new MapFixedObjects();
 
-        mapFixedObjects.MAX_COL = maxCol_map;
+        MapFixedObjects.MAX_COL = maxCol_map;
 
-        mapFixedObjects.MAX_ROW = rows_init_map_marks.size();
-        mapFixedObjects.walls = new boolean[mapFixedObjects.MAX_ROW][mapFixedObjects.MAX_COL];
+        MapFixedObjects.MAX_ROW = rows_init_map_marks.size();
+        mapFixedObjects.walls = new boolean[MapFixedObjects.MAX_ROW][MapFixedObjects.MAX_COL];
 
         var box_marks = new Vector<Box>();
         var agent_marks = new Vector<Agent>();
@@ -189,8 +189,8 @@ public class SearchClient {
                 System.out.println("#Character key: MapFixedObjects.goals.keySet() error");
             }
         }
-        mapFixedObjects.boxes = box_marks.toArray(new Box[box_marks.size()]);
-        mapFixedObjects.agents = agent_marks.toArray(new Agent[agent_marks.size()]);
+        MapFixedObjects.boxes = box_marks.toArray(new Box[box_marks.size()]);
+        MapFixedObjects.agents = agent_marks.toArray(new Agent[agent_marks.size()]);
 
         return mapFixedObjects;
     }

@@ -1,20 +1,22 @@
 package org.agents.planning;
 
 import org.agents.Agent;
+import org.agents.Box;
 import org.agents.MapFixedObjects;
 import org.agents.searchengine.PathProcessing;
 import org.agents.searchengine.SearchEngine;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.ListIterator;
 import java.util.Stack;
 
-public class Strategy {
+public class SearchStrategy {
 
-    public static Stack<ListIterator<String>> getPathsSequencial(MapFixedObjects mapFixedObjects, SearchEngine searchEngine) {
+    public static ArrayDeque<ListIterator<String>> getPathsSequencial(MapFixedObjects mapFixedObjects, SearchEngine searchEngine) {
        PathProcessing pathProcessing = new PathProcessing();
         ListIterator<String> path_iter;
-        Stack<ListIterator<String>> paths_iterations = new Stack<>();
+        ArrayDeque<ListIterator<String>> paths_iterations = new ArrayDeque<>();
         ArrayList<String> path;
 
         for (int i = mapFixedObjects.agents.length-1; i >=0 ; i--) {
@@ -23,7 +25,6 @@ public class Strategy {
             paths_iterations.add(path_iter);
 
         }
-
 
 /*
 
@@ -47,4 +48,6 @@ public class Strategy {
         return paths_iterations;
     }
 
+    public void runDescenteralizedSearch(ConflictAvoidanceTable conflictAvoidanceTable, Agent[] agents, Box[] boxes) {
+    }
 }

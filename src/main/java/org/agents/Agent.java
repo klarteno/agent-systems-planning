@@ -10,7 +10,7 @@ public final class Agent implements Serializable {
     private final int got_solved = 1;
 
     private final int[] agent_object;
-    private final int[] agent_object_coordinates;
+    private final int[] agent_object_coordinates;// add time coordinate
     private int[] agent_goal_coordinates;
 
     public Agent(int number_mark, int color_mark) {
@@ -55,7 +55,6 @@ public final class Agent implements Serializable {
     public int[] getCoordinates(){
         return this.agent_object_coordinates;
     }
-
 
     public boolean setSolvedStatus(){
         //change also the coordinates to be equlal to the goal position ?????

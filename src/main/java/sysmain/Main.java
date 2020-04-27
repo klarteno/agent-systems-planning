@@ -1,15 +1,8 @@
 package sysmain;
 
-
-
-import ProjectUtilsDraftsToDel.Serialization;
-import org.agents.Agent;
-import org.agents.Box;
-import org.agents.Color;
 import org.agents.MapFixedObjects;
 import org.agents.SearchClient;
-import org.agents.planning.Strategy;
-import org.agents.searchengine.PathProcessing;
+import org.agents.planning.SearchStrategy;
 import org.agents.searchengine.SearchEngine;
 
 import java.io.BufferedReader;
@@ -23,7 +16,7 @@ import java.util.*;
  *
  * @author autor
  */
-public class Main {
+public final class Main {
 
     private static final DecimalFormat df = new DecimalFormat("0.0000");
 
@@ -48,7 +41,7 @@ public class Main {
             MapFixedObjects mapFixedObjects = client.initObjects();
             SearchEngine searchEngine = new SearchEngine();
 
-            Stack<ListIterator<String>> paths_iterations = Strategy.getPathsSequencial(mapFixedObjects, searchEngine);
+            ArrayDeque<ListIterator<String>> paths_iterations = SearchStrategy.getPathsSequencial(mapFixedObjects, searchEngine);
 
             outputPathFor(serverMessages,2, 1, paths_iterations.pop());
             outputPathFor(serverMessages,2, 2, paths_iterations.pop());
