@@ -14,13 +14,14 @@ import java.util.*;
 
 public class SearchStrategy {
     private final SearchEngineSA search_engine;
-    private ConflictAvoidanceTable conflict_avoidance_table;
+    private static ConflictAvoidanceTable conflict_avoidance_table;
 
     public SearchStrategy(SearchEngineSA searchEngine) {
         this.search_engine = searchEngine;
+        conflict_avoidance_table = this.search_engine.getConflictAvoidanceCheckingRules().getConflictsTable();
     }
 
-    public static ArrayDeque<ListIterator<String>> getPathsSequencial(SearchEngineSA searchEngine) {
+    public ArrayDeque<ListIterator<String>> getPathsSequencial(SearchEngineSA searchEngine) {
        PathProcessing pathProcessing = new PathProcessing();
         ListIterator<String> path_iter;
         ArrayDeque<ListIterator<String>> paths_iterations = new ArrayDeque<>();
@@ -54,18 +55,13 @@ public class SearchStrategy {
 */
     }
 
-    public void setUpCoflictAvoidanceTable(ConflictAvoidanceTable conflict_avoidance_table) {
-        this.conflict_avoidance_table = conflict_avoidance_table;
-    }
 
-    public ConflictAvoidanceTable getCoflictAvoidanceTable() {
-        return this.conflict_avoidance_table;
-    }
+
 
     //the agents has to have goals for the boxes set up
     //TO DO decouple to agregation or commands together with conflict_avoidance_table
     public void runDescenteralizedSearch(Agent[] agents, Box[] boxes) {
-        assert this.conflict_avoidance_table != null;
+        assert conflict_avoidance_table != null;
         //make a parallel thread for each agen and box , put the id of the thread to the agent id
         Integer agent_id;
         for (Agent agent : agents) {
@@ -73,7 +69,7 @@ public class SearchStrategy {
             if(this.search_engine.isPathFound()){
                 ArrayDeque<int[]> agent_path = this.search_engine.getPath();
                 int agent_mark = agent.getNumberMark();
-                this.conflict_avoidance_table.replaceMarkedPathFor(agent_mark, agent_path);
+                conflict_avoidance_table.replaceMarkedPathFor(agent_mark, agent_path);
             }
         }
 
@@ -82,7 +78,7 @@ public class SearchStrategy {
             if(this.search_engine.isPathFound()){
                 ArrayDeque<int[]> box_path = this.search_engine.getPath();
                 int box_mark = box.getLetterMark();
-                this.conflict_avoidance_table.replaceMarkedPathFor(box_mark, box_path);
+                conflict_avoidance_table.replaceMarkedPathFor(box_mark, box_path);
             }
         }
     }

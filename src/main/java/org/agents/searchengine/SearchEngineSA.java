@@ -33,6 +33,12 @@ public class SearchEngineSA {
         return path.size();
     }
 
+    public ConflictAvoidanceCheckingRules getConflictAvoidanceCheckingRules(){
+        return this.conflict_avoidance_checking_rules;
+    }
+
+
+
     public boolean isPathFound() {
         return this.path.size() > 0;
     }

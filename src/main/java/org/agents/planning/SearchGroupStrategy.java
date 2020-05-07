@@ -41,8 +41,8 @@ public class SearchGroupStrategy {
 
         ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules = new ConflictAvoidanceCheckingRules(this.conflict_avoidance_table);
         this.search_strategy = new SearchStrategy(new SearchEngineSA(conflictAvoidanceCheckingRules));
-        this.search_strategy.setUpCoflictAvoidanceTable(this.conflict_avoidance_table);
-        search_strategy.runDescenteralizedSearch(agents, boxes);
+        this.conflict_avoidance_table = conflictAvoidanceCheckingRules.getConflictsTable();
+         search_strategy.runDescenteralizedSearch(agents, boxes);
      }
 
     public void runIndependenceDetection(){

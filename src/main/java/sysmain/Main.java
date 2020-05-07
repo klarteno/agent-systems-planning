@@ -55,7 +55,8 @@ public final class Main {
             ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules = new ConflictAvoidanceCheckingRules(conflictAvoidanceTable);
 
             SearchEngineSA searchEngine = new SearchEngineSA(conflictAvoidanceCheckingRules);
-            ArrayDeque<ListIterator<String>> paths_iterations = SearchStrategy.getPathsSequencial(searchEngine);
+            SearchStrategy searchStrategy = new SearchStrategy(searchEngine);
+            ArrayDeque<ListIterator<String>> paths_iterations = searchStrategy.getPathsSequencial(searchEngine);
 
 
             outputPathFor(serverMessages,2, 1, paths_iterations.pop());
