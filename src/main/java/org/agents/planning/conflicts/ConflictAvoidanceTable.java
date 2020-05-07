@@ -1,23 +1,29 @@
-package org.agents.planning;
+package org.agents.planning.conflicts;
 
 import datastructures.DisjointSet;
 import org.agents.markings.Coordinates;
+import org.agents.planning.PathsStoreQuerying;
 
+import java.io.Serializable;
 import java.util.*;
 
-public final class ConflictAvoidanceTable {
+public final class ConflictAvoidanceTable implements Serializable {
     private final PathsStoreQuerying pathsStoreQuerying;
-    //make it a union set
     private Set<Integer> ungrouped_movables;
-    private DisjointSet group_set;
+    private DisjointSet group_set;//groups the movables objects
 
     //the conflict avoidance is used only for the agents and the boxes used as input
     public ConflictAvoidanceTable(PathsStoreQuerying pathsStoreQuerying) {
         this.pathsStoreQuerying = pathsStoreQuerying;
 
-        Collection<? extends Integer> movables_ids = pathsStoreQuerying.getTrackedIds();
-        this.setUpTracked(movables_ids);
+
     }
+
+    public void startSetUp(){
+            Collection<? extends Integer> movables_ids = pathsStoreQuerying.getTrackedIds();
+            this.setUpTracked(movables_ids);
+    }
+
 
     public void setUpTracked(Collection<? extends Integer> movables_ids){
         this.ungrouped_movables = new HashSet<>(movables_ids.size());
@@ -29,32 +35,68 @@ public final class ConflictAvoidanceTable {
         return this.ungrouped_movables.toArray(new Integer[0]);
     }
 
-    public boolean isUnGrouped(int mark_id1){
-       return this.ungrouped_movables.contains(mark_id1);
+    public ArrayDeque<Integer> getGroupOf(int mark_id) {
+        ArrayDeque<Integer> group = new ArrayDeque<>();
+        group.add(mark_id);
 
+        int id_index = pathsStoreQuerying.getIndexFor(mark_id);
+        int next_index;
+        for (Integer next_mark_id : this.ungrouped_movables) {
+            next_index = pathsStoreQuerying.getIndexFor(next_mark_id);
+            if (this.group_set.areInSameSet(id_index, next_index))
+                group.add(next_mark_id);
+        }
+        return group;
     }
+
+    public boolean isUnGrouped(int mark_id){
+       return (this.getGroupOf(mark_id).size() == 1);
+    }
+
     //merge two mark_ids by their indexes retrieved from paths store
+    //and removes their paths stored because the åaths can not be valid after merging
     public void groupIDs(int mark_id1, int mark_id2){
+        assert this.ungrouped_movables.contains(mark_id1);
+        assert this.ungrouped_movables.contains(mark_id2);
+
         int index1 = pathsStoreQuerying.getIndexFor(mark_id1);
+        pathsStoreQuerying.removePath(mark_id1);
         int index2 = pathsStoreQuerying.getIndexFor(mark_id2);
+        pathsStoreQuerying.removePath(mark_id2);
 
         this.group_set.mergeSets(index1, index2);
-        this.ungrouped_movables.remove(mark_id1);
-        this.ungrouped_movables.remove(mark_id2);
     }
 
+    //merge two groups of mark_ids by their indexes retrieved from paths store
+    //and removes their paths stored because the åaths can not be valid after merging
+    public int[][] groupIDs(int[] group_one, int[] group_two){
+        pathsStoreQuerying.removePath(group_one);
+        pathsStoreQuerying.removePath(group_two);
+
+        int group = pathsStoreQuerying.getIndexFor(group_one[0]);
+        assert this.group_set.getSizeOfSet(group) == group_one.length;
+        for (int mark_id : group_two) {
+             this.group_set.mergeSets(group, pathsStoreQuerying.getIndexFor(mark_id));
+        }
+
+        int[][] grouped_marks = new int[2][];
+        grouped_marks[0] = group_one;
+        grouped_marks[1] = group_two;
+
+        return grouped_marks;
+    }
 
 //returns the first two conflicted found that are not in a group
     public boolean getNextConflictedMovables(int[] colided_ids){
         Integer[] ungrouped_movables = this.getAllUnGroupedIDs();
         int time_step = -1;
         int prev_marked = ungrouped_movables[0];
-        int[][] prev_path = this.pathsStoreQuerying.getPathFor(prev_marked);
+        int[][] prev_path = this.pathsStoreQuerying.getPathCloneFor(prev_marked);
 
         int next_marked;
         for (int i = 1; i < ungrouped_movables.length; i++) {
             next_marked = ungrouped_movables[i];
-            int[][] next_path = this.pathsStoreQuerying.getPathFor(next_marked);
+            int[][] next_path = this.pathsStoreQuerying.getPathCloneFor(next_marked);
             if(PathsStoreQuerying.isOverlap(prev_path, next_path)){
                 colided_ids[0] = prev_marked;
                 colided_ids[1] = next_marked;
@@ -66,10 +108,16 @@ public final class ConflictAvoidanceTable {
         return false;
     }
 
-
-
     public  int getPathLenght(int movable_id) {
         return this.pathsStoreQuerying.getPathLenght(movable_id);
+    }
+
+    public  int getPathLenght(int[] group__one) {
+        int sum = 0;
+        for (int i = 0; i < group__one.length; i++) {
+            sum += this.pathsStoreQuerying.getPathLenght(i);
+        }
+        return sum;
     }
 
     //adds the path and removes the path given
@@ -77,18 +125,36 @@ public final class ConflictAvoidanceTable {
         int[] cell_loc;
         while (!path.isEmpty()){
             cell_loc = path.pop();
-            pathsStoreQuerying.setCellLocationOf(cell_loc, number_mark, Coordinates.getTime(cell_loc));
+            pathsStoreQuerying.setCellLocationOf(number_mark, cell_loc);
         }
     }
 
-    public void addMarkedPath(ArrayDeque<int[]> path, int number_mark){
+    public void addMarkedPathsFor(int[][] group_marks_total, ArrayDeque<int[]> paths) {
+        pathsStoreQuerying.setCellLocationOf(group_marks_total, paths);
+    }
+
+    public void replaceMarkedPathFor(int number_mark, ArrayDeque<int[]> path){
+        pathsStoreQuerying.removePath(number_mark);
          for (int[] cell_location : path) {
-             pathsStoreQuerying.setCellLocationOf(cell_location, number_mark, Coordinates.getTime(cell_location));
+             pathsStoreQuerying.setCellLocationOf(number_mark, cell_location);
+        }
+    }
+
+    //adds the non-conflicting path to the path store ,  group_marks and group_paths should be ordered by the same index
+    public void replaceMarkedPathFor(int[] group_marks, ArrayDeque<int[]> group_paths ){
+        assert Objects.requireNonNull(group_paths.peek()).length/Coordinates.getLenght() == group_marks.length;
+
+        pathsStoreQuerying.removePath(group_marks);
+
+        int[] cell_locations;
+        while(!group_paths.isEmpty()){
+            cell_locations = group_paths.pop();
+            pathsStoreQuerying.setCellLocationOf(group_marks, cell_locations);
         }
     }
 
     public boolean removeMarkedPath(int number_mark){
-       return pathsStoreQuerying.removePath( number_mark);
+        return pathsStoreQuerying.removePath(number_mark);
     }
 
     /*
@@ -187,7 +253,18 @@ public final class ConflictAvoidanceTable {
 
     }
 
+//do not know what to check here ??
+    //perhaps if we have two conflicting groups that were resolved with the conflict avoidance table
+    //and then we add a path to a new group and the new group conflicts again with the other resolved group
+    public boolean isNewConflict(int [] group_one, int [] group_two) {
+        return true;
+    }
 
+
+    //return matrixes indexed by mark id from group_marks ,each matrix stores the time step for a coordinate for a movable
+    public int[][][] getMarkedPaths(int[] group_marks) {
+        return  this.pathsStoreQuerying.getPathsCloneForGroup(group_marks);
+    }
 
 
 }

@@ -2,9 +2,10 @@ package org.agents.searchengine;
 
 import org.agents.Agent;
 import org.agents.Box;
-import org.agents.Color;
 import org.agents.MapFixedObjects;
+import org.agents.action.CellLocation;
 import org.agents.action.Direction;
+import org.agents.markings.Coordinates;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -14,10 +15,8 @@ public final class PathProcessing {
     public static final String PushAction = "Push";
     public static final String PullAction = "Pull";
 
-    MapFixedObjects mapFixedObjects;
 
     public  PathProcessing() {
-        mapFixedObjects = new MapFixedObjects();
     }
 
     private ArrayList<String> getMoves(ArrayDeque<int[]> path){
@@ -33,20 +32,43 @@ public final class PathProcessing {
         return agent_moves;
     }
 
+    private ArrayList<String> getMoves(ArrayDeque<int[]> path, boolean is_multiple_agents ){
+        assert path != null;
+        ArrayList<String> agent_moves = new ArrayList<>();
+        int[] next_cell = path.pop();
+        String time_step_moves = "";
+        while (!path.isEmpty()){
+            int[] prev_cell = path.pop();
+            Direction[] next_direction = Direction.getDirectionsFrom(prev_cell, next_cell, is_multiple_agents);
+            for (int i = 0; i < next_direction.length; i++) {
+                time_step_moves += MoveAction + "(" + next_direction[i].toString() + ")";
+            }
+            agent_moves.add(time_step_moves);
+            time_step_moves = "";
+            next_cell = prev_cell;
+        }
+        return agent_moves;
+    }
+
+
+
     private ArrayList<String> getBoxMoves(Agent agent, int[] agent_cell, ArrayDeque<int[]> box_path){
         assert agent_cell != null;
 
         ArrayList<String> agent_moves = new ArrayList<>();
 
-        Iterator<int[]> iter = box_path.iterator();
-        int[] prev_cell = iter.next();
-        int[] next_cell;
+        Iterator<int[]> iter1 = box_path.iterator();
+        int[] prev_cell1 = iter1.next();
+        int[] next_cell1 = iter1.next();
 
-        while(iter.hasNext()){
-            next_cell = iter.next();
+        int[] prev_cell;
+        int[] next_cell = box_path.pop();
+      //  while(iter.hasNext()){
+        while(!box_path.isEmpty()){
+            prev_cell = box_path.pop();
             Direction position = Direction.getDirectionsFrom(agent_cell, prev_cell);
-            if(Arrays.equals(next_cell,agent_cell)){
-                ArrayDeque<int[]> cells = mapFixedObjects.getNeighbours(agent_cell, agent.getColor());
+            if(Arrays.equals(next_cell, agent_cell)){
+                ArrayDeque<int[]> cells = MapFixedObjects.getNeighbours(agent_cell, agent.getColor());
                 Stream<int[]> next_neighbours = cells.stream().filter(box_path::contains);//to optimize and abstract
                 int[] cell = this.selectCellForAgent(next_neighbours);
                 Direction agent_dir = Direction.getDirectionsFrom(agent_cell, cell);
@@ -56,9 +78,9 @@ public final class PathProcessing {
                 Direction next_box_dir = Direction.getDirectionsFrom(prev_cell, next_cell);
                 agent_moves.add(PushAction + "(" + position.toString() + "," + next_box_dir.toString() +")" );
 
-                agent_cell = prev_cell;
+                agent_cell = next_cell;
             }
-            prev_cell = next_cell;
+            next_cell = prev_cell;
         }
 
         return agent_moves;
@@ -75,25 +97,27 @@ public final class PathProcessing {
         }
     }
 
-    public ArrayList<String> get_moves_agent_goal(Agent agent, SearchEngine searchEngine, MapFixedObjects mapFixedObjects){
-        Optional<Box> next_box = mapFixedObjects.getNextBoxBy(agent.getColor());
+    public ArrayList<String> get_moves_agent_goal(Agent agent, SearchEngineSA searchEngine){
+        Optional<Box> next_box = MapFixedObjects.getNextBoxBy(agent.getColor());
         Box box_to_search;
         if (next_box.isPresent()){
             box_to_search=next_box.get();
         }else {
             box_to_search = null;
-            System.err.println("#tried to get null box");
+            System.out.println("#tried to get null box");
             System.exit(-1);
         }
 
-        searchEngine.runAstar(mapFixedObjects, agent.getNumberMark(), agent.getColor(), agent.getCoordinates(), box_to_search.getCoordinates());
+        agent.setGoalPosition(box_to_search.getRowPosition(), box_to_search.getColumnPosition());
+        searchEngine.runAstar(agent);
         ArrayDeque<int[]> agent_path = searchEngine.getPath();
         int[] agent_goal = agent_path.pop();
-        assert Arrays.equals(agent_goal, box_to_search.getCoordinates());
+        assert (Coordinates.getRow(agent_goal) == box_to_search.getRowPosition()) && (Coordinates.getCol(agent_goal) == box_to_search.getColumnPosition());
         int[] agent_end_path = agent_path.peek();
         ArrayList<String> agent_moves = this.getMoves(agent_path);
 
-        searchEngine.runAstar(mapFixedObjects, box_to_search.getLetterMark(), box_to_search.getColor(), box_to_search.getCoordinates(), box_to_search.getGoalPosition());
+
+        searchEngine.runAstar(box_to_search);
         ArrayDeque<int[]> box_path = searchEngine.getPath();
         ArrayList<String> box_moves = this.getBoxMoves(agent, agent_end_path, box_path);
 
@@ -101,4 +125,15 @@ public final class PathProcessing {
 
         return box_moves;
     }
+
+    public ArrayList<String> outputPathsMA(ArrayDeque<int[]> agents_paths){
+        int[] goal_cell = agents_paths.pop();
+        int[] agent_end_path = agents_paths.peek();
+        boolean multiple_agents = true;
+        ArrayList<String> agent_moves = this.getMoves(agents_paths, multiple_agents);
+
+        //boxes path to be added
+        return agent_moves;
+    }
+
 }

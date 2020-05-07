@@ -1,57 +1,155 @@
 package org.agents;
 
-import org.agents.planning.ConflictAvoidanceTable;
-
 import java.io.Serializable;
 import java.util.*;
 
+import org.agents.markings.Coordinates;
+import org.agents.planning.conflicts.ConflictAvoidanceTable;
+
 //replace with composition one MapFixedObjects and one with opearations
 public final class MapFixedObjects implements Serializable {
-        private  ConflictAvoidanceTable conflictAvoidanceTable;
+        //tracked_marking_ids key is for mark_id ,values for index
+        private HashMap<Integer, Integer> tracked_marking_ids;
+        //markings_ids is for for mark_id values for boxes or ojects
+        private HashMap<Integer, Serializable> markings_ids;
 
-        enum SearchState {
-                NO_CHECK_CONFLICTS,
-                CHECK_CONFLICTS;
-        };
 
-        //change this when the searching algorithm requires to check for conflicts
-        public SearchState searchState = SearchState.NO_CHECK_CONFLICTS;
+        public static int MAX_ROW = 0 ;
+        public static int MAX_COL = 0 ;
 
-        public static int MAX_ROW = 0;
-        public static int MAX_COL = 0;
-
-        public boolean[][] walls;
+        private static boolean[][] walls;
 
         //goals is not intended to use in the algorithms instead we store the goals in the box or agent object
-        public HashMap<Character, int[]> goals = new HashMap<>();
+        public static HashMap<Character, int[]> goals = new HashMap<>();
 
-        public static Box[] boxes;
-        public static Agent[] agents;
+        private static Box[] boxes;
+        private static Agent[] agents;
+        private static HashMap<Integer, Agent> agents_ids;
+        private static HashMap<Integer, Box> boxes_ids;
+
 
         public MapFixedObjects(){
+
         }
 
-        public MapFixedObjects(ConflictAvoidanceTable conflictAvoidanceTable){
-                this.conflictAvoidanceTable = conflictAvoidanceTable;
+        public static boolean[][] getWalls() {
+                return walls;
         }
 
+        public static void setWalls(boolean[][] walls_marks) {
+                walls = walls_marks;
+        }
+
+        private Serializable getMovableObject(int movable_id) {
+                return this.markings_ids.get(movable_id);
+        }
+
+        public static Agent[] getAgents(){
+                assert agents != null;
+                return agents;
+        }
+
+        public static Box[] getBoxes(){
+                assert boxes != null;
+                return boxes;
+        }
+
+        public static void setMovables(Agent[] agents_, Box[] boxes_){
+                boxes = boxes_;
+                agents = agents_;
+
+                agents_ids = new HashMap<>(boxes.length);
+                boxes_ids = new HashMap<>(agents.length);
+                //Arrays.stream(agents_)
+                for (Agent agent:agents_ ) {
+                        agents_ids.put(agent.getNumberMark(), agent);
+                }
+                for (Box box:boxes_ ) {
+                        boxes_ids.put(box.getLetterMark(), box);
+                }
+        }
+
+        //set ups a varying lenght of agents and boxes
+        public void setUpTrackedMovables(Agent[] agents, Box[] boxes ){
+                int number_of_movables = agents.length + boxes.length;
+                this.tracked_marking_ids = new HashMap<>(number_of_movables);
+                this.markings_ids = new HashMap<>(number_of_movables);
+
+                int index = 0;
+                for (Agent agent : agents) {
+                        tracked_marking_ids.put(agent.getNumberMark(), index++);
+                        this.markings_ids.put(agent.getNumberMark(),agent);
+                }
+                for (Box box : boxes) {
+                        tracked_marking_ids.put(box.getLetterMark(), index++);
+                        this.markings_ids.put(box.getLetterMark(), box);
+                }
+        }
+
+        public static Serializable getByMarkNo(int movable_id){
+                if (agents_ids.containsKey(movable_id)) {
+                       return agents_ids.get(movable_id);
+
+                }else if (boxes_ids.containsKey(movable_id)) {
+                       return boxes_ids.get(movable_id);
+
+                }else{
+                        throw new UnsupportedOperationException("unknown movable id request");
+                }
+        }
+
+        public static ArrayDeque<Serializable>  getByMarkNo(int[] movable_ids){
+                ArrayDeque<Serializable> arrayDeque = new ArrayDeque<>();
+                for (int movable_id : movable_ids) {
+                        if (agents_ids.containsKey(movable_id)) {
+                                arrayDeque.add(agents_ids.get(movable_id));
+                        } else if (boxes_ids.containsKey(movable_id)) {
+                                arrayDeque.add(boxes_ids.get(movable_id));
+                        } else {
+                                throw new UnsupportedOperationException("unknown movable id request");
+                        }
+                }
+                return arrayDeque;
+        }
 
         public static int getNumerOfAgents(){
-                return  agents.length;
+                return agents.length;
         }
+
+        public static Agent getByAgentMarkId(int mark_id){
+                return agents_ids.get(mark_id);
+        }
+
+        public static Box getByBoxMarkId(int id){ return boxes_ids.get(id); }
 
         public static int getNumerOfBoxes() {
                 return  boxes.length;
         }
 
+        public static Set<Integer> getAllIdsMarks(){
+                Set<Integer> keys = agents_ids.keySet();
+                keys.addAll(boxes_ids.keySet());
+                return keys;
+        }
+
+        public static Set<Integer> getAgentsMarks(){
+                return agents_ids.keySet();
+        }
+
+        public static Set<Integer> getBoxesMarks(){
+                return boxes_ids.keySet();
+        }
+
         //this opearation is used the most in searching :TO DO replace with matrix look up
-        private boolean isFreeCell(int[] cell, int movable_color) {
+        //checks for cell free and compares also the time of boxes and agents
+        public static boolean isFreeCell(int[] cell, int movable_color) {
+                assert cell.length == 3;
+                if(!isEmptyCell(cell))
+                        return false;
+
                 boolean isFreeCell = true;
-                int y = cell[0];
-                int x = cell[1];
-                isFreeCell = (y > 0 && y < MAX_ROW  && x > 0 && x < MAX_COL && !this.walls[y][x]);
-                if(!isFreeCell)
-                        return isFreeCell;
+                int y = Coordinates.getRow(cell);
+                int x = Coordinates.getCol(cell);
 
                 for(Agent next_agent: agents){
                         if(Arrays.equals(next_agent.getCoordinates(),cell)){
@@ -69,57 +167,92 @@ public final class MapFixedObjects implements Serializable {
                 return isFreeCell;
         }
 
-        //gets the neighbours of the cell  and removes those that conflicts at the start_time_step
-        public ArrayDeque<int[]> getFreeNeighbours(int[] coordinates, int number_mark, int color_movable, int start_time_step){
-                ArrayDeque<int[]> next_cells = new ArrayDeque<>();
-                if(searchState == SearchState.NO_CHECK_CONFLICTS){
-                        return this.getNeighbours(coordinates, color_movable);
-                } 
-                 else if(searchState == SearchState.CHECK_CONFLICTS){
-                        next_cells = this.getNeighbours(coordinates, color_movable);
-                        this.getCheckConflictAvoidanceTable(coordinates, start_time_step, next_cells);
-                        return next_cells;
-                }
-                 return next_cells;
+        public static boolean isEmptyCell(int[] cell_position){
+                int row = Coordinates.getRow(cell_position);
+                int col = Coordinates.getCol(cell_position);
+
+                return (row > 0 && row < MAX_ROW  && col > 0 && col < MAX_COL && !getWalls()[row][col]);
         }
 
-        private void getCheckConflictAvoidanceTable(int[] coordinates, int time_step, ArrayDeque<int[]> next_cells) {
-                this.conflictAvoidanceTable.removeCellConflicts(coordinates,time_step, next_cells);
+        public static int[][] getNeighboursMA(int[] position_to_expand) {
+                assert position_to_expand.length == 3;
+
+                int time_step = Coordinates.getTime(0, position_to_expand);
+                int row = Coordinates.getRow(position_to_expand);
+                int col = Coordinates.getCol(position_to_expand);
+
+
+                int[] dir_south = new int[]{time_step + 1, row+1, col };
+                //if (!conflicts_avoidance.contains(dir_south) && isEmptyCell(dir_south)) neighbours_indexes.add(dir_south);
+                int[] dir_north = new int[]{time_step+1, row-1, col};
+                //if (!conflicts_avoidance.contains(dir_south) && isEmptyCell(dir_south)) neighbours_indexes.add(dir_south);
+                int[] dir_east = new int[]{time_step + 1, row, col+1};
+                //if (!conflicts_avoidance.contains(dir_south) && isEmptyCell(dir_south)) neighbours_indexes.add(dir_south);
+                int[] dir_west = new int[]{time_step + 1, row, col-1};
+                //if (!conflicts_avoidance.contains(dir_south) && isEmptyCell(dir_south)) neighbours_indexes.add(dir_south);
+
+                int[] dir_wait = new int[]{time_step + 1, row, col};
+                int[][] dirs = new int[5][];
+                if (isEmptyCell(dir_south))     dirs[0] = dir_south;
+                if (isEmptyCell(dir_north))     dirs[0] = dir_north;
+                if (isEmptyCell(dir_east))      dirs[0] = dir_east;
+                if (isEmptyCell(dir_west))      dirs[0] = dir_west;
+                if (isEmptyCell(dir_west))      dirs[0] = dir_wait;//could bypass checking
+
+                return dirs;
         }
 
-        private ArrayDeque<int[]> getNeighbours(int[] coordinates, Color color_movable){
-                return this.getNeighbours(coordinates, Color.getColorCoded(color_movable));
-        }
-
-        public ArrayDeque<int[]>  getNeighbours(int[] coordinates, int color_movable){
-                int[] dir1 = new int[]{coordinates[0]+1,coordinates[1] };
-                int[] dir2 = new int[]{coordinates[0]-1,coordinates[1]};
-                int[] dir3 = new int[]{coordinates[0],coordinates[1]+1};
-                int[] dir4= new int[]{coordinates[0],coordinates[1]-1};
-
-                ArrayList<int[]> dirs = new ArrayList<>();
-                dirs.add(dir1);
-                dirs.add(dir2);
-                dirs.add(dir3);
-                dirs.add(dir4);
-
+        //use roll unloop instead of java colection
+        public static ArrayDeque<int[]> getNeighbours(int[] coordinates, int color_movable){
+                assert coordinates.length == 3;
                 ArrayDeque<int[]> neighbours_indexes = new ArrayDeque<>();
-                for(int[] cell:dirs){
-                        if (this.isFreeCell(cell, color_movable))
-                                neighbours_indexes.add(cell);
-                }
+
+                int time_step = Coordinates.getTime(coordinates);
+                int row = Coordinates.getRow(coordinates);   //y
+                int col = Coordinates.getCol(coordinates);   //x
+
+
+                int[] dir_south = new int[]{time_step+1, row+1, col };
+                if (isFreeCell(dir_south, color_movable))
+                        neighbours_indexes.add(dir_south);
+
+                int[] dir_north = new int[]{time_step+1, row-1, col};
+                if (isFreeCell(dir_north, color_movable))
+                        neighbours_indexes.add(dir_north);
+
+                int[] dir_east = new int[]{time_step+1, row, col+1};
+                if (isFreeCell(dir_east, color_movable))
+                        neighbours_indexes.add(dir_east);
+
+                int[] dir_west = new int[]{time_step+1, row, col-1};
+                if (isFreeCell(dir_west, color_movable))
+                        neighbours_indexes.add(dir_west);
 
                 return neighbours_indexes;
         }
 
-        public Optional<Box> getNextBoxBy(int color) {
+        public static ArrayDeque<int[]> getNeighbours(int[] coordinates, Color color_movable){
+                return getNeighbours(coordinates, Color.getColorCoded(color_movable));
+        }
+
+        public static Optional<Box> getNextBoxBy(int color) {
                 for(Box next_box : boxes){
                         if(next_box.getColor() == color) {
                                 return Optional.of(next_box);
                         }
                 }
-
                 return Optional.ofNullable(boxes[0]);
         }
 
+        private Set<Integer> getTrackedMarkingsIDs() {
+                return this.tracked_marking_ids.keySet();
+        }
+
+        private HashMap<Integer, Integer> getMarkingsIndexes() {
+                return this.tracked_marking_ids;
+        }
+
+        public int getIndexFor(int movable_id) {
+                 return this.tracked_marking_ids.get(movable_id);
+        }
 }

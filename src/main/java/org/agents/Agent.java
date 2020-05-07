@@ -1,77 +1,82 @@
 package org.agents;
 
+import org.agents.markings.AgentField;
+import org.agents.markings.Coordinates;
+import org.agents.markings.SolvedStatus;
 
 import java.io.Serializable;
 
 public final class Agent implements Serializable {
-    //TO DO decapsulation of a new data strucure like a primitive array
-    //TO DO bits for every field
-    private final int not_solved = 0;
-    private final int got_solved = 1;
-
     private final int[] agent_object;
-    private final int[] agent_object_coordinates;// add time coordinate
+    private final int[] agent_object_coordinates;
     private int[] agent_goal_coordinates;
 
     public Agent(int number_mark, int color_mark) {
-        this.agent_object = new int[ObjectsMarks.AgentField.values().length];
-        this.agent_object[ObjectsMarks.AgentField.NUMBER_MARK_INDEX.ordinal()]= number_mark;  ;
-        this.agent_object[ObjectsMarks.AgentField.COLOR_MARK_INDEX.ordinal()]= color_mark;  ;
-        this.agent_object[ObjectsMarks.BoxField.SOLVED_STATUS.ordinal()]= not_solved;
+        this.agent_object = AgentField.createAgentField();
 
-        this.agent_object_coordinates = new int[ObjectsMarks.CoordinatesField.values().length];
-        this.agent_object_coordinates[ObjectsMarks.CoordinatesField.ROW_POS.ordinal()]= -1;
-        this.agent_object_coordinates[ObjectsMarks.CoordinatesField.COLUMN_POS.ordinal()]= -1;
+        AgentField.setNumber(this.agent_object, number_mark);
+        AgentField.setColor(this.agent_object, color_mark);
+        AgentField.setSolved(this.agent_object, SolvedStatus.NOT_SOLVED);
+
+        this.agent_object_coordinates = new int[Coordinates.getLenght()];
+        Coordinates.setTime(this.agent_object_coordinates,0);
+        Coordinates.setRow(this.agent_object_coordinates,-1);
+        Coordinates.setCol(this.agent_object_coordinates,-1);
     }
 
     public void setGoalPosition(int goal_row, int goal_column) {
-        this.agent_goal_coordinates = new int[ObjectsMarks.CoordinatesField.values().length];
-        this.agent_goal_coordinates[ObjectsMarks.CoordinatesField.ROW_POS.ordinal()]= goal_row;
-        this.agent_goal_coordinates[ObjectsMarks.CoordinatesField.COLUMN_POS.ordinal()]= goal_column;
+        this.agent_goal_coordinates = new int[Coordinates.getLenght()];
+        Coordinates.setRow(this.agent_goal_coordinates,goal_row);
+        Coordinates.setCol(this.agent_goal_coordinates,goal_column);
+    }
+
+
+    public void setTimePosition(int step_time){
+        Coordinates.setTime(this.agent_object_coordinates, step_time);
+    }
+
+    public void setRowPosition(int pos){
+        if(this.valid(pos))
+            Coordinates.setRow(this.agent_object_coordinates,pos);
+    }
+
+    public void setColumnPosition(int pos){
+        if(this.valid(pos))
+            Coordinates.setCol(this.agent_object_coordinates,pos);
+    }
+
+    public int getRowPosition(){
+        return Coordinates.getRow(this.agent_object_coordinates);
+    }
+
+    public int getColumnPosition(){
+        return Coordinates.getCol(this.agent_object_coordinates);
     }
 
     public int[] getGoalPosition() {
         return  this.agent_goal_coordinates;
     }
 
-    public void setRowPosition(int pos){
-        if(this.valid(pos))
-            this.agent_object_coordinates[ObjectsMarks.CoordinatesField.ROW_POS.ordinal()]= pos;
-    }
 
-    public void setColumnPosition(int pos){
-        if(this.valid(pos))
-            this.agent_object_coordinates[ObjectsMarks.CoordinatesField.COLUMN_POS.ordinal()]= pos;
-    }
-
-    public int getRowPosition(){
-            return this.agent_object_coordinates[ObjectsMarks.CoordinatesField.ROW_POS.ordinal()];
-    }
-
-    public int getColumnPosition(){
-            return this.agent_object_coordinates[ObjectsMarks.CoordinatesField.COLUMN_POS.ordinal()];
+    public int getTimePosition(){
+        return Coordinates.getTime(this.agent_object_coordinates);
     }
 
     public int[] getCoordinates(){
         return this.agent_object_coordinates;
     }
 
-    public boolean setSolvedStatus(){
+    public void setSolvedStatus(){
         //change also the coordinates to be equlal to the goal position ?????
-        if(this.agent_object[ObjectsMarks.AgentField.SOLVED_STATUS.ordinal()]== not_solved){
-            this.agent_object[ObjectsMarks.AgentField.SOLVED_STATUS.ordinal()]= got_solved;
-
-            return true;
-        }
-        return false;
+        AgentField.setSolved(this.agent_object, SolvedStatus.GOT_SOLVED);
     }
 
     public int getNumberMark(){
-        return this.agent_object[ObjectsMarks.AgentField.NUMBER_MARK_INDEX.ordinal()];
+        return AgentField.getNumber(this.agent_object);
     }
 
     public int getColor(){
-        return this.agent_object[ObjectsMarks.AgentField.COLOR_MARK_INDEX.ordinal()];
+        return AgentField.getColor(this.agent_object);
     }
 
     private boolean valid(int pos) {

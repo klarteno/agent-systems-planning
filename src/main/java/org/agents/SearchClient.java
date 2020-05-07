@@ -26,6 +26,12 @@ public final class SearchClient {
     Vector<char[]> rows_init_map_marks;
     Vector<char[]> goal_map_marks;
 
+    static final Pattern pattern_text_headers = Pattern.compile("^[#]?[a-z]+$");
+    static final Pattern pattern_colors_headers = Pattern.compile("^[#]?color[a-z]*$");
+    static final Pattern pattern_initial_map_headers = Pattern.compile("^[#]?init[a-z]*$");
+    static final Pattern pattern_goal_map_headers = Pattern.compile("^[#]?goal[a-z]*$");
+    static final Pattern pattern_end_headers = Pattern.compile("^[#]?end[a-z]*$");
+
     public SearchClient(BufferedReader serverMessages) throws Exception {
         this.serverMessages = serverMessages;
         //color for object parsed from the map
@@ -35,12 +41,6 @@ public final class SearchClient {
     }
 
     public void parse() throws Exception {
-        Pattern pattern_text_headers = Pattern.compile("^[#]?[a-z]+$");
-        Pattern pattern_colors_headers = Pattern.compile("^[#]?color[a-z]*$");
-        Pattern pattern_initial_map_headers = Pattern.compile("^[#]?init[a-z]*$");
-        Pattern pattern_goal_map_headers = Pattern.compile("^[#]?goal[a-z]*$");
-        Pattern pattern_end_headers = Pattern.compile("^[#]?end[a-z]*$");
-
 
         ParsingState parsingState = ParsingState.NOTHING;
 
@@ -121,21 +121,27 @@ public final class SearchClient {
 
             if(parsingState == ParsingState.END){
                 System.out.println("# end map parsing"+line.toString());
+                Serialization.writeVectorObject(rows_init_map_marks, goal_map_marks, colors, maxCol_map);
+                Object resObject = Serialization.readGridObject(Optional.of("rows_init_map_marks.tmp"));
 
                 break;
             }
-
         }
-
      }
 
-    public MapFixedObjects initObjects(){
+
+    public MapFixedObjects initObjects() {
+      return initObjects(this.rows_init_map_marks, this.goal_map_marks, this.colors, this.maxCol_map);
+    }
+
+    public MapFixedObjects initObjects(Vector<char[]> rows_init_map_marks, Vector<char[]> goal_map_marks, HashMap<String, Color> colors, int maxCol_map){
         MapFixedObjects mapFixedObjects = new MapFixedObjects();
 
         MapFixedObjects.MAX_COL = maxCol_map;
 
+
         MapFixedObjects.MAX_ROW = rows_init_map_marks.size();
-        mapFixedObjects.walls = new boolean[MapFixedObjects.MAX_ROW][MapFixedObjects.MAX_COL];
+        MapFixedObjects.setWalls(new boolean[MapFixedObjects.MAX_ROW][MapFixedObjects.MAX_COL]);
 
         var box_marks = new Vector<Box>();
         var agent_marks = new Vector<Agent>();
@@ -144,13 +150,13 @@ public final class SearchClient {
         for (char[] cs : rows_init_map_marks) {
             for (int j = 0; j < cs.length; j++) {
                 if (cs[j] == '+') {// Wall
-                    mapFixedObjects.walls[row][j] = true;
+                    MapFixedObjects.getWalls()[row][j] = true;
                 } else if ('A' <= goal_map_marks.get(row)[j] && goal_map_marks.get(row)[j] <= 'Z') { // Goal Box.
                     char character = goal_map_marks.get(row)[j];
-                    mapFixedObjects.goals.put(character,new int[]{row, j});
+                    MapFixedObjects.goals.put(character,new int[]{row, j});
                     //goals_marks.add(new Goal(row, j, cs[j]));
                 } else if ('0' <= goal_map_marks.get(row)[j] && goal_map_marks.get(row)[j] <= '9') { // Goal Agent.
-                    mapFixedObjects.goals.put(goal_map_marks.get(row)[j],new int[]{row, j});
+                    MapFixedObjects.goals.put(goal_map_marks.get(row)[j],new int[]{row, j});
                 } else if ('A' <= cs[j] && cs[j] <= 'Z') { // Box.
                     int no = Color.getColorCoded(colors.remove(Character.toString(cs[j])));
                     Box box = new Box(cs[j], no);
@@ -169,8 +175,8 @@ public final class SearchClient {
             row++;
         }
 
-        for (Character key: mapFixedObjects.goals.keySet()) {
-            int[] coordinates = mapFixedObjects.goals.get(key);
+        for (Character key: MapFixedObjects.goals.keySet()) {
+            int[] coordinates = MapFixedObjects.goals.get(key);
             if ('A' <= key && key <= 'Z'){
                 for (Box box : box_marks) {
                     if (box.getLetterMark() == Character.getNumericValue(key)) {
@@ -189,8 +195,7 @@ public final class SearchClient {
                 System.out.println("#Character key: MapFixedObjects.goals.keySet() error");
             }
         }
-        MapFixedObjects.boxes = box_marks.toArray(new Box[box_marks.size()]);
-        MapFixedObjects.agents = agent_marks.toArray(new Agent[agent_marks.size()]);
+         MapFixedObjects.setMovables(agent_marks.toArray(new Agent[0]), box_marks.toArray(new Box[0]));
 
         return mapFixedObjects;
     }

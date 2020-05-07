@@ -1,40 +1,32 @@
 package org.agents;
 
+import org.agents.markings.BoxField;
+import org.agents.markings.Coordinates;
+import org.agents.markings.SolvedStatus;
+
 import java.io.Serializable;
 
 public final class Box implements Serializable {
-    //TO DO decapsulation of a new data strucure like a primitive array
-    //TO DO bits for every field
-    //public static final int NOT_SOLVED = 0;
-    //public static final int GOT_SOLVED = 1;
-    //public static final int IN_USE = 2;
-
-    public enum SolvedStatus {
-        NOT_SOLVED,
-        GOT_SOLVED,
-        IN_USE
-    }
-
     private final int[] box_object;
     private final int[] box_object_coordinates;
     private int[] box_goal_coordinates;
 
-
     public Box(char letter_mark, int color_mark) {
-        this.box_object = new int[ObjectsMarks.BoxField.values().length];
-        this.box_object[ObjectsMarks.BoxField.LETTER_MARK_INDEX.ordinal()]= Character.getNumericValue(letter_mark);
-        this.box_object[ObjectsMarks.BoxField.COLOR_MARK_INDEX.ordinal()]= color_mark;
-        this.box_object[ObjectsMarks.BoxField.SOLVED_STATUS.ordinal()] = SolvedStatus.NOT_SOLVED.ordinal();
+        this.box_object = BoxField.createBoxField();
+        BoxField.setLetter(this.box_object, Character.getNumericValue(letter_mark));
+        BoxField.setColor(this.box_object, color_mark);
+        BoxField.setSolved(this.box_object, SolvedStatus.NOT_SOLVED);
 
-        this.box_object_coordinates = new int[ObjectsMarks.CoordinatesField.values().length];
-        this.box_object_coordinates[ObjectsMarks.CoordinatesField.ROW_POS.ordinal()]= -1;
-        this.box_object_coordinates[ObjectsMarks.CoordinatesField.COLUMN_POS.ordinal()]= -1;
+        this.box_object_coordinates = new int[Coordinates.getLenght()];
+        Coordinates.setTime(this.box_object_coordinates,0);
+        Coordinates.setRow(this.box_object_coordinates,-1);
+        Coordinates.setCol(this.box_object_coordinates,-1);
     }
 
     public void setGoalPosition(int goal_row, int goal_column) {
-        this.box_goal_coordinates = new int[ObjectsMarks.CoordinatesField.values().length];
-        this.box_goal_coordinates[ObjectsMarks.CoordinatesField.ROW_POS.ordinal()]= goal_row;
-        this.box_goal_coordinates[ObjectsMarks.CoordinatesField.COLUMN_POS.ordinal()]= goal_column;
+        this.box_goal_coordinates = Coordinates.createCoordinates();
+        Coordinates.setRow(this.box_goal_coordinates,goal_row);
+        Coordinates.setCol(this.box_goal_coordinates,goal_column);
     }
 
     public int[] getGoalPosition() {
@@ -43,50 +35,55 @@ public final class Box implements Serializable {
 
     public void setRowPosition(int pos){
         if(this.valid(pos))
-            this.box_object_coordinates[ObjectsMarks.CoordinatesField.ROW_POS.ordinal()]= pos;
+            Coordinates.setRow(this.box_object_coordinates,pos);
     }
 
     public void setColumnPosition(int pos){
         if(this.valid(pos))
-            this.box_object_coordinates[ObjectsMarks.CoordinatesField.COLUMN_POS.ordinal()]= pos;
+            Coordinates.setCol(this.box_object_coordinates,pos);
     }
 
     //if the box is solved already returns false
     public boolean setSolvedStatus(SolvedStatus solvedStatus){
-        if(this.box_object[ObjectsMarks.BoxField.SOLVED_STATUS.ordinal()] != SolvedStatus.GOT_SOLVED.ordinal()){
-            this.box_object[ObjectsMarks.BoxField.SOLVED_STATUS.ordinal()]= solvedStatus.ordinal();
+        if(BoxField.getSolved(this.box_object)!= SolvedStatus.GOT_SOLVED){
+            BoxField.setSolved(this.box_object, solvedStatus);
             return true;
         }
             return false;
         //change also the coordinates to be equlal to the goal position ?????
-
     }
 
     public SolvedStatus getSolvedStatus(){
-        return SolvedStatus.values()[this.box_object[ObjectsMarks.BoxField.SOLVED_STATUS.ordinal()]] ;
+        return BoxField.getSolved(this.box_object) ;
     }
 
     public int getRowPosition(){
-           return this.box_object_coordinates[ObjectsMarks.CoordinatesField.ROW_POS.ordinal()];
+           return Coordinates.getRow(this.box_object_coordinates);
     }
 
     public int getColumnPosition(){
-            return this.box_object_coordinates[ObjectsMarks.CoordinatesField.COLUMN_POS.ordinal()];
+        return Coordinates.getCol(this.box_object_coordinates);
+    }
+
+    public void setTimeStep(int step_time){
+        Coordinates.setTime(this.box_object_coordinates,step_time);
+    }
+
+    public int getTimeStep(){
+        return Coordinates.getTime(this.box_object_coordinates);
     }
 
     public int[] getCoordinates(){
         return this.box_object_coordinates;
     }
 
-
     public int getLetterMark(){
-        return this.box_object[ObjectsMarks.BoxField.LETTER_MARK_INDEX.ordinal()];
+        return BoxField.getLetter(this.box_object);
     }
 
     public int getColor(){
-        return this.box_object[ObjectsMarks.BoxField.COLOR_MARK_INDEX.ordinal()];
+        return BoxField.getColor(this.box_object);
     }
-
 
     private boolean valid(int pos) {
         return pos>=0;

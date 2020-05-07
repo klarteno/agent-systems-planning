@@ -1,9 +1,17 @@
 package sysmain;
 
+import ProjectUtilsDraftsToDel.Serialization;
+import org.agents.Agent;
+import org.agents.Box;
 import org.agents.MapFixedObjects;
 import org.agents.SearchClient;
+import org.agents.planning.ConflictAvoidanceCheckingRules;
+import org.agents.planning.PathsStoreQuerying;
+import org.agents.planning.SearchGroupStrategy;
 import org.agents.planning.SearchStrategy;
-import org.agents.searchengine.SearchEngine;
+import org.agents.planning.conflicts.ConflictAvoidanceTable;
+import org.agents.searchengine.SearchEngineOD;
+import org.agents.searchengine.SearchEngineSA;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -39,9 +47,16 @@ public final class Main {
             client.parse();
 
             MapFixedObjects mapFixedObjects = client.initObjects();
-            SearchEngine searchEngine = new SearchEngine();
+            Serialization.writeGridObject(mapFixedObjects, Optional.of("map_fixed_objects.tmp"));
 
-            ArrayDeque<ListIterator<String>> paths_iterations = SearchStrategy.getPathsSequencial(mapFixedObjects, searchEngine);
+            mapFixedObjects.setUpTrackedMovables(MapFixedObjects.getAgents(),MapFixedObjects.getBoxes());
+            PathsStoreQuerying pathsStoreQuerying = new PathsStoreQuerying();
+            ConflictAvoidanceTable conflictAvoidanceTable = new ConflictAvoidanceTable(pathsStoreQuerying);
+            ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules = new ConflictAvoidanceCheckingRules(conflictAvoidanceTable);
+
+            SearchEngineSA searchEngine = new SearchEngineSA(conflictAvoidanceCheckingRules);
+            ArrayDeque<ListIterator<String>> paths_iterations = SearchStrategy.getPathsSequencial(searchEngine);
+
 
             outputPathFor(serverMessages,2, 1, paths_iterations.pop());
             outputPathFor(serverMessages,2, 2, paths_iterations.pop());
@@ -57,8 +72,6 @@ public final class Main {
             e.printStackTrace();
         }
     }
-
-
 
     private static void outputPathFor(BufferedReader serverMessages, int slots, int slot_number, ListIterator<String> path_iter) throws IOException {
         String[] msg1 = new String[slots+1];

@@ -1,5 +1,7 @@
 package org.agents.action;
 
+import org.agents.markings.Coordinates;
+
 public enum Direction {
 	NORTH,
 	WEST,
@@ -46,10 +48,15 @@ public enum Direction {
 		}
 		
 	}
+
 	public static Direction getDirectionsFrom(int[] from_cell,int[] destination_cell){
 		int[] offset= new int[2];
-		offset[0] = destination_cell[0] - from_cell[0];
-		offset[1] = destination_cell[1] - from_cell[1];
+
+		Coordinates.getRow(destination_cell);
+		Coordinates.getRow(from_cell);
+
+		offset[0] = Coordinates.getRow(destination_cell) - Coordinates.getRow(from_cell);
+		offset[1] = Coordinates.getCol(destination_cell) - Coordinates.getCol(from_cell);
 
 		//to optimize with switch statement and bits shifting for negative numbers
 		if (offset[0] == -1 && offset[1] == 0 ){
@@ -66,8 +73,40 @@ public enum Direction {
 		}
 
 		return Direction.WAIT;//if (offset[0] == 0 && offset[1] == 0 )
+	}
 
 
+	public static Direction[] getDirectionsFrom(int[] from_cell_locations, int[] destination_cell_locations, boolean is_multiple_agents ){
+		assert from_cell_locations.length > 3;
+		assert destination_cell_locations.length > 3;
+		assert from_cell_locations.length % 3 == 0;
+		assert destination_cell_locations.length % 3 == 0;
+
+		Direction[] directions = new Direction[from_cell_locations.length / 3];
+		int[] from_cell = new int[Coordinates.getLenght()];
+		int[] destination_cell = new int[Coordinates.getLenght()];
+
+		Direction next_direction;
+		int time_step;
+		int row;
+		int column;
+		for (int index = 0; index < from_cell_locations.length; index += Coordinates.getLenght()) {
+			time_step = index;
+			row = time_step +1;
+			column = time_step +1;
+			Coordinates.setTime(from_cell, from_cell_locations[time_step]);
+			Coordinates.setTime(destination_cell, destination_cell_locations[time_step]);
+
+			Coordinates.setRow(from_cell, from_cell_locations[row]);
+			Coordinates.setRow(destination_cell, destination_cell_locations[row]);
+
+			Coordinates.setCol(from_cell, from_cell_locations[column]);
+			Coordinates.setCol(destination_cell, destination_cell_locations[column]);
+
+			directions[index] = getDirectionsFrom(from_cell, destination_cell);
+		}
+
+		return directions;
 	}
 
 	public void getNextCellFrom(int[] position_cell){
