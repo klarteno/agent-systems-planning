@@ -1,7 +1,5 @@
 package org.agents;
 
-import ProjectUtilsDraftsToDel.Serialization;
-
 import java.io.BufferedReader;
 import java.util.HashMap;
 import java.util.Optional;
@@ -121,8 +119,6 @@ public final class SearchClient {
 
             if(parsingState == ParsingState.END){
                 System.out.println("# end map parsing"+line.toString());
-                Serialization.writeVectorObject(rows_init_map_marks, goal_map_marks, colors, maxCol_map);
-                Object resObject = Serialization.readGridObject(Optional.of("rows_init_map_marks.tmp"));
 
                 break;
             }
