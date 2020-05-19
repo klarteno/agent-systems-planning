@@ -1,5 +1,7 @@
 package org.agents;
 
+import org.agents.markings.Color;
+
 import java.io.BufferedReader;
 import java.util.HashMap;
 import java.util.Optional;
