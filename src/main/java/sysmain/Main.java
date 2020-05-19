@@ -1,6 +1,5 @@
 package sysmain;
 
-import ProjectUtilsDraftsToDel.Serialization;
 import org.agents.Agent;
 import org.agents.Box;
 import org.agents.MapFixedObjects;
@@ -45,7 +44,6 @@ public final class Main {
             client.parse();
 
             MapFixedObjects mapFixedObjects = client.initObjects();
-            Serialization.writeGridObject(mapFixedObjects, Optional.of("map_fixed_objects.tmp"));
 
             mapFixedObjects.setUpTrackedMovables(MapFixedObjects.getAgents().toArray(new Agent[0]),MapFixedObjects.getBoxes().toArray(new Box[0]));
             MapFixedObjects mapFixedObjects1 = new MapFixedObjects();
