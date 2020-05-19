@@ -8,6 +8,7 @@ import java.io.Serializable;
 import java.util.*;
 
 public final class ConflictAvoidanceTable implements Serializable {
+
     private final PathsStoreQuerying pathsStoreQuerying;
     private Set<Integer> ungrouped_movables;
     private DisjointSet group_set;//groups the movables objects
@@ -16,6 +17,16 @@ public final class ConflictAvoidanceTable implements Serializable {
     //MapFixedObjects is used only static in PathsStoreQuerying
     public ConflictAvoidanceTable() {
         this.pathsStoreQuerying = new PathsStoreQuerying();
+    }
+
+
+    UpdatePathToMain updateNow;
+
+    // Interface to MAIN method
+    public interface UpdatePathToMain {
+        void updateConflictAvoidanceTable();         // call function updateNow.updateConflictAvoidanceTable() and conflictAvoidanceTable in Main will be updated
+
+        ConflictAvoidanceTable getConflictAvoidanceTable(); // call function updateNow.getConflictAvoidanceTable() to get the updated conflictAvoidanceTable in Main
     }
 
 //replaces all the agents and boxes store in this class and PathsStoreQuerying with movables_ids

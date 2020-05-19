@@ -4,10 +4,12 @@ import org.agents.Agent;
 import org.agents.Box;
 import org.agents.MapFixedObjects;
 import org.agents.SearchClient;
-import org.agents.planning.MovablesScheduling;
 import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
+import org.agents.planning.conflicts.PathsStoreQuerying;
+import org.agents.planning.conflicts.SearchGroupStrategy;
 import org.agents.planning.SearchStrategy;
 import org.agents.planning.conflicts.ConflictAvoidanceTable;
+import org.agents.searchengine.SearchEngineOD;
 import org.agents.searchengine.SearchEngineSA;
 
 import java.io.BufferedReader;
@@ -20,10 +22,14 @@ import java.util.*;
  * This class is used to lunch project
  *
  * @author autor
+ *  {@link ConflictAvoidanceTable.UpdatePathToMain} interface
+ *   to handle updates of path
  */
-public final class Main {
+public final class Main implements ConflictAvoidanceTable.UpdatePathToMain{
 
     private static final DecimalFormat df = new DecimalFormat("0.0000");
+
+    public ConflictAvoidanceTable path; // path will be update in function updateConflictAvoidanceTable()
 
     /**
      * This is the main method of our application.
@@ -45,20 +51,13 @@ public final class Main {
 
             MapFixedObjects mapFixedObjects = client.initObjects();
 
-            mapFixedObjects.setUpTrackedMovables(MapFixedObjects.getAgents().toArray(new Agent[0]),MapFixedObjects.getBoxes().toArray(new Box[0]));
-            MapFixedObjects mapFixedObjects1 = new MapFixedObjects();
-            ConflictAvoidanceTable conflictAvoidanceTable = new ConflictAvoidanceTable();
+            mapFixedObjects.setUpTrackedMovables(MapFixedObjects.getAgents(),MapFixedObjects.getBoxes());
+            PathsStoreQuerying pathsStoreQuerying = new PathsStoreQuerying();
+            ConflictAvoidanceTable conflictAvoidanceTable = new ConflictAvoidanceTable(pathsStoreQuerying);
             ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules = new ConflictAvoidanceCheckingRules(conflictAvoidanceTable);
 
-            Set<Agent> agents_unsolved = MapFixedObjects.getAgents();
-            Set<Box> boxes_unsolved = MapFixedObjects.getBoxes();
-            LinkedList<Box> boxes = new LinkedList<>(boxes_unsolved);
-
-            MovablesScheduling movablesScheduling = new MovablesScheduling(boxes);
-
-            SearchStrategy searchStrategy = new SearchStrategy(conflictAvoidanceCheckingRules,movablesScheduling);
-            SearchEngineSA searchEngine = new SearchEngineSA(searchStrategy);
-
+            SearchEngineSA searchEngine = new SearchEngineSA(conflictAvoidanceCheckingRules);
+            SearchStrategy searchStrategy = new SearchStrategy(searchEngine);
             ArrayDeque<ListIterator<String>> paths_iterations = searchStrategy.getPathsSequencial(searchEngine);
 
 
@@ -98,8 +97,16 @@ public final class Main {
                 break;
             }
         }
+
+
     }
 
+    public void updateConflictAvoidanceTable(){
+            // update path of type ConflictAvoidanceTable
 
+    }
 
+    public ConflictAvoidanceTable getConflictAvoidanceTable(){
+        return path;
+    }
 }
