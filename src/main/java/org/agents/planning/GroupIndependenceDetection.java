@@ -2,14 +2,18 @@ package org.agents.planning;
 
 import org.agents.Agent;
 import org.agents.Box;
+import org.agents.MapFixedObjects;
+import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
 import org.agents.planning.conflicts.ConflictAvoidanceTable;
 import org.agents.searchengine.SearchEngineSA;
 
-import java.util.ArrayDeque;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class SearchGroupStrategy {
+    private final ConflictAvoidanceCheckingRules conflict_avoidance_checking_rules;
     public ConflictAvoidanceTable conflict_avoidance_table;
-    private final SearchStrategy search_strategy;
+    private   SearchStrategy search_strategy;
 
     private final static int first_collide = 0;
     private final static int second_collide = 1;
@@ -27,22 +31,11 @@ public class SearchGroupStrategy {
         return colided_ids[second_collide];
     }
 
-    enum SearchingMode {
-        SINGLE,
-        GROUP,
-        MERGING,
-        CANCELLING,
-        GOAL_REACHED;
-    };
 
      //asssumed the agents,boxes have set up their goals corectly
-    public SearchGroupStrategy(ConflictAvoidanceTable conflictAvoidanceTable, Agent[] agents, Box[] boxes) {
-        this.conflict_avoidance_table = conflictAvoidanceTable;
-
-        ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules = new ConflictAvoidanceCheckingRules(this.conflict_avoidance_table);
-        this.search_strategy = new SearchStrategy(new SearchEngineSA(conflictAvoidanceCheckingRules));
-        this.conflict_avoidance_table = conflictAvoidanceCheckingRules.getConflictsTable();
-         search_strategy.runDescenteralizedSearch(agents, boxes);
+    public SearchGroupStrategy(ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules) {
+        this.conflict_avoidance_checking_rules = conflictAvoidanceCheckingRules;
+        this.conflict_avoidance_table = this.conflict_avoidance_checking_rules.getConflictsTable();
      }
 
     public void runIndependenceDetection(){

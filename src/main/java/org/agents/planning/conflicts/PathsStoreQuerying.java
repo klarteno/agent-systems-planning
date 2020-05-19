@@ -1,8 +1,5 @@
 package org.agents.planning;
 
-import datastructures.DisjointSet;
-import org.agents.Agent;
-import org.agents.Box;
 import org.agents.MapFixedObjects;
 import org.agents.markings.Coordinates;
 
@@ -25,13 +22,10 @@ public class PathsStoreQuerying implements Serializable {
         this.movables_ids = movables_ids_;
         initIdsIndexes();
         this.path_lenghs = new int[movables_ids_.size()];
-
     }
 
 
     public PathsStoreQuerying() {
-
-
     }
 
       private void initIdsIndexes(){
@@ -50,17 +44,10 @@ public class PathsStoreQuerying implements Serializable {
         this.ids_indexes = new HashMap<>(MapFixedObjects.getAllIdsMarks().size());
         initIdsIndexes();//indexes the mark_ids and stores a index
         this.path_lenghs = new int[MapFixedObjects.getAllIdsMarks().size()];
-
-
     }
-
 
     private void setTableForPaths(int[][][] table_for_paths) {
         this.table_for_paths = table_for_paths;
-    }
-
-    private int[][][] getTableForPaths() {
-        return this.table_for_paths;
     }
 
     public static int getPathsRowsNo(){
@@ -75,7 +62,7 @@ public class PathsStoreQuerying implements Serializable {
         int y_loc =   Coordinates.getRow(cell_location);
         int x_loc =   Coordinates.getCol(cell_location);
         int start_time_step = Coordinates.getTime(cell_location);
-        getTableForPaths()[this.ids_indexes.get(mark_id)][y_loc][x_loc] = start_time_step;
+        this.table_for_paths[this.ids_indexes.get(mark_id)][y_loc][x_loc] = start_time_step;
     }
 
     public void setCellLocationOf(int[][] groups_marks, ArrayDeque<int[]> paths){
@@ -102,13 +89,13 @@ public class PathsStoreQuerying implements Serializable {
             row = time_step + 1;
             column = row + 1;
             mark_id = group_marks[start_position/Coordinates.getLenght()];
-            getTableForPaths()[this.ids_indexes.get(mark_id)][cell_locations[row]][cell_locations[column]] = cell_locations[time_step];
+            this.table_for_paths[this.ids_indexes.get(mark_id)][cell_locations[row]][cell_locations[column]] = cell_locations[time_step];
         }
     }
 
     public boolean removePath(int mark_id){
-        if(getTableForPaths()[this.ids_indexes.get(mark_id)].length > 0 ){
-            getTableForPaths()[this.ids_indexes.get(mark_id)] = new int[0][0];
+        if(this.table_for_paths[this.ids_indexes.get(mark_id)].length > 0 ){
+            this.table_for_paths[this.ids_indexes.get(mark_id)] = new int[0][0];
             return true;
         }else{
             return false;
@@ -117,7 +104,7 @@ public class PathsStoreQuerying implements Serializable {
 
     public boolean removePath(int[] group_marks){
         for (int mark_id : group_marks)
-            getTableForPaths()[this.ids_indexes.get(mark_id)] = new int[0][0];
+            this.table_for_paths[this.ids_indexes.get(mark_id)] = new int[0][0];
 
         return true;
     }
@@ -125,7 +112,7 @@ public class PathsStoreQuerying implements Serializable {
     public int getTimeStep(int mark_id, int[] cell_location){
         int y_loc = cell_location[0];
         int x_loc = cell_location[1];
-        return getTableForPaths()[this.ids_indexes.get(mark_id)][y_loc][x_loc];
+        return this.table_for_paths[this.ids_indexes.get(mark_id)][y_loc][x_loc];
      }
 
     public static boolean isOverlap(int[][] first_path, int[][] second_path){
