@@ -1,8 +1,8 @@
 package org.agents.planning.conflicts;
 
 import datastructures.DisjointSet;
+import org.agents.MapFixedObjects;
 import org.agents.markings.Coordinates;
-import org.agents.planning.PathsStoreQuerying;
 
 import java.io.Serializable;
 import java.util.*;
@@ -12,23 +12,20 @@ public final class ConflictAvoidanceTable implements Serializable {
     private Set<Integer> ungrouped_movables;
     private DisjointSet group_set;//groups the movables objects
 
-    //the conflict avoidance is used only for the agents and the boxes used as input
-    public ConflictAvoidanceTable(PathsStoreQuerying pathsStoreQuerying) {
-        this.pathsStoreQuerying = pathsStoreQuerying;
-
-
+    //the conflict avoidance is used for the agents and the boxes used as input from MapFixedObjects
+    //MapFixedObjects is used only static in PathsStoreQuerying
+    public ConflictAvoidanceTable() {
+        this.pathsStoreQuerying = new PathsStoreQuerying();
     }
 
-    public void startSetUp(){
-            Collection<? extends Integer> movables_ids = pathsStoreQuerying.getTrackedIds();
-            this.setUpTracked(movables_ids);
-    }
-
-
+//replaces all the agents and boxes store in this class and PathsStoreQuerying with movables_ids
     public void setUpTracked(Collection<? extends Integer> movables_ids){
         this.ungrouped_movables = new HashSet<>(movables_ids.size());
         this.ungrouped_movables.addAll(movables_ids);
         this.group_set = new DisjointSet(movables_ids.size());
+
+        //takes as input the  set_ids of the markings of all agents and boxes, number_of_movables is number of boxes and agents needed to track
+        this.pathsStoreQuerying.setUpTracked(movables_ids);
     }
 
     public Integer[] getAllUnGroupedIDs(){

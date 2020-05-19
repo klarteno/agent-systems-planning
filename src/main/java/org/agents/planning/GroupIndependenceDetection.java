@@ -10,10 +10,10 @@ import org.agents.searchengine.SearchEngineSA;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class SearchGroupStrategy {
+public class GroupIndependenceDetection {
     private final ConflictAvoidanceCheckingRules conflict_avoidance_checking_rules;
     public ConflictAvoidanceTable conflict_avoidance_table;
-    private   SearchStrategy search_strategy;
+    private GroupSearch search_strategy;
 
     private final static int first_collide = 0;
     private final static int second_collide = 1;
@@ -33,7 +33,8 @@ public class SearchGroupStrategy {
 
 
      //asssumed the agents,boxes have set up their goals corectly
-    public SearchGroupStrategy(ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules) {
+    public GroupIndependenceDetection(ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules) {
+        this.search_strategy = new GroupSearch();
         this.conflict_avoidance_checking_rules = conflictAvoidanceCheckingRules;
         this.conflict_avoidance_table = this.conflict_avoidance_checking_rules.getConflictsTable();
      }

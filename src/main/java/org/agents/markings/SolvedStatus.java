@@ -6,7 +6,8 @@ package org.agents.markings;
 
 public enum SolvedStatus {
     NOT_SOLVED,
-    GOT_SOLVED,
+    GOAL_FINAL_SOLVED,
+    GOAL_STEP_SOLVED,
     IN_USE;
 
     public static SolvedStatus get(int index) {
@@ -14,7 +15,7 @@ public enum SolvedStatus {
 
         switch (index) {
             case 0:  return NOT_SOLVED;
-            case 1:  return GOT_SOLVED;
+            case 1:  return GOAL_FINAL_SOLVED;
             default:  return IN_USE;
         }
     }
@@ -22,7 +23,7 @@ public enum SolvedStatus {
     public static int get(SolvedStatus gotSolved) {
         switch (gotSolved) {
             case NOT_SOLVED:  return 0;
-            case GOT_SOLVED:  return 1;
+            case GOAL_FINAL_SOLVED:  return 1;
             default:  return 2;
         }
 

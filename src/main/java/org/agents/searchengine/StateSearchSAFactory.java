@@ -2,7 +2,6 @@ package org.agents.searchengine;
 
 import org.agents.MapFixedObjects;
 import org.agents.markings.Coordinates;
-import org.agents.planning.SearchSAState;
 
 import java.util.Arrays;
 import java.util.HashMap;

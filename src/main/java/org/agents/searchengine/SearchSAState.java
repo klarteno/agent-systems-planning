@@ -1,4 +1,4 @@
-package org.agents.planning;
+package org.agents.searchengine;
 
 import org.agents.markings.Coordinates;
 

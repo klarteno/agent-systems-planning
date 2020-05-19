@@ -28,7 +28,7 @@ public enum BoxField {
 
     public static void setSolved(int[] box_object){
         assert box_object.length == 3;
-        box_object[BoxField.SOLVED_STATUS.ordinal()] = SolvedStatus.GOT_SOLVED.ordinal();
+        box_object[BoxField.SOLVED_STATUS.ordinal()] = SolvedStatus.GOAL_FINAL_SOLVED.ordinal();
     }
 
     private static int getLenght(){

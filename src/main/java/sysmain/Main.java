@@ -5,12 +5,10 @@ import org.agents.Agent;
 import org.agents.Box;
 import org.agents.MapFixedObjects;
 import org.agents.SearchClient;
-import org.agents.planning.ConflictAvoidanceCheckingRules;
-import org.agents.planning.PathsStoreQuerying;
-import org.agents.planning.SearchGroupStrategy;
+import org.agents.planning.MovablesScheduling;
+import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
 import org.agents.planning.SearchStrategy;
 import org.agents.planning.conflicts.ConflictAvoidanceTable;
-import org.agents.searchengine.SearchEngineOD;
 import org.agents.searchengine.SearchEngineSA;
 
 import java.io.BufferedReader;
@@ -49,13 +47,20 @@ public final class Main {
             MapFixedObjects mapFixedObjects = client.initObjects();
             Serialization.writeGridObject(mapFixedObjects, Optional.of("map_fixed_objects.tmp"));
 
-            mapFixedObjects.setUpTrackedMovables(MapFixedObjects.getAgents(),MapFixedObjects.getBoxes());
-            PathsStoreQuerying pathsStoreQuerying = new PathsStoreQuerying();
-            ConflictAvoidanceTable conflictAvoidanceTable = new ConflictAvoidanceTable(pathsStoreQuerying);
+            mapFixedObjects.setUpTrackedMovables(MapFixedObjects.getAgents().toArray(new Agent[0]),MapFixedObjects.getBoxes().toArray(new Box[0]));
+            MapFixedObjects mapFixedObjects1 = new MapFixedObjects();
+            ConflictAvoidanceTable conflictAvoidanceTable = new ConflictAvoidanceTable();
             ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules = new ConflictAvoidanceCheckingRules(conflictAvoidanceTable);
 
-            SearchEngineSA searchEngine = new SearchEngineSA(conflictAvoidanceCheckingRules);
-            SearchStrategy searchStrategy = new SearchStrategy(searchEngine);
+            Set<Agent> agents_unsolved = MapFixedObjects.getAgents();
+            Set<Box> boxes_unsolved = MapFixedObjects.getBoxes();
+            LinkedList<Box> boxes = new LinkedList<>(boxes_unsolved);
+
+            MovablesScheduling movablesScheduling = new MovablesScheduling(boxes);
+
+            SearchStrategy searchStrategy = new SearchStrategy(conflictAvoidanceCheckingRules,movablesScheduling);
+            SearchEngineSA searchEngine = new SearchEngineSA(searchStrategy);
+
             ArrayDeque<ListIterator<String>> paths_iterations = searchStrategy.getPathsSequencial(searchEngine);
 
 

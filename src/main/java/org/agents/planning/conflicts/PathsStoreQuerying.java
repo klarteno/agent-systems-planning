@@ -1,4 +1,4 @@
-package org.agents.planning;
+package org.agents.planning.conflicts;
 
 import org.agents.MapFixedObjects;
 import org.agents.markings.Coordinates;
@@ -6,48 +6,43 @@ import org.agents.markings.Coordinates;
 import java.io.Serializable;
 import java.util.*;
 
-public class PathsStoreQuerying implements Serializable {
+class PathsStoreQuerying implements Serializable {
     //make ia a matrix of aarays of java bitset , one bitset holding the time for each id
     private int[][][] table_for_paths;
     private int[] path_lenghs; //indexed by table_ids which is in other class
     //this table stores for every number mark of the movable objectss a index that is used to index in the table_for_paths
     private Collection<? extends Integer> movables_ids;
-    private HashMap<Integer,Integer> ids_indexes;
-
-//takes as input the   set_ids of the markings of all agents and boxes,   number_of_movables is number of boxes and agents needed to track
-    public PathsStoreQuerying(Collection<? extends Integer> movables_ids_) {
-        //table_for_paths = new int[number_of_movables][][];
-        this.table_for_paths = new int[movables_ids_.size()][MapFixedObjects.MAX_ROW][MapFixedObjects.MAX_COL];
-
-        this.movables_ids = movables_ids_;
-        initIdsIndexes();
-        this.path_lenghs = new int[movables_ids_.size()];
-    }
+    private HashMap<Integer,Integer> ids_indexes;//should be declared final
 
 
     public PathsStoreQuerying() {
-    }
-
-      private void initIdsIndexes(){
-          int index = 0;
-          for (Integer next : movables_ids){
-              ids_indexes.put(index++, next);
-          }
-      }
-
-    public void startSetUp(){
         int number_of_movables = MapFixedObjects.getNumerOfAgents() + MapFixedObjects.getNumerOfBoxes();
         //table_for_paths = new int[number_of_movables][][];
         this.table_for_paths = new int[number_of_movables][MapFixedObjects.MAX_ROW][MapFixedObjects.MAX_COL];
 
         this.movables_ids = MapFixedObjects.getAllIdsMarks();
-        this.ids_indexes = new HashMap<>(MapFixedObjects.getAllIdsMarks().size());
         initIdsIndexes();//indexes the mark_ids and stores a index
         this.path_lenghs = new int[MapFixedObjects.getAllIdsMarks().size()];
+
     }
 
-    private void setTableForPaths(int[][][] table_for_paths) {
-        this.table_for_paths = table_for_paths;
+      private void initIdsIndexes(){
+          this.ids_indexes = new HashMap<>(this.movables_ids.size());
+          int index = 0;
+          for (Integer next : movables_ids){
+              ids_indexes.put(next, index++);
+          }
+      }
+
+    public void setUpTracked(Collection<? extends Integer> movables_ids){
+        //table_for_paths = new int[number_of_movables][][];
+        this.table_for_paths = new int[movables_ids.size()][MapFixedObjects.MAX_ROW][MapFixedObjects.MAX_COL];
+
+        this.movables_ids = movables_ids;
+        initIdsIndexes();
+        this.path_lenghs = new int[movables_ids.size()];
+
+
     }
 
     public static int getPathsRowsNo(){
@@ -66,16 +61,24 @@ public class PathsStoreQuerying implements Serializable {
     }
 
     public void setCellLocationOf(int[][] groups_marks, ArrayDeque<int[]> paths){
-        int[] group = Arrays.copyOf(groups_marks[0],groups_marks[0].length + groups_marks[1].length);
-        System.arraycopy(groups_marks[1],0, group, group[groups_marks[0].length], groups_marks[1].length);
+        int[] group = getSingleGroupOf(groups_marks);
+        for(int mark_id : group)
+            this.path_lenghs[ids_indexes.get(mark_id)] = paths.size();
 
         while (!paths.isEmpty())
             setCellLocationOf(group, paths.pop());
     }
+
+    //merges two groups
+    private int[] getSingleGroupOf(int[][] groups_marks) {
+        int[] group = Arrays.copyOf(groups_marks[0], groups_marks[0].length + groups_marks[1].length);
+        System.arraycopy(groups_marks[1], 0, group, group[groups_marks[0].length], groups_marks[1].length);
+        return group;
+    }
+
     //TO DO: instead of array copying : iterate through the matrix groups_marks
     private void setCellLocationOf(int[][] groups_marks, int[] cell_locations){
-        int[] group = Arrays.copyOf(groups_marks[0],groups_marks[0].length + groups_marks[1].length);
-        System.arraycopy(groups_marks[1],0, group, group[groups_marks[0].length], groups_marks[1].length);
+        int[] group = getSingleGroupOf(groups_marks);
         setCellLocationOf(group, cell_locations);
     }
 
@@ -89,6 +92,7 @@ public class PathsStoreQuerying implements Serializable {
             row = time_step + 1;
             column = row + 1;
             mark_id = group_marks[start_position/Coordinates.getLenght()];
+
             this.table_for_paths[this.ids_indexes.get(mark_id)][cell_locations[row]][cell_locations[column]] = cell_locations[time_step];
         }
     }
@@ -96,6 +100,8 @@ public class PathsStoreQuerying implements Serializable {
     public boolean removePath(int mark_id){
         if(this.table_for_paths[this.ids_indexes.get(mark_id)].length > 0 ){
             this.table_for_paths[this.ids_indexes.get(mark_id)] = new int[0][0];
+            this.path_lenghs[ids_indexes.get(mark_id)] = 0;
+
             return true;
         }else{
             return false;
@@ -103,9 +109,10 @@ public class PathsStoreQuerying implements Serializable {
     }
 
     public boolean removePath(int[] group_marks){
-        for (int mark_id : group_marks)
+        for (int mark_id : group_marks){
             this.table_for_paths[this.ids_indexes.get(mark_id)] = new int[0][0];
-
+            this.path_lenghs[ids_indexes.get(mark_id)] = 0;
+        }
         return true;
     }
 

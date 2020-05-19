@@ -3,13 +3,20 @@ package org.agents;
 import org.agents.markings.BoxField;
 import org.agents.markings.Coordinates;
 import org.agents.markings.SolvedStatus;
+import org.agents.searchengine.SearchEngineSA;
 
 import java.io.Serializable;
 
 public final class Box implements Serializable {
+    private static int COST_G = 0;
+    private static int COST_HEURISTIC = 1;
+
     private final int[] box_object;
     private final int[] box_object_coordinates;
     private int[] box_goal_coordinates;
+
+    private int[] box_costs = new int[2];
+
 
     public Box(char letter_mark, int color_mark) {
         this.box_object = BoxField.createBoxField();
@@ -27,6 +34,8 @@ public final class Box implements Serializable {
         this.box_goal_coordinates = Coordinates.createCoordinates();
         Coordinates.setRow(this.box_goal_coordinates,goal_row);
         Coordinates.setCol(this.box_goal_coordinates,goal_column);
+
+        this.box_costs[COST_HEURISTIC] = SearchEngineSA.getHeuristic(box_object_coordinates, box_goal_coordinates);
     }
 
     public int[] getGoalPosition() {
@@ -43,9 +52,13 @@ public final class Box implements Serializable {
             Coordinates.setCol(this.box_object_coordinates,pos);
     }
 
+    public int getCostHeuristic(){
+        return this.box_costs[COST_HEURISTIC];
+    }
+
     //if the box is solved already returns false
     public boolean setSolvedStatus(SolvedStatus solvedStatus){
-        if(BoxField.getSolved(this.box_object)!= SolvedStatus.GOT_SOLVED){
+        if(BoxField.getSolved(this.box_object)!= SolvedStatus.GOAL_FINAL_SOLVED){
             BoxField.setSolved(this.box_object, solvedStatus);
             return true;
         }

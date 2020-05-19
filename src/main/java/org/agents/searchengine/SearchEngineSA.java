@@ -3,10 +3,9 @@ package org.agents.searchengine;
 import org.agents.Agent;
 import org.agents.Box;
 import org.agents.markings.Coordinates;
-import org.agents.planning.ConflictAvoidanceCheckingRules;
-import org.agents.planning.SearchSAState;
+import org.agents.planning.SearchStrategy;
+import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
 
-import java.io.Serializable;
 import java.util.*;
 
 public class SearchEngineSA {
@@ -14,10 +13,10 @@ public class SearchEngineSA {
 
     private ArrayDeque<int[]> path;
     private static PriorityQueue<int[][]> frontier;
-    private final ConflictAvoidanceCheckingRules conflict_avoidance_checking_rules;
+    private final SearchStrategy search_strategy;
 
-    public SearchEngineSA(ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules){
-        this.conflict_avoidance_checking_rules = conflictAvoidanceCheckingRules;
+    public SearchEngineSA(SearchStrategy searchStrategy){
+        this.search_strategy = searchStrategy;
         //move to parent class and subclass??
         //make second option for comparator
         frontier = new PriorityQueue<int[][]>(5, Comparator.comparingInt(SearchSAState::getFCost));
@@ -33,19 +32,13 @@ public class SearchEngineSA {
         return path.size();
     }
 
-    public ConflictAvoidanceCheckingRules getConflictAvoidanceCheckingRules(){
-        return this.conflict_avoidance_checking_rules;
-    }
-
-
 
     public boolean isPathFound() {
         return this.path.size() > 0;
     }
 
-
     public static int getHeuristic(int[] cell_coordinates, int[] goal_coordinates){
-        return Math.abs(Coordinates.getRow(0,cell_coordinates) - Coordinates.getRow(0,goal_coordinates)) + Math.abs(Coordinates.getCol(0,cell_coordinates) - Coordinates.getCol(0,goal_coordinates))  ;
+        return Math.abs(Coordinates.getRow(cell_coordinates) - Coordinates.getRow(goal_coordinates)) + Math.abs(Coordinates.getCol(cell_coordinates) - Coordinates.getCol(goal_coordinates))  ;
     }
 
     //cost_time(s) is total cost of the path until now
@@ -78,7 +71,9 @@ public class SearchEngineSA {
         StateSearchSAFactory.createCostSoFar();
         StateSearchSAFactory.createClosedSet();
 
-        StateSearchSAFactory.setDeadlineConstraint(goal_coordinates, getHeuristic(start_coordinates, goal_coordinates), getHeuristic(start_coordinates, goal_coordinates));
+         int heur1 = getHeuristic(start_coordinates, goal_coordinates);
+         int heur2 = getHeuristic(start_coordinates, goal_coordinates);
+        StateSearchSAFactory.setDeadlineConstraint(goal_coordinates, heur1, heur2);
 
         ArrayDeque<int[]> path = new ArrayDeque<int[]>();
         int path_index = 0;
@@ -119,7 +114,7 @@ public class SearchEngineSA {
             StateSearchSAFactory.addToClosedSet(current_state);
 
             time_step = SearchSAState.getTimeStep(current_state);
-            ArrayDeque<int[]> neighbours =  this.conflict_avoidance_checking_rules.getFreeNeighbours(SearchSAState.getStateCoordinates(current_state), color_movable, time_step, StateSearchSAFactory.getDeadlineTimeConstraint());
+            ArrayDeque<int[]> neighbours =  this.search_strategy.getFreeNeighbours(SearchSAState.getStateCoordinates(current_state), color_movable, time_step, StateSearchSAFactory.getDeadlineTimeConstraint());
             prev_cell_neighbours.clear();//needed to clear it because this how this data structure works
 
             int neighbour_gcost =  SearchSAState.getGCost(current_state) + COST_NEXT_CELL;

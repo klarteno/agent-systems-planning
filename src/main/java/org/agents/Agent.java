@@ -24,15 +24,30 @@ public final class Agent implements Serializable {
         Coordinates.setCol(this.agent_object_coordinates,-1);
     }
 
+
     public void setGoalPosition(int goal_row, int goal_column) {
-        this.agent_goal_coordinates = new int[Coordinates.getLenght()];
+        if (this.agent_goal_coordinates == null)
+            this.agent_goal_coordinates = new int[Coordinates.getLenght()];
+
         Coordinates.setRow(this.agent_goal_coordinates,goal_row);
         Coordinates.setCol(this.agent_goal_coordinates,goal_column);
     }
 
+    public void setGoalPosition(int[] goal) {
+        if (this.agent_goal_coordinates == null)
+            this.agent_goal_coordinates = new int[Coordinates.getLenght()];
 
+        Coordinates.setRow(this.agent_goal_coordinates,Coordinates.getRow(goal));
+        Coordinates.setCol(this.agent_goal_coordinates,Coordinates.getCol(goal));
+    }
+
+    //TO DO can be moved to interface
     public void setTimePosition(int step_time){
         Coordinates.setTime(this.agent_object_coordinates, step_time);
+    }
+
+    public int getTimePosition(){
+        return Coordinates.getTime(this.agent_object_coordinates);
     }
 
     public void setRowPosition(int pos){
@@ -58,23 +73,26 @@ public final class Agent implements Serializable {
     }
 
 
-    public int getTimePosition(){
-        return Coordinates.getTime(this.agent_object_coordinates);
-    }
 
     public int[] getCoordinates(){
         return this.agent_object_coordinates;
     }
 
-    public void setSolvedStatus(){
+
+    //TO DO can be moved to interface
+    public void setSolvedStatus(SolvedStatus stepSolved){
         //change also the coordinates to be equlal to the goal position ?????
-        AgentField.setSolved(this.agent_object, SolvedStatus.GOT_SOLVED);
+        AgentField.setSolved(this.agent_object, stepSolved);
+    }
+    public SolvedStatus getSolvedStatus() {
+        return AgentField.getSolved(this.agent_object) ;
     }
 
     public int getNumberMark(){
         return AgentField.getNumber(this.agent_object);
     }
 
+    //TO DO can be moved to interface
     public int getColor(){
         return AgentField.getColor(this.agent_object);
     }
@@ -82,5 +100,7 @@ public final class Agent implements Serializable {
     private boolean valid(int pos) {
         return pos>=0;
     }
+
+
 
 }

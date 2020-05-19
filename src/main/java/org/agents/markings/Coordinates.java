@@ -80,9 +80,9 @@ public enum Coordinates {
         for (int coordinate = 0; coordinate < pos_coordinates.length; coordinate = coordinate + Coordinates.getLenght()) {
                 if (index == coordinate){
                     coord_pos = new int[Coordinates.getLenght()];
-                    Coordinates.setTime(0, coord_pos, Coordinates.getTime(coordinate, pos_coordinates));
-                    Coordinates.setRow(0, coord_pos, Coordinates.getRow(coordinate, pos_coordinates));
-                    Coordinates.setCol(0, coord_pos, Coordinates.getCol(coordinate, pos_coordinates));
+                    Coordinates.setTime(coord_pos, Coordinates.getTime(coordinate, pos_coordinates));
+                    Coordinates.setRow(coord_pos, Coordinates.getRow(coordinate, pos_coordinates));
+                    Coordinates.setCol(coord_pos, Coordinates.getCol(coordinate, pos_coordinates));
                 }
         }
         return coord_pos;
@@ -94,9 +94,9 @@ public enum Coordinates {
         }
         for (int i = 0; i < coordinates.length; i = i + Coordinates.getLenght()) {
             if (i == index){
-                Coordinates.setTime(index, coordinates, Coordinates.getTime(0, coordinate));
-                Coordinates.setRow(index, coordinates, Coordinates.getRow(0, coordinate));
-                Coordinates.setCol(index, coordinates, Coordinates.getCol(0, coordinate));
+                Coordinates.setTime(index, coordinates, Coordinates.getTime(coordinate));
+                Coordinates.setRow(index, coordinates, Coordinates.getRow(coordinate));
+                Coordinates.setCol(index, coordinates, Coordinates.getCol(coordinate));
             }
         }
     }

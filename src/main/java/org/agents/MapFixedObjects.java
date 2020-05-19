@@ -3,8 +3,9 @@ package org.agents;
 import java.io.Serializable;
 import java.util.*;
 
+import org.agents.markings.Color;
 import org.agents.markings.Coordinates;
-import org.agents.planning.conflicts.ConflictAvoidanceTable;
+import org.agents.markings.SolvedStatus;
 
 //replace with composition one MapFixedObjects and one with opearations
 public final class MapFixedObjects implements Serializable {
@@ -12,7 +13,6 @@ public final class MapFixedObjects implements Serializable {
         private HashMap<Integer, Integer> tracked_marking_ids;
         //markings_ids is for for mark_id values for boxes or ojects
         private HashMap<Integer, Serializable> markings_ids;
-
 
         public static int MAX_ROW = 0 ;
         public static int MAX_COL = 0 ;
@@ -22,19 +22,29 @@ public final class MapFixedObjects implements Serializable {
         //goals is not intended to use in the algorithms instead we store the goals in the box or agent object
         public static HashMap<Character, int[]> goals = new HashMap<>();
 
-        private static Box[] boxes;
-        private static Agent[] agents;
+        //central place to hold agents and boxes
+        //when  agents and boxes gets a final cell position , goal cell it gets stored here
+        private static Box[] boxes_store;
+        private static Agent[] agents_store;
+
         private static HashMap<Integer, Agent> agents_ids;
         private static HashMap<Integer, Box> boxes_ids;
 
-
-        public MapFixedObjects(){
-
+        public static ArrayDeque<Agent> getAgentsByColor(Integer color_no) {
+                return colors_of_agents.get(color_no);
         }
+
+        public static ArrayDeque<Box> getBoxesByColor(Integer color_no) {
+                return colors_of_boxes.get(color_no);
+        }
+
+        private static HashMap<Integer, ArrayDeque<Agent>> colors_of_agents;
+        private static HashMap<Integer, ArrayDeque<Box>> colors_of_boxes;
 
         public static boolean[][] getWalls() {
                 return walls;
         }
+
 
         public static void setWalls(boolean[][] walls_marks) {
                 walls = walls_marks;
@@ -44,22 +54,122 @@ public final class MapFixedObjects implements Serializable {
                 return this.markings_ids.get(movable_id);
         }
 
-        public static Agent[] getAgents(){
-                assert agents != null;
-                return agents;
+
+        private static HashMap<Integer, ArrayDeque<Box>> updateBoxesByColor(){
+                ArrayDeque<Box> boxes;
+                HashMap<Integer,ArrayDeque<Box>> colors_of_boxes = new HashMap<>();
+                //Color color;
+                for(Box box:boxes_store){
+                        if (box.getSolvedStatus() != SolvedStatus.GOAL_FINAL_SOLVED)
+                                if(colors_of_boxes.containsKey(box.getColor())){
+                                        colors_of_boxes.get(box.getColor()).add(box);
+                                }else {
+                                        boxes = new ArrayDeque<>();
+                                        boxes.add(box);
+                                        colors_of_boxes.put(box.getColor(),boxes) ;
+                                }
+                }
+
+                return colors_of_boxes;
         }
 
-        public static Box[] getBoxes(){
-                assert boxes != null;
-                return boxes;
+
+        private static HashMap<Integer, ArrayDeque<Agent>> updateAgentsByColor(){
+                ArrayDeque<Agent> agents;
+                HashMap<Integer,ArrayDeque<Agent>> colors_of_agents = new HashMap<>();
+                //Color color;
+                for(Agent agent:agents_store){
+                        if (agent.getSolvedStatus() != SolvedStatus.GOAL_FINAL_SOLVED)
+                                if(colors_of_agents.containsKey(agent.getColor())){
+                                        colors_of_agents.get(agent.getColor()).add(agent);
+                                }else {
+                                        agents = new ArrayDeque<>();
+                                        agents.add(agent);
+                                        colors_of_agents.put(agent.getColor(),agents) ;
+                        }
+                }
+
+                return colors_of_agents;
         }
+
+
+        public synchronized static Set<Agent> getAgents(){
+                 Set<Agent> not_solved_agents = new HashSet<>();
+
+                for (Agent agent : agents_store) {
+                        if(agent.getSolvedStatus() != SolvedStatus.GOAL_FINAL_SOLVED){
+                                not_solved_agents.add(agent);
+                        }
+                }
+
+                return not_solved_agents;
+        }
+
+        public synchronized static boolean setAgents(Agent[] agents){
+                for (Agent agent : agents_store) {
+                        int mark_id = agent.getNumberMark();
+                        if(agent.getSolvedStatus() != SolvedStatus.GOAL_FINAL_SOLVED){
+                                for (Agent new_agent : agents) {
+                                        if (mark_id == new_agent.getNumberMark() && agent.getColor()== new_agent.getColor()){
+                                                agent = new_agent;
+                                        }
+                                }
+                        }
+                        else {
+                                System.out.println("#tried to replace a box with status solved");
+                                return false;
+                        }
+                }
+
+                colors_of_agents = updateAgentsByColor();
+
+                return true;
+        }
+
+
+        public synchronized static Set<Box> getBoxes(){
+                 Set<Box> not_solved_boxes = new HashSet<>();
+
+                for (Box box : boxes_store) {
+                        if(box.getSolvedStatus() != SolvedStatus.GOAL_FINAL_SOLVED){
+                                not_solved_boxes.add(box);
+                        }
+                }
+
+                return  not_solved_boxes;
+        }
+
+        public synchronized static boolean setBoxes(Box[] boxes){
+                for (Box box : boxes_store) {
+                        int mark_id = box.getLetterMark();
+                        if(box.getSolvedStatus() != SolvedStatus.GOAL_FINAL_SOLVED){
+                                for (Box new_box : boxes) {
+                                        if (mark_id == new_box.getLetterMark() && box.getColor()== new_box.getColor()){
+                                                box = new_box;
+                                        }
+                                }
+                         }
+                        else {
+                                System.out.println("#tried to replace a box with status solved");
+                                return false;
+                        }
+                }
+
+                colors_of_boxes = updateBoxesByColor();
+
+                return true;
+        }
+
 
         public static void setMovables(Agent[] agents_, Box[] boxes_){
-                boxes = boxes_;
-                agents = agents_;
+                boxes_store = boxes_;
+                colors_of_boxes = updateBoxesByColor();
 
-                agents_ids = new HashMap<>(boxes.length);
-                boxes_ids = new HashMap<>(agents.length);
+                agents_store = agents_;
+                colors_of_agents = updateAgentsByColor();
+
+                agents_ids = new HashMap<>(boxes_store.length);
+                boxes_ids = new HashMap<>(agents_store.length);
                 //Arrays.stream(agents_)
                 for (Agent agent:agents_ ) {
                         agents_ids.put(agent.getNumberMark(), agent);
@@ -113,7 +223,7 @@ public final class MapFixedObjects implements Serializable {
         }
 
         public static int getNumerOfAgents(){
-                return agents.length;
+                return agents_store.length;
         }
 
         public static Agent getByAgentMarkId(int mark_id){
@@ -123,7 +233,7 @@ public final class MapFixedObjects implements Serializable {
         public static Box getByBoxMarkId(int id){ return boxes_ids.get(id); }
 
         public static int getNumerOfBoxes() {
-                return  boxes.length;
+                return  boxes_store.length;
         }
 
         public static Set<Integer> getAllIdsMarks(){
@@ -151,14 +261,14 @@ public final class MapFixedObjects implements Serializable {
                 int y = Coordinates.getRow(cell);
                 int x = Coordinates.getCol(cell);
 
-                for(Agent next_agent: agents){
+                for(Agent next_agent: agents_store){
                         if(Arrays.equals(next_agent.getCoordinates(),cell)){
                                 isFreeCell = false;
                                 break;
                         }
                 }
 
-                for(Box next_box: boxes){
+                for(Box next_box: boxes_store){
                         if(Arrays.equals(next_box.getCoordinates(),cell) && !(next_box.getColor() == movable_color)) {
                                 isFreeCell = false;
                                 break;
@@ -177,7 +287,7 @@ public final class MapFixedObjects implements Serializable {
         public static int[][] getNeighboursMA(int[] position_to_expand) {
                 assert position_to_expand.length == 3;
 
-                int time_step = Coordinates.getTime(0, position_to_expand);
+                int time_step = Coordinates.getTime(position_to_expand);
                 int row = Coordinates.getRow(position_to_expand);
                 int col = Coordinates.getCol(position_to_expand);
 
@@ -236,12 +346,12 @@ public final class MapFixedObjects implements Serializable {
         }
 
         public static Optional<Box> getNextBoxBy(int color) {
-                for(Box next_box : boxes){
+                for(Box next_box : boxes_store){
                         if(next_box.getColor() == color) {
                                 return Optional.of(next_box);
                         }
                 }
-                return Optional.ofNullable(boxes[0]);
+                return Optional.ofNullable(boxes_store[0]);
         }
 
         private Set<Integer> getTrackedMarkingsIDs() {
