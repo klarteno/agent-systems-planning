@@ -4,7 +4,6 @@ import org.agents.markings.Color;
 
 import java.io.BufferedReader;
 import java.util.HashMap;
-import java.util.Optional;
 import java.util.Vector;
 import java.util.regex.Pattern;
 

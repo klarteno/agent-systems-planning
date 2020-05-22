@@ -1,7 +1,5 @@
 package org.agents.markings;
 
-import java.util.Arrays;
-
 public enum Coordinates {
     TIME,//includes waiting time in a cell location
     ROW,// coordinate Y

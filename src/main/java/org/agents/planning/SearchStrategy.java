@@ -4,9 +4,8 @@ import org.agents.Agent;
 import org.agents.Box;
 import org.agents.MapFixedObjects;
 import org.agents.markings.SolvedStatus;
-import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
-import org.agents.planning.conflicts.ConflictAvoidanceTable;
 import org.agents.planning.schedulling.TaskScheduled;
+import org.agents.planning.schedulling.TrackedGroups;
 import org.agents.searchengine.PathProcessing;
 import org.agents.searchengine.SearchEngineSA;
 
@@ -15,13 +14,9 @@ import java.util.*;
 
 //TO DO send  TaskScheduled to SearchEngineSA instead of depeding on it on some publih subscribe
 public class SearchStrategy {
-    private static ConflictAvoidanceTable conflict_avoidance_table;
     private static MovablesScheduling movablesScheduling;
-    ConflictAvoidanceCheckingRules conflict_avoidance_checking_rules;
 
-    public SearchStrategy(ConflictAvoidanceCheckingRules conflict_avoidance_checking_rules, MovablesScheduling movablesScheduling) {
-        this.conflict_avoidance_checking_rules =  conflict_avoidance_checking_rules;
-        conflict_avoidance_table = conflict_avoidance_checking_rules.getConflictsTable();
+    public SearchStrategy(MovablesScheduling movablesScheduling) {
         SearchStrategy.movablesScheduling = movablesScheduling;
     }
 
@@ -61,7 +56,7 @@ public class SearchStrategy {
 
     //the agents has to have goals for the boxes set up
     //TO DO decouple to agregation or commands together with conflict_avoidance_table
-    public boolean runDescenteralizedSearch( SearchEngineSA searchEngine) {
+    public TaskScheduled runDescenteralizedSearch(SearchEngineSA searchEngine) {
         //make a parallel thread for each agen and box , put the id of the thread to the agent id
         Integer agent_id;
         ArrayList<Agent> agents = movablesScheduling.getAgentsScheduled();
@@ -74,17 +69,15 @@ public class SearchStrategy {
                 agent.setSolvedStatus(SolvedStatus.GOAL_STEP_SOLVED);
                 //conflict_avoidance_table.replaceMarkedPathFor(agent_mark, agent_path);//asyncrounouse
 
-                taskScheduled.add(agent,agent_path);
+                taskScheduled.add(agent, agent_path);
             }
         }
 
        // get the agent path and status , get the boxes solved therir path add them
            //     to taskScheduled in the movables scduling , add to conflict checking rules
 
-        ArrayDeque<Box> boxes = movablesScheduling.getBoxesScheduled();//by agent with goal satisfied???
-        Box box;
-        while (!boxes.isEmpty()) {
-            box = boxes.pop();
+        LinkedList<Box> boxes = movablesScheduling.getBoxesScheduled();//by agent with goal satisfied???
+        for (Box box : boxes){
             searchEngine.runAstar(box);
             if(searchEngine.isPathFound()){
                 ArrayDeque<int[]> box_path = searchEngine.getPath();
@@ -92,29 +85,28 @@ public class SearchStrategy {
                 box.setSolvedStatus(SolvedStatus.GOAL_FINAL_SOLVED);
                 //conflict_avoidance_table.replaceMarkedPathFor(box_mark, box_path);
 
-                taskScheduled.add(box,box_path);
+                taskScheduled.add(box, box_path);
             }
         }
 
         //scheduled tasks are pushed to be stored in ConflictAvoidanceCheckingRules
         //only ConflictAvoidanceCheckingRules can invalidate all or some TaskScheduled , create new out of mmore TaskScheduled
-        TaskScheduled task_scheduled = movablesScheduling.getSearchResults();
-        this.conflict_avoidance_checking_rules.addTaskScheduled(task_scheduled);
+        TaskScheduled task_scheduled2 = movablesScheduling.getSearchResults();
+        //this.conflict_avoidance_checking_rules.addTaskScheduled(task_scheduled2);
+        //movablesScheduling.
 
-        return task_scheduled.isSchedulable();
+        return taskScheduled;
     }
 
-    public void runSearchIDetection(GroupIndependenceDetection groupIndependenceDetection){
 
-        ConflictAvoidanceTable conflictAvoidanceTable = new ConflictAvoidanceTable();
-        ConflictAvoidanceCheckingRules avoidanceCheckingRules = new ConflictAvoidanceCheckingRules(conflictAvoidanceTable);
-        avoidanceCheckingRules.addMovablesIds();
-        groupIndependenceDetection = new GroupIndependenceDetection(avoidanceCheckingRules);
+    public TaskScheduled runCentralizedSearch(){
+        Collection<? extends Integer> arg1 = null;
+        TrackedGroups trackedGroups = new TrackedGroups(arg1);
+        GroupIndependenceDetection searchGroupStrategy = new GroupIndependenceDetection(trackedGroups);
+        searchGroupStrategy.runIndependenceDetection();
 
-        groupIndependenceDetection.runIndependenceDetection();
-
+        return new TaskScheduled();
     }
-
 
     public ArrayDeque<int[]> runSearch(SearchEngineSA searchEngine, int movable_id) {
         Serializable obj = MapFixedObjects.getByMarkNo(movable_id);
@@ -135,17 +127,11 @@ public class SearchStrategy {
                 int agent_mark = agent.getNumberMark();
 
                 return searchEngine.getPath();
-
             }
 
         }else{
             throw new UnsupportedOperationException("unknown movable id cast from Serializable");
         }
-
         return null;
-    }
-
-    public ArrayDeque<int[]> getFreeNeighbours(int[] stateCoordinates, int color_movable, int time_step, int deadlineTimeConstraint) {
-       return this.conflict_avoidance_checking_rules.getFreeNeighbours(stateCoordinates, color_movable, time_step, deadlineTimeConstraint);
     }
 }

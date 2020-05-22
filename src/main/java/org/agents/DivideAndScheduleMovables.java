@@ -10,37 +10,29 @@ import java.io.Serializable;
 import java.util.*;
 
 public class DivideAndScheduleMovables {
-    private final int[][] data_matrix;
-    private final ArrayList<int[]> minimum_cost;
-    HungarianAlgorithmResizable hungarian_algorithm;
     private ArrayList<Agent> agents_scheduled;
-    private LinkedList<Box> boxes;
+    private HungarianAlgorithmResizable hungarian_algorithm;
+
+    private static Set<Integer> boxes_ids;
 
     //jobs are columns
     //costs are rows
     //agents and boxes should have the same color
     //we choose columns for agents
     //we choose rows for total path from agent to box to boxs goal
-    public DivideAndScheduleMovables(int[][] dataMatrix) {
-        this.data_matrix = dataMatrix;
-        hungarian_algorithm = new HungarianAlgorithmResizable(dataMatrix);
-        this.minimum_cost = hungarian_algorithm.getMinimumCost();
+    public DivideAndScheduleMovables() {
     }
 
-    private void setMovables(LinkedList<Box> boxes) {
-        this.boxes = boxes;
-        this.agents_scheduled = new ArrayList<>(boxes.size());//at least the number of boxes
-    }
-
-    private void setUpBoxes(LinkedList<Box> boxes) {
-        this.boxes = boxes;
-        this.agents_scheduled = new ArrayList<>(boxes.size());//at least the number of boxes
+    public void setUpBoxes(Set<Integer> boxesIds) {
+        boxes_ids = boxesIds;
      }
 
-    private ArrayDeque<Agent> getAgentsScheduled2(LinkedList<Agent> agents){
+    public ArrayDeque<Agent> getAgentsScheduledRandom(LinkedList<Agent> agents){
         ArrayDeque<Agent> agents_to_schedule = new ArrayDeque<>();
 
-        for (Box next_box: boxes){
+        Box next_box;
+        for (Integer next_box_id: boxes_ids){
+            next_box = MapFixedObjects.getBoxByID(next_box_id);
             int next_box_color = next_box.getColor();
 
             for (Agent agent : agents) {
@@ -54,12 +46,14 @@ public class DivideAndScheduleMovables {
         return agents_to_schedule;
     }
 
-    public ArrayDeque<MovablesScheduling> getAgentsScheduled(LinkedList<Agent> agents_to_schedule){
+    //input the agents to schedule and and has the result a pair of agent and box , and all
+    //the pairs are included in MovablesScheduling
+    public MovablesScheduling getAgentsScheduled(LinkedList<Agent> agents_to_schedule){
         final int AGENTS = 0;
         final int BOXES = 0;
 
         HashMap<Integer, ArrayList<Agent>> groups_agents = new HashMap<>();
-        HashMap<Integer, Serializable[][]> groups;
+        HashMap<Integer, Serializable[][]> groups_movables;
 
         for (Agent agent : agents_to_schedule) {
             if (groups_agents.containsKey(agent.getColor())) {
@@ -71,55 +65,62 @@ public class DivideAndScheduleMovables {
             }
         }
 
-        groups = new HashMap<>(groups_agents.size());
+        groups_movables = new HashMap<>(groups_agents.size());
+
         for (Integer key_color : groups_agents.keySet()){
             ArrayList<Agent> _agents = groups_agents.get(key_color);
-            Serializable[][] match_movables = new Serializable[2][];
-            match_movables[AGENTS] = new Agent[_agents.size()];
+            Integer[][] match_movables = new Integer[2][];
+            match_movables[AGENTS] = new Integer[_agents.size()];
 
             for (int i = 0; i < _agents.size(); i++) {
-                match_movables[AGENTS][i] = _agents.get(i);
+                match_movables[AGENTS][i] = _agents.get(i).getNumberMark();
             }
 
-            ArrayDeque<Box> boxes_by_color = MapFixedObjects.getBoxesByColor(key_color);
-            match_movables[BOXES] = new Box[boxes_by_color.size()];
+            ArrayDeque<Integer> boxes_by_color = MapFixedObjects.getBoxesIDsByColor(key_color, boxes_ids);
+            match_movables[BOXES] = new Integer[boxes_by_color.size()];
+
             int index_box = 0;
             while (!boxes_by_color.isEmpty())
                 match_movables[BOXES][index_box++] = boxes_by_color.pop();
 
-            groups.put(key_color, match_movables);
+            groups_movables.put(key_color, match_movables);
         }
 
-        ArrayDeque<MovablesScheduling> agents_scheduled_opt = new ArrayDeque<>();
+         MovablesScheduling movablesScheduling = new MovablesScheduling();
+
         //build matrix with heuristic costs
-        for (Integer color : groups.keySet()){
-            Serializable[][] _group = groups.get(color);
+        for (Integer color : groups_movables.keySet()){
+            Integer[][] _group = (Integer[][]) groups_movables.get(color);
             int[][] heuristc_costs = new int[_group[BOXES].length][_group[AGENTS].length];
-            Serializable[] agentss =_group[AGENTS];
-            Serializable[] boxxxes = _group[BOXES];
-            for (int box_no = 0; box_no < _group[BOXES].length ; box_no++) {
-                Box box_to_next = (Box)boxxxes[box_no];
-                for (int agent_i = 0; agent_i < _group[AGENTS].length ; agent_i++) {
-                    assert _group[AGENTS][agent_i] instanceof Agent;
-                    Agent agent = (Agent)agentss[agent_i];
+            Integer[] agentss =_group[AGENTS];
+            Integer[] boxxxes = _group[BOXES];
+
+            Box box_to_next;
+            Agent agent;
+            for (int box_no = 0; box_no < boxxxes.length ; box_no++) {
+                box_to_next = MapFixedObjects.getBoxByID(boxxxes[box_no]);
+
+                for (int agent_i = 0; agent_i < agentss.length ; agent_i++) {
+                    agent = MapFixedObjects.getByAgentMarkId(agentss[agent_i]);
                     int heuristic_value = box_to_next.getCostHeuristic() + SearchEngineSA.getHeuristic(agent.getCoordinates(), box_to_next.getCoordinates());
                     heuristc_costs[box_no][agent_i] = heuristic_value;
                 }
             }
 
-            MovablesScheduling movablesScheduling = new MovablesScheduling();
-
             if(_group[AGENTS].length > 1) {
                 this.hungarian_algorithm = new HungarianAlgorithmResizable(heuristc_costs);
                 ArrayList<int[]> values_resulted = this.hungarian_algorithm.getMinimumCost();
+
                 for(int[] pair : values_resulted){
                     int agent_index = pair[0];
                     int box_index = pair[1];
-                    Agent agent_opt = (Agent) agentss[agent_index];
-                    Box box_opt = (Box) boxxxes[box_index];
+                    Integer agent_opt = agentss[agent_index];
+                    Integer box_opt = boxxxes[box_index];
 
                     movablesScheduling.setUpPair(agent_opt, box_opt);
-                    agents_to_schedule.remove(agent_opt);
+
+                    boxes_ids.remove(box_opt);
+                    agents_to_schedule.remove(MapFixedObjects.getByAgentMarkId(agent_opt));
                 }
 
             }else{
@@ -131,30 +132,27 @@ public class DivideAndScheduleMovables {
                     }
                 }
 
-                Agent agent_opt = (Agent) agentss[0];
-                Box box_opt = (Box) boxxxes[box_no];
+                Integer agent_opt = agentss[0];
+                Integer box_opt = boxxxes[box_no];
 
                 movablesScheduling.setUpPair(agent_opt, box_opt);
-                agents_to_schedule.remove(agent_opt);
-
+                boxes_ids.remove(box_opt);
+                agents_to_schedule.remove(MapFixedObjects.getByAgentMarkId(agent_opt));
             }
+         }
 
-            agents_scheduled_opt.add(movablesScheduling);
-        }
-
-        return agents_scheduled_opt;
+        return movablesScheduling;
     }
 
-
-
-    private ArrayDeque<Box> getBoxesScheduled(){
+    public ArrayDeque<Box> getBoxesScheduled(){
         ArrayDeque<Box> boxes_to_schedule = new ArrayDeque<>();
-
+        Box box;
         for (Agent agent : this.agents_scheduled) {
             if(agent.getSolvedStatus() == SolvedStatus.GOAL_STEP_SOLVED ){
-                for(Box next_box : boxes){
-                    if (Arrays.equals(agent.getGoalPosition(), next_box.getCoordinates())){
-                        boxes_to_schedule.add(next_box);
+                for(Integer next_box : boxes_ids){
+                    box = MapFixedObjects.getBoxByID(next_box);
+                    if (Arrays.equals(agent.getGoalPosition(), box.getCoordinates())){
+                        boxes_to_schedule.add(box);
                     }
                 }
             }
@@ -163,22 +161,19 @@ public class DivideAndScheduleMovables {
         return boxes_to_schedule;
     }
 
-
-
     public TaskScheduled getSearchResults(){
         HashMap<Integer,ArrayDeque<Integer>> agents_to_boxes = new HashMap<>();
 
         ArrayList<Integer> agents_solved_mark_ids = new ArrayList<>();
-        Set<Map.Entry<Integer, ArrayDeque<Integer>>> round = agents_to_boxes.entrySet();
-        ArrayList<Integer> boxes_solved_mark_ids = new ArrayList<>();
 
         for (Agent agent : this.agents_scheduled) {
             switch (agent.getSolvedStatus()) {
                 case GOAL_STEP_SOLVED:
                     ArrayDeque<Integer> boxes_solved = new ArrayDeque<>() ;
-                    for(Box next_box : boxes){
-                        if (Arrays.equals(agent.getGoalPosition(), next_box.getCoordinates())){
-                            boxes_solved.add(next_box.getLetterMark());
+                    for(Integer next_box : boxes_ids){
+                        Box box = MapFixedObjects.getBoxByID(next_box);
+                        if (Arrays.equals(agent.getGoalPosition(), box.getCoordinates())){
+                            boxes_solved.add(box.getLetterMark());
                         }
                     }
                     agents_to_boxes.put(agent.getNumberMark(), boxes_solved);

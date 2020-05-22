@@ -4,17 +4,17 @@ import org.agents.Agent;
 import org.agents.Box;
 import org.agents.MapFixedObjects;
 import org.agents.SearchClient;
-import org.agents.planning.MovablesScheduling;
-import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
 import org.agents.planning.SearchStrategy;
-import org.agents.planning.conflicts.ConflictAvoidanceTable;
+import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
 import org.agents.searchengine.SearchEngineSA;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.text.DecimalFormat;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.ListIterator;
 
 /**
  * This class is used to lunch project
@@ -45,20 +45,15 @@ public final class Main {
 
             MapFixedObjects mapFixedObjects = client.initObjects();
 
-            mapFixedObjects.setUpTrackedMovables(MapFixedObjects.getAgents().toArray(new Agent[0]),MapFixedObjects.getBoxes().toArray(new Box[0]));
+            mapFixedObjects.setUpTrackedMovables(MapFixedObjects.getAgents().toArray(new Agent[0]), MapFixedObjects.getBoxes().toArray(new Box[0]));
+
             MapFixedObjects mapFixedObjects1 = new MapFixedObjects();
-            ConflictAvoidanceTable conflictAvoidanceTable = new ConflictAvoidanceTable();
-            ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules = new ConflictAvoidanceCheckingRules(conflictAvoidanceTable);
 
-            Set<Agent> agents_unsolved = MapFixedObjects.getAgents();
-            Set<Box> boxes_unsolved = MapFixedObjects.getBoxes();
-            LinkedList<Box> boxes = new LinkedList<>(boxes_unsolved);
 
-            MovablesScheduling movablesScheduling = new MovablesScheduling(boxes);
+            ConflictAvoidanceCheckingRules avoidanceCheckingRules = null;
+            SearchEngineSA searchEngine = new SearchEngineSA(avoidanceCheckingRules);
 
-            SearchStrategy searchStrategy = new SearchStrategy(conflictAvoidanceCheckingRules,movablesScheduling);
-            SearchEngineSA searchEngine = new SearchEngineSA(searchStrategy);
-
+            SearchStrategy searchStrategy = null;
             ArrayDeque<ListIterator<String>> paths_iterations = searchStrategy.getPathsSequencial(searchEngine);
 
 

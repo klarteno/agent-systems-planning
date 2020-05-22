@@ -3,7 +3,6 @@ package org.agents.searchengine;
 import org.agents.Agent;
 import org.agents.Box;
 import org.agents.MapFixedObjects;
-import org.agents.action.CellLocation;
 import org.agents.action.Direction;
 import org.agents.markings.Coordinates;
 

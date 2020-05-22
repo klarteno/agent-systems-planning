@@ -30,30 +30,54 @@ public final class MapFixedObjects implements Serializable {
         private static HashMap<Integer, Agent> agents_ids;
         private static HashMap<Integer, Box> boxes_ids;
 
+        public static Set<Integer> getAllBoxesIds() {
+                return boxes_ids.keySet();
+        }
+
+        public static Box getBoxByID(Integer box_id) {
+                return  boxes_ids.get(box_id);
+        }
+
+
+        private static HashMap<Integer, ArrayDeque<Agent>> colors_of_agents;
+        private static HashMap<Integer, ArrayDeque<Box>> colors_of_boxes;
+
         public static ArrayDeque<Agent> getAgentsByColor(Integer color_no) {
                 return colors_of_agents.get(color_no);
         }
 
-        public static ArrayDeque<Box> getBoxesByColor(Integer color_no) {
+        public static ArrayDeque<Box> getBoxesIDsByColor(Integer color_no) {
                 return colors_of_boxes.get(color_no);
         }
 
-        private static HashMap<Integer, ArrayDeque<Agent>> colors_of_agents;
-        private static HashMap<Integer, ArrayDeque<Box>> colors_of_boxes;
+        //TO DO : make the hashmap for key_color:keySet
+        public static ArrayDeque<Integer> getBoxesIDsByColor(Integer key_color, Set<Integer> keySet) {
+                ArrayDeque<Box> boxes_ = colors_of_boxes.get(key_color);
+                ArrayDeque<Integer> same_boxes = new ArrayDeque<>();
+                Box box;
+                while(!boxes_.isEmpty()){
+                        box = boxes_.pop();
+                        if(keySet.contains(box.getLetterMark())){
+                                same_boxes.add(box.getLetterMark());
+                        }
+                }
+
+                return same_boxes;
+        }
 
         public static boolean[][] getWalls() {
                 return walls;
         }
 
-
         public static void setWalls(boolean[][] walls_marks) {
                 walls = walls_marks;
         }
 
+
+
         private Serializable getMovableObject(int movable_id) {
                 return this.markings_ids.get(movable_id);
         }
-
 
         private static HashMap<Integer, ArrayDeque<Box>> updateBoxesByColor(){
                 ArrayDeque<Box> boxes;
@@ -93,8 +117,8 @@ public final class MapFixedObjects implements Serializable {
         }
 
 
-        public synchronized static Set<Agent> getAgents(){
-                 Set<Agent> not_solved_agents = new HashSet<>();
+        public synchronized static  LinkedList<Agent> getAgents(){
+                LinkedList<Agent> not_solved_agents = new LinkedList<>();
 
                 for (Agent agent : agents_store) {
                         if(agent.getSolvedStatus() != SolvedStatus.GOAL_FINAL_SOLVED){

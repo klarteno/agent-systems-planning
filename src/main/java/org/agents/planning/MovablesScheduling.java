@@ -3,21 +3,19 @@ package org.agents.planning;
 import org.agents.Agent;
 import org.agents.Box;
 import org.agents.MapFixedObjects;
-import org.agents.markings.SolvedStatus;
-import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
 import org.agents.planning.schedulling.TaskScheduled;
 
 import java.util.*;
 
 public class MovablesScheduling {
-   private final ArrayList<Agent> agents_scheduled_opt;
-    private final  LinkedList<Box> boxes;
+   private final ArrayList<Agent> agents_scheduled;
+    private final LinkedList<Box> boxes_scheduled;
 
     private HashMap<Integer,Integer> boxes_heuristic;
 
     public MovablesScheduling() {
-        this.boxes = new LinkedList<>();
-        this.agents_scheduled_opt = new ArrayList<>();//at least the number of boxes
+        this.agents_scheduled = new ArrayList<>();
+        this.boxes_scheduled = new LinkedList<>();
     }
 
     public TaskScheduled getSearchResults(){
@@ -27,11 +25,11 @@ public class MovablesScheduling {
         Set<Map.Entry<Integer, ArrayDeque<Integer>>> round = agents_to_boxes.entrySet();
         ArrayList<Integer> boxes_solved_mark_ids = new ArrayList<>();
 
-        for (Agent agent : this.agents_scheduled_opt) {
+        for (Agent agent : this.agents_scheduled) {
             switch (agent.getSolvedStatus()) {
                 case GOAL_STEP_SOLVED:
                     ArrayDeque<Integer> boxes_solved = new ArrayDeque<>() ;
-                    for(Box next_box : boxes){
+                    for(Box next_box : boxes_scheduled){
                         if (Arrays.equals(agent.getGoalPosition(), next_box.getCoordinates())){
                             boxes_solved.add(next_box.getLetterMark());
                         }
@@ -55,15 +53,22 @@ public class MovablesScheduling {
     }
 
     //agent has target box
-    public void setUpPair(Agent agent, Box box_target) {
+    public void setUpPair(Integer agent_id, Integer box_target_id) {
+        Agent agent = MapFixedObjects.getByAgentMarkId(agent_id);
+        Box box_target = MapFixedObjects.getBoxByID(box_target_id);
+
         agent.setGoalPosition(box_target.getCoordinates());
-        this.agents_scheduled_opt.add(agent);
-        this.boxes.add(box_target);
+        this.agents_scheduled.add(agent);
+        this.boxes_scheduled.add(box_target);
     }
 
     //update agents goal status and then querry the same class for getSearchResults()
     public ArrayList<Agent> getAgentsScheduled(){
-        return this.agents_scheduled_opt;
+        return this.agents_scheduled;
+    }
+
+    public LinkedList<Box> getBoxesScheduled(){
+        return this.boxes_scheduled;
     }
 
 }
