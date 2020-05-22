@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.Objects;
 
 public final class ConflictAvoidanceTable implements Serializable {
+
     private final PathsStoreQuerying pathsStoreQuerying;
     private DisjointSet group_set;//groups the movables objects
     private TrackedGroups tracked_groups;
@@ -20,6 +21,16 @@ public final class ConflictAvoidanceTable implements Serializable {
     public ConflictAvoidanceTable(TrackedGroups movablesGroup) {
         this.tracked_groups = movablesGroup;
         this.pathsStoreQuerying = new PathsStoreQuerying(this.tracked_groups);
+    }
+
+
+    UpdatePathToMain updateNow;
+
+    // Interface to MAIN method
+    public interface UpdatePathToMain {
+        void updateConflictAvoidanceTable();         // call function updateNow.updateConflictAvoidanceTable() and conflictAvoidanceTable in Main will be updated
+
+        ConflictAvoidanceTable getConflictAvoidanceTable(); // call function updateNow.getConflictAvoidanceTable() to get the updated conflictAvoidanceTable in Main
     }
 
 //replaces all the agents and boxes store in this class and PathsStoreQuerying with movables_ids
