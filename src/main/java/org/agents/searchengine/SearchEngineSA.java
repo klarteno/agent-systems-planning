@@ -69,12 +69,12 @@ public class SearchEngineSA {
         StateSearchSAFactory.createCostSoFar();
         StateSearchSAFactory.createClosedSet();
 
-        // int total_gcost = getHeuristic(start_coordinates, goal_coordinates);
-         //int heur2 = getHeuristic(start_coordinates, goal_coordinates);
-        //StateSearchSAFactory.setDeadlineConstraint(goal_coordinates, total_gcost, heur2);
-         int total_gcost = 0;
-         int heur2 = 0;
-         StateSearchSAFactory.setDeadlineConstraint(start_coordinates, total_gcost, heur2);
+        int total_gcost = getHeuristic(start_coordinates, goal_coordinates);
+        int heur2 = getHeuristic(start_coordinates, goal_coordinates);
+        StateSearchSAFactory.setDeadlineConstraint(goal_coordinates, total_gcost, heur2);
+        int total_gcost3 = 0;
+        int heur4 = 0;
+        // StateSearchSAFactory.setDeadlineConstraint(start_coordinates, total_gcost3, heur4); it looks no good to be earlier tnan goal
         ArrayDeque<int[]> path = new ArrayDeque<int[]>();
         int path_index = 0;
         int time_step = 0;

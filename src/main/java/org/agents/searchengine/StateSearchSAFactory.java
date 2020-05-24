@@ -13,7 +13,6 @@ final class StateSearchSAFactory {
 
     public static final int[][] NO_DEADLINE = new int[0][];
 
-
     private static int [][] state;
     private static int [][][] cost_so_far;
     private static int [][][] closed_states;
@@ -125,7 +124,7 @@ final class StateSearchSAFactory {
         assert (cell_coordinates.length == 3);
 
         int heuristc_value = SearchEngineSA.getHeuristic(cell_coordinates, goal_coordinates);
-        //int heuristc_value2 = SearchEngine.getConsistentHeuristic(cost_time,cell_coordinates, goal_coordinates);
+        //int heuristc_value2 = SearchEngineSA.getConsistentHeuristic(cost_time,cell_coordinates, goal_coordinates);
         state  = SearchSAState.createNew(cell_coordinates, total_gcost, heuristc_value + total_gcost);
 
         return state;
@@ -137,7 +136,6 @@ final class StateSearchSAFactory {
 
         return state;
     }
-
 
     public static int getGCost(int[][] state) {
         return SearchSAState.getGCost(state);
@@ -236,12 +234,6 @@ final class StateSearchSAFactory {
         //the time_state can not decrease
         return  is_the_first_value && is_previouse_explored;
 
-
-
-
-
-
-
          */
 
 
@@ -267,6 +259,7 @@ final class StateSearchSAFactory {
     public static int[] getDeadlineCoord() {
         return SearchSAState.getStateCoordinates(deadline_constraint) ;
     }
+
     public static void setDeadlineConstraint(int[] coordinate, int total_gcost, int heuristc_value) {
           deadline_constraint = SearchSAState.createNew(coordinate, total_gcost, heuristc_value + total_gcost);
     }

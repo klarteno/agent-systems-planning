@@ -35,10 +35,6 @@ public class SearchEngineOD {
         return Math.abs(Coordinates.getRow(cell_coordinates) - Coordinates.getRow(goal_coordinates)) + Math.abs(Coordinates.getCol(cell_coordinates) - Coordinates.getCol(goal_coordinates))  ;
     }
 
-    public static int getHeuristic(int y, int x, int y_goal, int x_goal) {
-        return Math.abs(y - y_goal) + Math.abs(x - x_goal)  ;
-    }
-
     public void runOperatorDecomposition(Agent agent){
         this.runOperatorDecomposition(agent.getCoordinates(), agent.getGoalPosition(), new int[0][][]);
     }
@@ -61,6 +57,7 @@ public class SearchEngineOD {
         StateSearchMAFactory.createCostSoFar();
         StateSearchMAFactory.createClosedSet();
         StateSearchMAFactory.setConflictingPaths(conflicting_paths);
+        StateSearchMAFactory.setDeadlineConstraint();
 
         ArrayDeque<int[]> path = new ArrayDeque<>();
         int time_step = 0;

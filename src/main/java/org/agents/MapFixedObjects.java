@@ -307,13 +307,12 @@ public final class MapFixedObjects implements Serializable {
                 return (row > 0 && row < MAX_ROW  && col > 0 && col < MAX_COL && !getWalls()[row][col]);
         }
 
-        public static LinkedList<int[]> getNeighboursMA(int[] position_to_expand) {
+        public static LinkedList<int[]> getNeighboursMA(int[] position_to_expand, int time_deadline) {
                 assert position_to_expand.length == 3;
 
                 int time_step = Coordinates.getTime(position_to_expand);
                 int row = Coordinates.getRow(position_to_expand);
                 int col = Coordinates.getCol(position_to_expand);
-
 
                 int[] dir_south = new int[]{time_step + 1, row+1, col };
                 //if (!conflicts_avoidance.contains(dir_south) && isEmptyCell(dir_south)) neighbours_indexes.add(dir_south);
@@ -331,7 +330,9 @@ public final class MapFixedObjects implements Serializable {
                 if (isEmptyCell(dir_north))     neighbours_valid.add(dir_north);
                 if (isEmptyCell(dir_east))      neighbours_valid.add(dir_east);
                 if (isEmptyCell(dir_west))      neighbours_valid.add(dir_west);
-                if (isEmptyCell(dir_wait))      neighbours_valid.add(dir_wait);;//could bypass checking
+                if (Coordinates.getTime(dir_wait) <= time_deadline){
+                        neighbours_valid.add(dir_wait);
+                }
 
                 return neighbours_valid;
         }
