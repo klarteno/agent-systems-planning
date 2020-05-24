@@ -4,18 +4,23 @@ import org.agents.Agent;
 import org.agents.Box;
 import org.agents.MapFixedObjects;
 import org.agents.planning.schedulling.TaskScheduled;
+import org.agents.planning.schedulling.TrackedGroups;
 
 import java.util.*;
 
 public class MovablesScheduling {
-   private final ArrayList<Agent> agents_scheduled;
+    private final ArrayList<Agent> agents_scheduled;
     private final LinkedList<Box> boxes_scheduled;
 
     private HashMap<Integer,Integer> boxes_heuristic;
+    private final Set<Integer> agents_scheduled_ids;
+    private final Set<Integer> boxes_scheduled_ids;
 
     public MovablesScheduling() {
         this.agents_scheduled = new ArrayList<>();
         this.boxes_scheduled = new LinkedList<>();
+        this.agents_scheduled_ids = new HashSet<>();
+        this.boxes_scheduled_ids = new HashSet<>();
     }
 
     public TaskScheduled getSearchResults(){
@@ -52,8 +57,15 @@ public class MovablesScheduling {
         return taskScheduled;
     }
 
+    public TrackedGroups getTrackedGroups(){
+        return new TrackedGroups(this.agents_scheduled_ids, this.boxes_scheduled_ids );
+    }
+
     //agent has target box
     public void setUpPair(Integer agent_id, Integer box_target_id) {
+        this.agents_scheduled_ids.add(agent_id);
+        this.boxes_scheduled_ids.add(box_target_id);
+
         Agent agent = MapFixedObjects.getByAgentMarkId(agent_id);
         Box box_target = MapFixedObjects.getBoxByID(box_target_id);
 

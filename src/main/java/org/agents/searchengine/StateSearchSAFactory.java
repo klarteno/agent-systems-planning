@@ -258,7 +258,7 @@ final class StateSearchSAFactory {
     }
 
     public static int getDeadlineTimeConstraint() {
-        if(deadline_constraint==NO_DEADLINE)
+        if(deadline_constraint == NO_DEADLINE)
             return 0;
 
         return SearchSAState.getTimeStep(deadline_constraint);

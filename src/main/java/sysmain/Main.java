@@ -21,14 +21,21 @@ import java.util.ListIterator;
  * This class is used to lunch project
  *
  * @author autor
- *  {@link ConflictAvoidanceTable.UpdatePathToMain} interface
+ *  {@link ConflictAvoidanceTable} interface
  *   to handle updates of path
  */
-public final class Main implements ConflictAvoidanceTable.UpdatePathToMain{
+public final class Main{
+
+    enum SearchingMode {
+        SINGLE,
+        GROUP,
+        MERGING,
+        CANCELLING,
+        GOAL_REACHED;
+    };
 
     private static final DecimalFormat df = new DecimalFormat("0.0000");
 
-    public ConflictAvoidanceTable path; // path will be update in function updateConflictAvoidanceTable()
 
     /**
      * This is the main method of our application.
@@ -52,20 +59,15 @@ public final class Main implements ConflictAvoidanceTable.UpdatePathToMain{
 
             mapFixedObjects.setUpTrackedMovables(MapFixedObjects.getAgents().toArray(new Agent[0]), MapFixedObjects.getBoxes().toArray(new Box[0]));
 
-            MapFixedObjects mapFixedObjects1 = new MapFixedObjects();
-
-
             ConflictAvoidanceCheckingRules avoidanceCheckingRules = null;
             SearchEngineSA searchEngine = new SearchEngineSA(avoidanceCheckingRules);
 
             SearchStrategy searchStrategy = null;
 
-            ArrayDeque<ListIterator<String>> paths_iterations = searchStrategy.getPathsSequencial(searchEngine);
-
+            ArrayDeque<ListIterator<String>> paths_iterations = searchStrategy.getPathsSequencial();
 
             outputPathFor(serverMessages,2, 1, paths_iterations.pop());
             outputPathFor(serverMessages,2, 2, paths_iterations.pop());
-
 
             long endTime = System.nanoTime();
             String duration = df.format( (endTime - startTime) / 1000000000.0 );
@@ -103,12 +105,4 @@ public final class Main implements ConflictAvoidanceTable.UpdatePathToMain{
 
     }
 
-    public void updateConflictAvoidanceTable(){
-            // update path of type ConflictAvoidanceTable
-
-    }
-
-    public ConflictAvoidanceTable getConflictAvoidanceTable(){
-        return path;
-    }
 }

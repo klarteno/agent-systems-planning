@@ -2,14 +2,14 @@ package org.agents.planning;
 
 import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
 import org.agents.planning.conflicts.ConflictAvoidanceTable;
-import org.agents.planning.schedulling.TrackedGroups;
+
 
 import java.util.*;
 
 public class GroupIndependenceDetection {
     private final ConflictAvoidanceCheckingRules conflict_avoidance_checking_rules;
     public ConflictAvoidanceTable conflict_avoidance_table;
-    private GroupSearch search_strategy;
+    private final GroupSearch group_search_strategy;
 
     private final static int first_collide = 0;
     private final static int second_collide = 1;
@@ -28,12 +28,12 @@ public class GroupIndependenceDetection {
     }
 
      //asssumed the agents,boxes have set up their goals corectly
-    public GroupIndependenceDetection(TrackedGroups trackedGroups) {
-        this.search_strategy = new GroupSearch();
-        ConflictAvoidanceTable conflictAvoidanceTable = new ConflictAvoidanceTable(trackedGroups);
-        this.conflict_avoidance_checking_rules = new ConflictAvoidanceCheckingRules(conflictAvoidanceTable);
+    public GroupIndependenceDetection(ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules) {
+        this.conflict_avoidance_checking_rules = conflictAvoidanceCheckingRules;
         this.conflict_avoidance_table = this.conflict_avoidance_checking_rules.getConflictsTable();
-     }
+        this.group_search_strategy = new GroupSearch();
+
+    }
 
     public void runIndependenceDetection(){
         boolean isColided = this.conflict_avoidance_table.setNextConflictedMovables(colided_ids);
@@ -45,8 +45,8 @@ public class GroupIndependenceDetection {
             if(this.conflict_avoidance_table.isUnGrouped(movable_id_one)&&this.conflict_avoidance_table.isUnGrouped(movable_id_two))
                 startIDForSingleAgents(movable_id_one, movable_id_two);
 */
-            ArrayDeque<Integer> groupone = this.conflict_avoidance_table.getGroupOf(movable_id_one);
-            ArrayDeque<Integer> grouptwo = this.conflict_avoidance_table.getGroupOf(movable_id_two);
+            Set<Integer> groupone = this.conflict_avoidance_table.getGroupOf(movable_id_one);
+            Set<Integer> grouptwo = this.conflict_avoidance_table.getGroupOf(movable_id_two);
             //Integer[] group__one = group_one.toArray(new Integer[0]);
             int [] group_one = groupone.stream().mapToInt(Integer::intValue).toArray();
             int [] group_two = grouptwo.stream().mapToInt(Integer::intValue).toArray();
@@ -55,7 +55,7 @@ public class GroupIndependenceDetection {
             if (this.conflict_avoidance_table.isNewConflict(group_one, group_two)){
                 int path_lenght_one = this.conflict_avoidance_table.getPathLenght(group_one);
                 conflicting_path = this.conflict_avoidance_table.getMarkedPaths(group_two);
-                ArrayDeque<int[]> new_path_one = this.search_strategy.runGroupSearchMA(group_one, conflicting_path);
+                ArrayDeque<int[]> new_path_one = this.group_search_strategy.runGroupSearchMA(group_one, conflicting_path);
                //group_one and new_path_one have the same ordering of indexes
                 assert new_path_one != null;
 
@@ -69,7 +69,7 @@ public class GroupIndependenceDetection {
                 }else {
                     int path_lenght_two = this.conflict_avoidance_table.getPathLenght(group_two);
                     conflicting_path = this.conflict_avoidance_table.getMarkedPaths(group_one);
-                    ArrayDeque<int[]> new_path_two = this.search_strategy.runGroupSearchMA(group_two, conflicting_path);
+                    ArrayDeque<int[]> new_path_two = this.group_search_strategy.runGroupSearchMA(group_two, conflicting_path);
                     //group_two and new_path_two have the same ordering of indexes
                     assert new_path_two != null;
                     if (path_lenght_two == new_path_two.size()){
@@ -81,14 +81,14 @@ public class GroupIndependenceDetection {
                     }else {
                         //the paths groups are removed when grouped
                         int[][] group_marks_total = this.conflict_avoidance_table.groupIDs(group_one, group_two);
-                        ArrayDeque<int[]> paths = this.search_strategy.runGroupSearchMA(group_marks_total);
+                        ArrayDeque<int[]> paths = this.group_search_strategy.runGroupSearchMA(group_marks_total);
                         this.conflict_avoidance_table.addMarkedPathsFor(group_marks_total, paths);
                         isColided = this.conflict_avoidance_table.setNextConflictedMovables(colided_ids);
                     }
                 }
             }else{
                 int[][] group_marks_total = this.conflict_avoidance_table.groupIDs(group_one, group_two);
-                ArrayDeque<int[]> paths = this.search_strategy.runGroupSearchMA(group_marks_total);
+                ArrayDeque<int[]> paths = this.group_search_strategy.runGroupSearchMA(group_marks_total);
                 this.conflict_avoidance_table.addMarkedPathsFor(group_marks_total, paths);
                 isColided = this.conflict_avoidance_table.setNextConflictedMovables(colided_ids);
             }

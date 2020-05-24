@@ -12,6 +12,8 @@ class PathsStoreQuerying implements Serializable {
     private int[][][] table_for_paths;
     private int[] path_lenghs; //indexed by table_ids which is in other class
     private final TrackedGroups tracked_groups;
+    private int paths_rows;
+    private int paths_columns;
 
     public PathsStoreQuerying(TrackedGroups trackedGroups) {
         this.tracked_groups = trackedGroups;
@@ -20,31 +22,46 @@ class PathsStoreQuerying implements Serializable {
 
     public void setUpTracked(TrackedGroups trackedGroups){
         int group_size = trackedGroups.getGroupSize();
-        this.table_for_paths = new int[group_size][MapFixedObjects.MAX_ROW][MapFixedObjects.MAX_COL];
+        this.paths_rows = MapFixedObjects.MAX_ROW;
+        this.paths_columns = MapFixedObjects.MAX_COL;
+
+        this.table_for_paths = new int[group_size][paths_rows][paths_columns];
         this.path_lenghs = new int[group_size];
     }
 
-    public static int getPathsRowsNo(){
-        return MapFixedObjects.MAX_ROW;
+    public  int getPathsRowsNo(){
+        return this.paths_rows;
     }
 
-    public static int getPathsColumnsNo(){
-        return MapFixedObjects.MAX_COL;
+    public int getPathsColumnsNo(){
+        return this.paths_columns;
     }
 
-    public void setCellLocationOf(int mark_id, int[] cell_location){
+    public void setCellLocationOf(int mark_id, ArrayDeque<int[]> path){
+        this.removePath(mark_id);
+        for (int[] cell_location : path) {
+            this.setCellLocationOf(mark_id, cell_location);
+        }
+        this.path_lenghs[this.getIndexFor(mark_id)] = path.size();
+    }
+
+    void setCellLocationOf(int mark_id, int[] cell_location){
         int y_loc =   Coordinates.getRow(cell_location);
         int x_loc =   Coordinates.getCol(cell_location);
         int start_time_step = Coordinates.getTime(cell_location);
 
-        int id_index = this.tracked_groups.getIndexFor(mark_id);
+        int id_index = this.getIndexFor(mark_id);
         this.table_for_paths[id_index][y_loc][x_loc] = start_time_step;
+    }
+
+    private int getIndexFor(int mark_id){
+        return this.tracked_groups.getIndexFor(mark_id);
     }
 
     public void setCellLocationOf(int[][] groups_marks, ArrayDeque<int[]> paths){
         int[] group = getMergedGroupOfTwo(groups_marks);
         for(int mark_id : group){
-            int id_index = this.tracked_groups.getIndexFor(mark_id);
+            int id_index = this.getIndexFor(mark_id);
             this.path_lenghs[id_index] = paths.size();
         }
 
@@ -75,17 +92,22 @@ class PathsStoreQuerying implements Serializable {
             row = start_position + 1;
             column = start_position + 2;
             mark_id = group_marks[start_position/Coordinates.getLenght()];
-            int id_index = this.tracked_groups.getIndexFor(mark_id);
+            int id_index = this.getIndexFor(mark_id);
 
             this.table_for_paths[id_index][cell_locations[row]][cell_locations[column]] = cell_locations[time_step];
         }
     }
 
     public boolean removePath(int mark_id){
-        int id_index = this.tracked_groups.getIndexFor(mark_id);
+        int id_index = this.getIndexFor(mark_id);
 
         if(this.table_for_paths[id_index].length > 0 ){
-            this.table_for_paths[id_index] = new int[0][0];
+            ///int[][] ggggg = this.table_for_paths[id_index];
+            for (int i = 0; i < this.paths_rows; i++) {
+                for (int j = 0; j < this.paths_columns; j++) {
+                    this.table_for_paths[id_index][i][j] = -1;
+                }
+            }
             this.path_lenghs[id_index] = 0;
 
             return true;
@@ -96,7 +118,7 @@ class PathsStoreQuerying implements Serializable {
 
     public boolean removePath(int[] group_marks){
         for (int mark_id : group_marks){
-            int id_index = this.tracked_groups.getIndexFor(mark_id);
+            int id_index = this.getIndexFor(mark_id);
             this.table_for_paths[id_index] = new int[0][0];
             this.path_lenghs[id_index] = 0;
         }
@@ -106,7 +128,7 @@ class PathsStoreQuerying implements Serializable {
     public int getTimeStep(int mark_id, int[] cell_location){
         int y_loc = cell_location[0];
         int x_loc = cell_location[1];
-        int id_index = this.tracked_groups.getIndexFor(mark_id);
+        int id_index = this.getIndexFor(mark_id);
 
         return this.table_for_paths[id_index][y_loc][x_loc];
      }
@@ -153,7 +175,7 @@ class PathsStoreQuerying implements Serializable {
 
     public int[][] getPathCloneFor(int mark_id){
         int[][] clone_path = new int[getPathsRowsNo()][];
-        int id_index = this.tracked_groups.getIndexFor(mark_id);
+        int id_index = this.getIndexFor(mark_id);
         int[][] path = this.table_for_paths[id_index];
 
         for (int row = 0; row < getPathsRowsNo(); row++) {
@@ -164,7 +186,7 @@ class PathsStoreQuerying implements Serializable {
     }
 
     private int[][] getPathFor(int mark_id){
-        int id_index = this.tracked_groups.getIndexFor(mark_id);
+        int id_index = this.getIndexFor(mark_id);
         return this.table_for_paths[id_index];
     }
 
@@ -173,20 +195,23 @@ class PathsStoreQuerying implements Serializable {
 
         int rows = getPathsRowsNo();
         int[][][] clone_paths = new int[group_marks.length][rows][];
-        int[][] nex_path;
+        int[][] next_path;
         int index = 0;
-        for (int mark_id : group_marks){
-            nex_path = getPathFor(mark_id);
+
+        for (int i = 0; i < group_marks.length; i++) {
+            next_path = getPathFor(group_marks[i]);
             for (int row = 0; row < rows; row++) {
-                clone_paths[index++][row] = Arrays.copyOf(nex_path[row], nex_path[row].length);
+                clone_paths[i][row] = Arrays.copyOf(next_path[row], next_path[row].length);
             }
+
         }
+
         return clone_paths;
     }
 
 
     public  int getPathLenght(int mark_id) {
-        int index = this.tracked_groups.getIndexFor(mark_id);
+        int index = this.getIndexFor(mark_id);
 
         return this.path_lenghs[index];
     }

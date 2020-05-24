@@ -4,39 +4,44 @@ import org.agents.Agent;
 import org.agents.Box;
 import org.agents.MapFixedObjects;
 import org.agents.markings.SolvedStatus;
+import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
 import org.agents.planning.schedulling.TaskScheduled;
-import org.agents.planning.schedulling.TrackedGroups;
 import org.agents.searchengine.PathProcessing;
 import org.agents.searchengine.SearchEngineSA;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.ListIterator;
 
 //TO DO send  TaskScheduled to SearchEngineSA instead of depeding on it on some publih subscribe
 public class SearchStrategy {
-    private static MovablesScheduling movablesScheduling;
+    private final MovablesScheduling movablesScheduling;
+    ConflictAvoidanceCheckingRules avoidanceCheckingRules;
 
     public SearchStrategy(MovablesScheduling movablesScheduling) {
-        SearchStrategy.movablesScheduling = movablesScheduling;
+        this.movablesScheduling = movablesScheduling;
+        //TrackedGroups trackedGroups = movablesScheduling.getTrackedGroups();
+        this.avoidanceCheckingRules = new ConflictAvoidanceCheckingRules(movablesScheduling.getTrackedGroups());
     }
 
-    public ArrayDeque<ListIterator<String>> getPathsSequencial(SearchEngineSA searchEngine) {
-       PathProcessing pathProcessing = new PathProcessing();
+    public ArrayDeque<ListIterator<String>> getPathsSequencial() {
+        PathProcessing pathProcessing = new PathProcessing();
         ListIterator<String> path_iter;
         ArrayDeque<ListIterator<String>> paths_iterations = new ArrayDeque<>();
         ArrayList<String> path;
 
-        Set<Integer> keys = MapFixedObjects.getAgentsMarks();
-        for (Integer key:keys) {
-            path = pathProcessing.get_moves_agent_goal(MapFixedObjects.getByAgentMarkId(key), searchEngine);
+        SearchEngineSA searchEngine = new SearchEngineSA(this.avoidanceCheckingRules);
+
+        for (Agent agent:this.movablesScheduling.getAgentsScheduled()) {
+            path = pathProcessing.get_moves_agent_goal(agent, searchEngine);
             path_iter = path.listIterator(path.size());
             paths_iterations.add(path_iter);
-
         }
         return paths_iterations;
 
 /*
-
         Agent agent1 = mapFixedObjects.agents[0];
 
         //Stack<int[]> path = searchEngine.runAstar(mapFixedObjects, agent1.getColor(), agent1.getCoordinates(), box1.get().getGoalPosition());
@@ -56,11 +61,12 @@ public class SearchStrategy {
 
     //the agents has to have goals for the boxes set up
     //TO DO decouple to agregation or commands together with conflict_avoidance_table
-    public TaskScheduled runDescenteralizedSearch(SearchEngineSA searchEngine) {
-        //make a parallel thread for each agen and box , put the id of the thread to the agent id
-        Integer agent_id;
+    public TaskScheduled runDescenteralizedSearch() {
+        SearchEngineSA searchEngine = new SearchEngineSA(avoidanceCheckingRules);
+
         ArrayList<Agent> agents = movablesScheduling.getAgentsScheduled();
         TaskScheduled taskScheduled = new TaskScheduled();
+
         for (Agent agent : agents){
             searchEngine.runAstar(agent);
             if(searchEngine.isPathFound()){
@@ -93,19 +99,20 @@ public class SearchStrategy {
         //only ConflictAvoidanceCheckingRules can invalidate all or some TaskScheduled , create new out of mmore TaskScheduled
         TaskScheduled task_scheduled2 = movablesScheduling.getSearchResults();
         //this.conflict_avoidance_checking_rules.addTaskScheduled(task_scheduled2);
-        //movablesScheduling.
 
         return taskScheduled;
     }
 
+    public TaskScheduled runCentralizedSearch(ArrayDeque<TaskScheduled> paths_found){
+        while (!paths_found.isEmpty())
+            this.avoidanceCheckingRules.addTaskScheduledPaths(paths_found.pop());
 
-    public TaskScheduled runCentralizedSearch(){
-        Collection<? extends Integer> arg1 = null;
-        TrackedGroups trackedGroups = new TrackedGroups(arg1);
-        GroupIndependenceDetection searchGroupStrategy = new GroupIndependenceDetection(trackedGroups);
+        GroupIndependenceDetection searchGroupStrategy = new GroupIndependenceDetection(this.avoidanceCheckingRules);
         searchGroupStrategy.runIndependenceDetection();
 
-        return new TaskScheduled();
+        TaskScheduled task_result = this.avoidanceCheckingRules.getNextValidTask();
+
+        return task_result;
     }
 
     public ArrayDeque<int[]> runSearch(SearchEngineSA searchEngine, int movable_id) {

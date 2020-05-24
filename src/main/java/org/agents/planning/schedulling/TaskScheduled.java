@@ -25,8 +25,8 @@ public class TaskScheduled {
 
     public boolean isSchedulable(){
         boolean result = false;
-        if (this.agents_to_boxes != null)
-           result = result || agents_to_boxes.size() > 0;
+
+        result = result || agents_to_boxes.size() > 0;
 
         if (this.agents_solved_mark_ids != null)
             result = result || agents_solved_mark_ids.size() > 0;

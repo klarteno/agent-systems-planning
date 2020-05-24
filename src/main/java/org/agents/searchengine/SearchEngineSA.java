@@ -12,7 +12,7 @@ public class SearchEngineSA {
 
     private ArrayDeque<int[]> path;
     private static PriorityQueue<int[][]> frontier;
-    ConflictAvoidanceCheckingRules conflict_avoidance_checking_rules;
+    private final ConflictAvoidanceCheckingRules conflict_avoidance_checking_rules;
 
     public SearchEngineSA(ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules){
          this.conflict_avoidance_checking_rules =  conflictAvoidanceCheckingRules;
@@ -69,10 +69,12 @@ public class SearchEngineSA {
         StateSearchSAFactory.createCostSoFar();
         StateSearchSAFactory.createClosedSet();
 
-         int heur1 = getHeuristic(start_coordinates, goal_coordinates);
-         int heur2 = getHeuristic(start_coordinates, goal_coordinates);
-        StateSearchSAFactory.setDeadlineConstraint(goal_coordinates, heur1, heur2);
-
+        // int total_gcost = getHeuristic(start_coordinates, goal_coordinates);
+         //int heur2 = getHeuristic(start_coordinates, goal_coordinates);
+        //StateSearchSAFactory.setDeadlineConstraint(goal_coordinates, total_gcost, heur2);
+         int total_gcost = 0;
+         int heur2 = 0;
+         StateSearchSAFactory.setDeadlineConstraint(start_coordinates, total_gcost, heur2);
         ArrayDeque<int[]> path = new ArrayDeque<int[]>();
         int path_index = 0;
         int time_step = 0;
@@ -115,7 +117,7 @@ public class SearchEngineSA {
             ArrayDeque<int[]> neighbours =   this.conflict_avoidance_checking_rules.getFreeNeighbours(SearchSAState.getStateCoordinates(current_state), color_movable, time_step, StateSearchSAFactory.getDeadlineTimeConstraint());
             prev_cell_neighbours.clear();//needed to clear it because this how this data structure works
 
-            int neighbour_gcost =  SearchSAState.getGCost(current_state) + COST_NEXT_CELL;
+            int neighbour_gcost = SearchSAState.getGCost(current_state) + COST_NEXT_CELL;
 
             boolean isFound = false;
             for(int[] cell_neighbour: neighbours){

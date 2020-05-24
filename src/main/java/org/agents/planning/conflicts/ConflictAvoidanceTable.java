@@ -5,48 +5,28 @@ import org.agents.markings.Coordinates;
 import org.agents.planning.schedulling.TrackedGroups;
 
 import java.io.Serializable;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Objects;
+import java.util.*;
 
 public final class ConflictAvoidanceTable implements Serializable {
-
     private final PathsStoreQuerying pathsStoreQuerying;
-    private DisjointSet group_set;//groups the movables objects
-    private TrackedGroups tracked_groups;
+    private final DisjointSet group_set;//groups the movables objects
+    private final TrackedGroups tracked_groups;
 
     //the conflict avoidance is used for the agents and the boxes used as input from MapFixedObjects
     //MapFixedObjects is used only static in PathsStoreQuerying
+    //it sets all the agents and boxes store in this class and PathsStoreQuerying with movables_ids
     public ConflictAvoidanceTable(TrackedGroups movablesGroup) {
         this.tracked_groups = movablesGroup;
         this.pathsStoreQuerying = new PathsStoreQuerying(this.tracked_groups);
-    }
-
-
-    UpdatePathToMain updateNow;
-
-    // Interface to MAIN method
-    public interface UpdatePathToMain {
-        void updateConflictAvoidanceTable();         // call function updateNow.updateConflictAvoidanceTable() and conflictAvoidanceTable in Main will be updated
-
-        ConflictAvoidanceTable getConflictAvoidanceTable(); // call function updateNow.getConflictAvoidanceTable() to get the updated conflictAvoidanceTable in Main
-    }
-
-//replaces all the agents and boxes store in this class and PathsStoreQuerying with movables_ids
-    public void setUpTracked(TrackedGroups movablesGroup){
-        this.tracked_groups = movablesGroup;
         this.group_set = new DisjointSet(movablesGroup.getGroupSize());
-        //takes as input the  set_ids of the markings of all agents and boxes, number_of_movables is number of boxes and agents needed to track
-        this.pathsStoreQuerying.setUpTracked(movablesGroup);
     }
 
     public Integer[] getAllUnGroupedIDs(){
         return this.tracked_groups.getAllUnGroupedIDs().toArray(new Integer[0]);
     }
 
-    public ArrayDeque<Integer> getGroupOf(int mark_id) {
-        ArrayDeque<Integer> group = new ArrayDeque<>();
+    public Set<Integer> getGroupOf(int mark_id) {
+        Set<Integer> group  = new HashSet<>();
         group.add(mark_id);
 
         int id_index = this.tracked_groups.getIndexFor(mark_id);
@@ -121,7 +101,7 @@ public final class ConflictAvoidanceTable implements Serializable {
     public  int getPathLenght(int[] group__one) {
         int sum = 0;
         for (int i = 0; i < group__one.length; i++) {
-            sum += this.pathsStoreQuerying.getPathLenght(i);
+            sum += this.pathsStoreQuerying.getPathLenght(group__one[i]);
         }
         return sum;
     }
@@ -136,14 +116,12 @@ public final class ConflictAvoidanceTable implements Serializable {
     }
 
     public void addMarkedPathsFor(int[][] group_marks_total, ArrayDeque<int[]> paths) {
-        pathsStoreQuerying.setCellLocationOf(group_marks_total, paths);
+        this.pathsStoreQuerying.setCellLocationOf(group_marks_total, paths);
     }
 
-    public void replaceMarkedPathFor(int number_mark, ArrayDeque<int[]> path){
-        pathsStoreQuerying.removePath(number_mark);
-         for (int[] cell_location : path) {
-             pathsStoreQuerying.setCellLocationOf(number_mark, cell_location);
-        }
+    public void replaceMarkedPathFor(int mark_id, ArrayDeque<int[]> path){
+        this.pathsStoreQuerying.setCellLocationOf(mark_id, path);
+
     }
 
     //adds the non-conflicting path to the path store ,  group_marks and group_paths should be ordered by the same index

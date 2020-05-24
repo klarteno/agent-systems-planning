@@ -30,6 +30,9 @@ public final class MapFixedObjects implements Serializable {
         private static HashMap<Integer, Agent> agents_ids;
         private static HashMap<Integer, Box> boxes_ids;
 
+        private static HashMap<Integer, ArrayDeque<Agent>> colors_of_agents;
+        private static HashMap<Integer, ArrayDeque<Box>> colors_of_boxes;
+
         public static Set<Integer> getAllBoxesIds() {
                 return boxes_ids.keySet();
         }
@@ -37,10 +40,6 @@ public final class MapFixedObjects implements Serializable {
         public static Box getBoxByID(Integer box_id) {
                 return  boxes_ids.get(box_id);
         }
-
-
-        private static HashMap<Integer, ArrayDeque<Agent>> colors_of_agents;
-        private static HashMap<Integer, ArrayDeque<Box>> colors_of_boxes;
 
         public static ArrayDeque<Agent> getAgentsByColor(Integer color_no) {
                 return colors_of_agents.get(color_no);
@@ -308,7 +307,7 @@ public final class MapFixedObjects implements Serializable {
                 return (row > 0 && row < MAX_ROW  && col > 0 && col < MAX_COL && !getWalls()[row][col]);
         }
 
-        public static int[][] getNeighboursMA(int[] position_to_expand) {
+        public static LinkedList<int[]> getNeighboursMA(int[] position_to_expand) {
                 assert position_to_expand.length == 3;
 
                 int time_step = Coordinates.getTime(position_to_expand);
@@ -326,14 +325,15 @@ public final class MapFixedObjects implements Serializable {
                 //if (!conflicts_avoidance.contains(dir_south) && isEmptyCell(dir_south)) neighbours_indexes.add(dir_south);
 
                 int[] dir_wait = new int[]{time_step + 1, row, col};
-                int[][] dirs = new int[5][];
-                if (isEmptyCell(dir_south))     dirs[0] = dir_south;
-                if (isEmptyCell(dir_north))     dirs[0] = dir_north;
-                if (isEmptyCell(dir_east))      dirs[0] = dir_east;
-                if (isEmptyCell(dir_west))      dirs[0] = dir_west;
-                if (isEmptyCell(dir_west))      dirs[0] = dir_wait;//could bypass checking
 
-                return dirs;
+                LinkedList<int[]> neighbours_valid = new LinkedList<>();
+                if (isEmptyCell(dir_south))     neighbours_valid.add(dir_south);
+                if (isEmptyCell(dir_north))     neighbours_valid.add(dir_north);
+                if (isEmptyCell(dir_east))      neighbours_valid.add(dir_east);
+                if (isEmptyCell(dir_west))      neighbours_valid.add(dir_west);
+                if (isEmptyCell(dir_wait))      neighbours_valid.add(dir_wait);;//could bypass checking
+
+                return neighbours_valid;
         }
 
         //use roll unloop instead of java colection

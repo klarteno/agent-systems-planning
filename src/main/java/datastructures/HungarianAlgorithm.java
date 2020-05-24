@@ -221,7 +221,7 @@ public class HungarianAlgorithm {
      * Step 6:
      * Create a chain K of alternating "squares" and "0*"
      *
-     * @param mainZero => Z_0 of Step 4
+     * @param mainZero >= Z_0 of Step 4
      */
     private void step6(int[] mainZero) {
         int i = mainZero[0];

@@ -32,7 +32,7 @@ public class SearchEngineOD {
     }
 
     public static int getHeuristic(int[] cell_coordinates, int[] goal_coordinates){
-        return Math.abs(Coordinates.getRow(0,cell_coordinates) - Coordinates.getRow(0,goal_coordinates)) + Math.abs(Coordinates.getCol(0,cell_coordinates) - Coordinates.getCol(0,goal_coordinates))  ;
+        return Math.abs(Coordinates.getRow(cell_coordinates) - Coordinates.getRow(goal_coordinates)) + Math.abs(Coordinates.getCol(cell_coordinates) - Coordinates.getCol(goal_coordinates))  ;
     }
 
     public static int getHeuristic(int y, int x, int y_goal, int x_goal) {
@@ -57,12 +57,12 @@ public class SearchEngineOD {
 
     public void runOperatorDecomposition(int[] start_coordinates, int[] goal_coordinates, int[][][] conflicting_paths){
         frontier.clear();
-        StateSearchMAFactory.setUpGoals(goal_coordinates);
+        StateSearchMAFactory.setGoals(goal_coordinates);
         StateSearchMAFactory.createCostSoFar();
         StateSearchMAFactory.createClosedSet();
-        StateSearchMAFactory.setUpConflictingPaths(conflicting_paths);
+        StateSearchMAFactory.setConflictingPaths(conflicting_paths);
 
-        ArrayDeque<int[]> path = new ArrayDeque<int[]>();
+        ArrayDeque<int[]> path = new ArrayDeque<>();
         int time_step = 0;
         //unused for output from algorithm, delete it when make bench mark
         HashMap<int[],int[]> came_from = new HashMap<>();
@@ -73,14 +73,14 @@ public class SearchEngineOD {
         StateSearchMAFactory.putCostSoFar(next_state);
         StateSearchMAFactory.mark_state_inqueue(next_state,true);
 
-        StateSearchMAFactory.updateCameFromPrevCell(came_from,next_state, null);
+        StateSearchMAFactory.updateCameFromPrevCell(came_from, next_state, next_state);
 
         //init state with dummy variables
         int[][] current_state = null; //StateSearchMAFactory.createDummyState()
 
         while(!frontier.isEmpty()){
             current_state = frontier.poll();
-            assert current_state.length == 3;
+
             if (StateSearchMAFactory.isInHeap(current_state)){
                 StateSearchMAFactory.mark_state_inqueue(current_state,false);
 
@@ -98,8 +98,13 @@ public class SearchEngineOD {
                 int[] pos_coordinates = Arrays.copyOf(SearchMAState.getStateCoordinates(current_state), SearchMAState.getStateCoordinates(current_state).length);
                 ArrayDeque<int[][]> next_intermediate_nodes = StateSearchMAFactory.expandStandardState(pos_coordinates, g_cost, f_cost);
                  //assert StateSearchMAFactory.isIntermediateNode(next_intermediate_nodes);
-                while(!next_intermediate_nodes.isEmpty())
-                    frontier.add(next_intermediate_nodes.pop());
+                while(!next_intermediate_nodes.isEmpty()){
+                    int[][] state = next_intermediate_nodes.pop();
+                    frontier.add(state);
+                    StateSearchMAFactory.putCostSoFar(state);
+                    StateSearchMAFactory.mark_state_inqueue(state,true);
+                }
+                    
 
             }else  if (StateSearchMAFactory.isIntermediateNode(SearchMAState.getStateCoordinates(current_state))){
                 int g_cost = SearchMAState.getGCost(current_state) + COST_NEXT_CELL;
@@ -110,7 +115,6 @@ public class SearchEngineOD {
                 for (int[][] state : next_nodes) {
                     int[] pos = SearchMAState.getStateCoordinates(state);
                     if (StateSearchMAFactory.isStandardNode(pos)) {
-                        int[][] next_node;
                         int neighbour_gcost = SearchMAState.getGCost(state);
                         int[] next_time_step_state = SearchMAState.getStateCoordinates(state);
                         if (!StateSearchMAFactory.isInClosedSet(next_time_step_state)){

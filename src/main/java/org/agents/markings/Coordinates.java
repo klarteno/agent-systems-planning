@@ -101,7 +101,7 @@ public enum Coordinates {
 
     public static boolean isValid(int[] pos_coordinates){
         //if it has a lenght multiple of of the coordinates lenght is valid
-        return (pos_coordinates.length+1 % Coordinates.getLenght() == 0) ;
+        return (pos_coordinates.length % Coordinates.getLenght() == 0) ;
     }
 }
 //https://docs.oracle.com/javase/1.5.0/docs/guide/language/enums.html

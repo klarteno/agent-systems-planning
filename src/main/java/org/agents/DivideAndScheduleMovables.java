@@ -20,12 +20,9 @@ public class DivideAndScheduleMovables {
     //agents and boxes should have the same color
     //we choose columns for agents
     //we choose rows for total path from agent to box to boxs goal
-    public DivideAndScheduleMovables() {
-    }
-
-    public void setUpBoxes(Set<Integer> boxesIds) {
+    public DivideAndScheduleMovables(Set<Integer> boxesIds) {
         boxes_ids = boxesIds;
-     }
+    }
 
     public ArrayDeque<Agent> getAgentsScheduledRandom(LinkedList<Agent> agents){
         ArrayDeque<Agent> agents_to_schedule = new ArrayDeque<>();
@@ -50,10 +47,10 @@ public class DivideAndScheduleMovables {
     //the pairs are included in MovablesScheduling
     public MovablesScheduling getAgentsScheduled(LinkedList<Agent> agents_to_schedule){
         final int AGENTS = 0;
-        final int BOXES = 0;
+        final int BOXES = 1;
 
         HashMap<Integer, ArrayList<Agent>> groups_agents = new HashMap<>();
-        HashMap<Integer, Serializable[][]> groups_movables;
+        HashMap<Integer, Serializable[][]> groups_movables = new HashMap<>(groups_agents.size());
 
         for (Agent agent : agents_to_schedule) {
             if (groups_agents.containsKey(agent.getColor())) {
@@ -65,7 +62,7 @@ public class DivideAndScheduleMovables {
             }
         }
 
-        groups_movables = new HashMap<>(groups_agents.size());
+
 
         for (Integer key_color : groups_agents.keySet()){
             ArrayList<Agent> _agents = groups_agents.get(key_color);
@@ -73,7 +70,8 @@ public class DivideAndScheduleMovables {
             match_movables[AGENTS] = new Integer[_agents.size()];
 
             for (int i = 0; i < _agents.size(); i++) {
-                match_movables[AGENTS][i] = _agents.get(i).getNumberMark();
+                int mark_id = _agents.get(i).getNumberMark();
+                match_movables[AGENTS][i] = mark_id;
             }
 
             ArrayDeque<Integer> boxes_by_color = MapFixedObjects.getBoxesIDsByColor(key_color, boxes_ids);
@@ -91,7 +89,10 @@ public class DivideAndScheduleMovables {
         //build matrix with heuristic costs
         for (Integer color : groups_movables.keySet()){
             Integer[][] _group = (Integer[][]) groups_movables.get(color);
-            int[][] heuristc_costs = new int[_group[BOXES].length][_group[AGENTS].length];
+
+            int rows = _group[BOXES].length;
+            int columns = _group[AGENTS].length;
+            int[][] heuristc_costs = new int[rows][columns];
             Integer[] agentss =_group[AGENTS];
             Integer[] boxxxes = _group[BOXES];
 
@@ -133,7 +134,7 @@ public class DivideAndScheduleMovables {
                 }
 
                 Integer agent_opt = agentss[0];
-                Integer box_opt = boxxxes[box_no];
+                Integer box_opt = boxxxes[0];
 
                 movablesScheduling.setUpPair(agent_opt, box_opt);
                 boxes_ids.remove(box_opt);

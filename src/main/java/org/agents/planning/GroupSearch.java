@@ -29,6 +29,7 @@ public class GroupSearch {
         int coordinate_index = 0;
         ///Arrays.stream(start_group).parallel().
 
+
         Agent agent;
         Box box;
         int[] movable_coordinate;
@@ -57,6 +58,7 @@ public class GroupSearch {
             }
             //coordinate_index += Coordinates.getLenght();
         }
+
 
         searchEngineOD.runOperatorDecomposition(start_coordinates, goal_coordinates, conflicting_paths);
 
