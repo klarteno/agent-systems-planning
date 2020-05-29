@@ -1,13 +1,12 @@
-package org.agents.searchengine;
+package org.agents.searchengine.normal;
 
 import org.agents.Agent;
 import org.agents.Box;
-import org.agents.markings.Coordinates;
 import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
 
 import java.util.*;
 
-public class SearchEngineSA {
+public class SearchEngineSANormal {
     private static final int COST_NEXT_CELL = 1;
 
     private ArrayDeque<int[]> path;
@@ -15,11 +14,11 @@ public class SearchEngineSA {
     private static ConflictAvoidanceCheckingRules conflict_avoidance_checking_rules;
     static int searched_mark_id = 0;
 
-    public SearchEngineSA(ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules){
+    public SearchEngineSANormal(ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules){
          conflict_avoidance_checking_rules = conflictAvoidanceCheckingRules;
         //move to parent class and subclass??
         //make second option for comparator
-        frontier = new PriorityQueue<int[][]>(5, Comparator.comparingInt(SearchSAState::getFCost));
+        frontier = new PriorityQueue<int[][]>(5, Comparator.comparingInt(SearchSAStateNormal::getFCost));
     }
 
     public ArrayDeque<int[]> getPath(){
@@ -45,6 +44,7 @@ public class SearchEngineSA {
         return conflict_avoidance_checking_rules.getCostTimeCoordinate(searched_mark_id, cell_coordinate);
     }
 
+
     public void runAstar(Agent agent){
         assert agent != null;
 
@@ -63,8 +63,8 @@ public class SearchEngineSA {
 
      private void runAstar(int mark_id, int[] start_coordinates, int[] goal_coordinates){
         frontier.clear();
-        StateSearchSAFactory.createCostSoFar();
-        StateSearchSAFactory.createClosedSet();
+        StateSearchSAFactoryNormal.createCostSoFar();
+        StateSearchSAFactoryNormal.createClosedSet();
 
         int total_gcost = getHeuristic(start_coordinates, goal_coordinates);
         int heur2 = getHeuristic(start_coordinates, goal_coordinates);
@@ -78,16 +78,16 @@ public class SearchEngineSA {
         HashMap<int[],int[]> came_from = new HashMap<>();
         HashMap<Integer, Stack<int[]>> paths = new HashMap<>();
 
-        int[][] next_state = StateSearchSAFactory.createState(start_coordinates, 0, goal_coordinates);
+        int[][] next_state = StateSearchSAFactoryNormal.createState(start_coordinates, 0, goal_coordinates);
         frontier.add(next_state);
-        StateSearchSAFactory.putCostSoFar(next_state);
-        StateSearchSAFactory.mark_state_inqueue(next_state,true);
+        StateSearchSAFactoryNormal.putCostSoFar(next_state);
+        StateSearchSAFactoryNormal.mark_state_inqueue(next_state,true);
 
 
         //init state with dummy variables
-        int[][] current_state = StateSearchSAFactory.createDummyState();
+        int[][] current_state = StateSearchSAFactoryNormal.createDummyState();
         int[][] previouse_state = null;
-        StateSearchSAFactory.updateCameFromPrevCell(came_from, next_state, next_state);
+        StateSearchSAFactoryNormal.updateCameFromPrevCell(came_from, next_state, next_state);
 
          int cost_time = 0;
         //unused for output from algorithm, delete it when make bench mark
@@ -99,60 +99,49 @@ public class SearchEngineSA {
 
             current_state = frontier.poll();
             assert current_state.length == 2;
-            if (StateSearchSAFactory.isInHeap(current_state)){
-            StateSearchSAFactory.mark_state_inqueue(current_state,false);
-            path.push(SearchSAState.getStateCoordinates(current_state));
+            if (StateSearchSAFactoryNormal.isInHeap(current_state)){
+            StateSearchSAFactoryNormal.mark_state_inqueue(current_state,false);
+            path.push(SearchSAStateNormal.getStateCoordinates(current_state));
 
-            if (StateSearchSAFactory.isGoal(SearchSAState.getStateCoordinates(current_state), goal_coordinates)){
+            if (StateSearchSAFactoryNormal.isGoal(SearchSAStateNormal.getStateCoordinates(current_state), goal_coordinates)){
                 this.path = path;
                 return;
             }
-            StateSearchSAFactory.addToClosedSet(current_state);
+            StateSearchSAFactoryNormal.addToClosedSet(current_state);
 
-            time_step = SearchSAState.getTimeStep(current_state);
-            ArrayDeque<int[]> neighbours = conflict_avoidance_checking_rules.getFreeNeighboursSA(SearchSAState.getStateCoordinates(current_state), mark_id);
+            time_step = SearchSAStateNormal.getTimeStep(current_state);
+            ArrayDeque<int[]> neighbours = conflict_avoidance_checking_rules.getFreeNeighboursSA(SearchSAStateNormal.getStateCoordinates(current_state), mark_id);
             prev_cell_neighbours.clear();//needed to clear it because this how this data structure works
 
-            int neighbour_gcost;
+            int neighbour_gcost = SearchSAStateNormal.getGCost(current_state) + COST_NEXT_CELL;;
 
             boolean isFound = false;
             for(int[] cell_neighbour: neighbours){
                 //assert cell_neighbour.length;
-                if (!Arrays.equals(SearchSAState.getStateCoordinates(previouse_state), cell_neighbour)){
+                if (!Arrays.equals(SearchSAStateNormal.getStateCoordinates(previouse_state), cell_neighbour)){
                     prev_cell_neighbours.add(cell_neighbour);
                 }
 
-                int[] curr = SearchSAState.getStateCoordinates(current_state);
-                if(Coordinates.getRow(curr) == Coordinates.getRow(cell_neighbour) &&
-                        Coordinates.getCol(curr) == Coordinates.getCol(cell_neighbour )&&
-                        Coordinates.getTime(curr) <= Coordinates.getTime(cell_neighbour)){
-                    neighbour_gcost = SearchSAState.getGCost(current_state);
+                if (!StateSearchSAFactoryNormal.isInClosedSet(cell_neighbour, neighbour_gcost)){
 
-                }else {
-                     neighbour_gcost = SearchSAState.getGCost(current_state) + COST_NEXT_CELL;
-
-                }
-
-                if (!StateSearchSAFactory.isInClosedSet(cell_neighbour, neighbour_gcost)){
-
-                if(!StateSearchSAFactory.isInCostSoFar(cell_neighbour)){
-                    next_state = StateSearchSAFactory.createState(cell_neighbour, neighbour_gcost, goal_coordinates);
+                if(!StateSearchSAFactoryNormal.isInCostSoFar(cell_neighbour)){
+                    next_state = StateSearchSAFactoryNormal.createState(cell_neighbour, neighbour_gcost, goal_coordinates);
                     frontier.add(next_state);
-                    StateSearchSAFactory.putCostSoFar(next_state);
-                    StateSearchSAFactory.mark_state_inqueue(next_state,true);
+                    StateSearchSAFactoryNormal.putCostSoFar(next_state);
+                    StateSearchSAFactoryNormal.mark_state_inqueue(next_state,true);
                 }else {                       //this is an old node, uniform cost applies now
-                    int[] next_state_costs = StateSearchSAFactory.getCostSoFar(cell_neighbour);
-                    if (neighbour_gcost <= next_state_costs[StateSearchSAFactory.G_COST]){
-                        int cost_difference = next_state_costs[StateSearchSAFactory.G_COST] - neighbour_gcost;
-                        int f_value = next_state_costs[StateSearchSAFactory.F_COST] - cost_difference;
-                        next_state = StateSearchSAFactory.createState(cell_neighbour, neighbour_gcost, f_value);
+                    int[] next_state_costs = StateSearchSAFactoryNormal.getCostSoFar(cell_neighbour);
+                    if (neighbour_gcost <= next_state_costs[StateSearchSAFactoryNormal.G_COST]){
+                        int cost_difference = next_state_costs[StateSearchSAFactoryNormal.G_COST] - neighbour_gcost;
+                        int f_value = next_state_costs[StateSearchSAFactoryNormal.F_COST] - cost_difference;
+                        next_state = StateSearchSAFactoryNormal.createState(cell_neighbour, neighbour_gcost, f_value);
                         frontier.add(next_state);
-                        StateSearchSAFactory.putCostSoFar(next_state);
-                        StateSearchSAFactory.mark_state_inqueue(next_state,true);
-                        StateSearchSAFactory.updateCameFromPrevCell(came_from, current_state, previouse_state);
+                        StateSearchSAFactoryNormal.putCostSoFar(next_state);
+                        StateSearchSAFactoryNormal.mark_state_inqueue(next_state,true);
+                        StateSearchSAFactoryNormal.updateCameFromPrevCell(came_from, current_state, previouse_state);
 
                     }else {
-                        neighbour_gcost = next_state_costs[StateSearchSAFactory.G_COST];
+                        neighbour_gcost = next_state_costs[StateSearchSAFactoryNormal.G_COST];
                     }
                 }
                 }

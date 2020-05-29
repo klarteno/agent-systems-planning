@@ -196,9 +196,7 @@ final class StateSearchMAFactory {
             }
         }
 
-
         deadline_constraint = Coordinates.createCoordinates(time_deadline, row_deadline, column_deadline);
-
     }
 
     private static int getDeadlineTimeConstraint() {
@@ -250,7 +248,6 @@ final class StateSearchMAFactory {
 
         //int heuristc_value = getStateHeuristcManhatten(cell_coordinates);
         int heuristc_value = getHeuristcOf(cell_coordinates);
-
         state  = SearchMAState.createNew(cell_coordinates, total_gcost, heuristc_value + total_gcost);
 
         return state;
@@ -262,7 +259,6 @@ final class StateSearchMAFactory {
 
         //int heuristc_value = getStateHeuristcManhatten(cell_coordinates);
         int heuristc_value = getHeuristcOf(cell_coordinates);
-
         state  = SearchMAState.createNew(cell_coordinates,total_gcost, heuristc_value + total_gcost);
 
         return state;
@@ -441,7 +437,6 @@ final class StateSearchMAFactory {
                 }
             }
         }
-
     }
 
     public static ArrayDeque<int[][]> expandStandardState(int[] pos_coordinates, int g_cost, int f_cost) {
@@ -449,7 +444,6 @@ final class StateSearchMAFactory {
         int index_to_expand = random.nextInt(pos_coordinates.length/Coordinates.getLenght());//or other heuristic to use instead of random
 
         int prev_time = Coordinates.getTime(index_to_expand, pos_coordinates);
-
         ArrayDeque<int [][]> next_state_nodes = new ArrayDeque<>();
 
         int[] position_to_expand = Coordinates.getCoordinatesAt(index_to_expand, pos_coordinates);

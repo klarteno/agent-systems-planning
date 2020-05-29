@@ -12,6 +12,10 @@ public final class ConflictAvoidanceTable implements Serializable {
     private final DisjointSet group_set;//groups the movables objects
     private final TrackedGroups tracked_groups;
 
+    public final static int CELL_MARK1_TO_AVOID = -1;
+    public final static int CELL_MARK2_TO_AVOID = 0;
+
+
     //the conflict avoidance is used for the agents and the boxes used as input from MapFixedObjects
     //MapFixedObjects is used only static in PathsStoreQuerying
     //it sets all the agents and boxes store in this class and PathsStoreQuerying with movables_ids
@@ -21,8 +25,16 @@ public final class ConflictAvoidanceTable implements Serializable {
         this.group_set = new DisjointSet(movablesGroup.getGroupSize());
     }
 
-    public Integer[] getAllUnGroupedIDs(){
-        return this.tracked_groups.getAllUnGroupedIDs().toArray(new Integer[0]);
+    public int[] getAllUnGroupedIDs(){
+        Set<Integer> tracked = this.tracked_groups.getAllUnGroupedIDs();
+        int[] ids = new int[tracked.size()];
+        int index = 0;
+        for (Integer id : tracked){
+            ids[index++] = id;
+        }
+        return ids;
+
+       // return this.tracked_groups.getAllUnGroupedIDs().toArray(new Integer[0]);
     }
 
     public Set<Integer> getGroupOf(int mark_id) {
@@ -78,7 +90,7 @@ public final class ConflictAvoidanceTable implements Serializable {
 
 //returns the first two conflicted found that are not in a group
     public boolean setNextConflictedMovables(int[] colided_ids){
-        Integer[] ungrouped_movables = this.getAllUnGroupedIDs();
+        int[] ungrouped_movables = this.getAllUnGroupedIDs();
         int time_step = -1;
         int prev_marked = ungrouped_movables[0];
         int[][] prev_path = this.pathsStoreQuerying.getPathCloneFor(prev_marked);
@@ -119,9 +131,8 @@ public final class ConflictAvoidanceTable implements Serializable {
         this.pathsStoreQuerying.setCellLocationOf(group_marks_total, paths);
     }
 
-    public void replaceMarkedPathFor(int mark_id, ArrayDeque<int[]> path){
+    public void replaceMarkedPathFor(int mark_id, ArrayDeque<int[]> path, int clock_time_offset){
         this.pathsStoreQuerying.setCellLocationOf(mark_id, path);
-
     }
 
     //adds the non-conflicting path to the path store ,  group_marks and group_paths should be ordered by the same index
@@ -191,7 +202,7 @@ public final class ConflictAvoidanceTable implements Serializable {
         return -1;
     }
 
-//removes edge conflicts and cell conflicts
+    //removes edge conflicts and cell conflicts
     //TO DO : add more rules depending on the colors between boxes and agents
     public void removeCellConflicts(int[] prev_cell_location, ArrayDeque<int[]> path){
         int[] cell_location;
@@ -212,6 +223,38 @@ public final class ConflictAvoidanceTable implements Serializable {
         }
     }
 
+    //removes edge conflicts and cell conflicts
+    //TO DO : add more rules depending on the colors between boxes and agents
+    public void removeIllegalConflicts(int[] prev_cell_location, ArrayDeque<int[]> path, ArrayList<int[][][]> illegal_paths){
+        int[] cell_location;
+        Iterator<int[]> path_iterator;
+
+        for (int[][][] matr : illegal_paths) {
+            for (int[][] path_avoidance : matr) {
+                path_iterator = path.iterator();
+
+                while (path_iterator.hasNext()) {
+                    cell_location = path_iterator.next();
+                    //remove vertex conflicts
+                    if (Coordinates.getTime(cell_location) == path_avoidance[Coordinates.getRow(cell_location)][Coordinates.getCol(cell_location)]) {
+                        path_iterator.remove();//is it removing the present element??
+                    }
+
+                    //remove edge conflicts
+                    int edge_start_time1 = Coordinates.getTime(prev_cell_location);
+                    int edge_end_time2 = path_avoidance[Coordinates.getRow(prev_cell_location)][Coordinates.getCol(prev_cell_location)];
+
+                    int edge_end_time1 = Coordinates.getTime(cell_location);
+                    int edge_start_time2 = path_avoidance[Coordinates.getRow(cell_location)][Coordinates.getCol(cell_location)];
+
+                    if (edge_end_time1 - 1 == edge_start_time2 && edge_start_time1 == edge_end_time2 - 1) {
+                        path_iterator.remove();//is it removing the present element??
+                    }
+                }
+            }
+        }
+    }
+
     private boolean isCellOrEdgeConflicts(int[] cell_location, int[] prev_cell_location, int index) {
         //check cell location conflicts
         if(pathsStoreQuerying.getTimeStep(index, cell_location) ==  Coordinates.getTime(cell_location)){
@@ -222,7 +265,8 @@ public final class ConflictAvoidanceTable implements Serializable {
 
     //check edge between cell locations for conflicts
     private boolean getEdgeConflicts(int[] prev_cell_location, int[] cell_location, int index){
-        return (pathsStoreQuerying.getTimeStep(index, prev_cell_location) ==  Coordinates.getTime(cell_location)) && (pathsStoreQuerying.getTimeStep(index, cell_location) ==  Coordinates.getTime(cell_location)-1);
+        return (pathsStoreQuerying.getTimeStep(index, prev_cell_location) ==  Coordinates.getTime(cell_location))
+                && (pathsStoreQuerying.getTimeStep(index, cell_location) ==  Coordinates.getTime(cell_location)-1);
     }
 
     //do not know what to check here ??
@@ -235,6 +279,12 @@ public final class ConflictAvoidanceTable implements Serializable {
 
     //return matrixes indexed by mark id from group_marks ,each matrix stores the time step for a coordinate for a movable
     public int[][][] getMarkedPaths(int[] group_marks) {
+        return  this.pathsStoreQuerying.getPathsForGroup(group_marks);
+    }
+
+    //return matrixes indexed by mark id from group_marks ,each matrix stores the time step for a coordinate for a movable
+    //return paths are clones
+    public int[][][] getMarkedPathsCloned(int[] group_marks) {
         return  this.pathsStoreQuerying.getPathsCloneForGroup(group_marks);
     }
 }

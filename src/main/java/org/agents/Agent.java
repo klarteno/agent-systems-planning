@@ -72,12 +72,9 @@ public final class Agent implements Serializable {
         return  this.agent_goal_coordinates;
     }
 
-
-
     public int[] getCoordinates(){
         return this.agent_object_coordinates;
     }
-
 
     //TO DO can be moved to interface
     public void setSolvedStatus(SolvedStatus stepSolved){
@@ -100,7 +97,4 @@ public final class Agent implements Serializable {
     private boolean valid(int pos) {
         return pos>=0;
     }
-
-
-
 }

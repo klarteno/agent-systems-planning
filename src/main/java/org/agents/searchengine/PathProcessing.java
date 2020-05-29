@@ -5,6 +5,7 @@ import org.agents.Box;
 import org.agents.MapFixedObjects;
 import org.agents.action.Direction;
 import org.agents.markings.Coordinates;
+import org.agents.searchengine.normal.SearchEngineSANormal;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -13,7 +14,6 @@ public final class PathProcessing {
     public static final String MoveAction = "Move";
     public static final String PushAction = "Push";
     public static final String PullAction = "Pull";
-
 
     public  PathProcessing() {
     }
@@ -96,6 +96,7 @@ public final class PathProcessing {
         }
     }
 
+    //this will not work without searchEngineSANormal
     public ArrayList<String> get_moves_agent_goal(Agent agent, SearchEngineSA searchEngine){
         Optional<Box> next_box = MapFixedObjects.getNextBoxBy(agent.getColor());
         Box box_to_search;
@@ -124,6 +125,38 @@ public final class PathProcessing {
 
         return box_moves;
     }
+
+
+    public ArrayList<String> get_moves_agent_goal(Agent agent, SearchEngineSANormal searchEngineSANormal){
+        Optional<Box> next_box = MapFixedObjects.getNextBoxBy(agent.getColor());
+        Box box_to_search;
+        if (next_box.isPresent()){
+            box_to_search=next_box.get();
+        }else {
+            box_to_search = null;
+            System.out.println("#tried to get null box");
+            System.exit(-1);
+        }
+
+        agent.setGoalPosition(box_to_search.getRowPosition(), box_to_search.getColumnPosition());
+        searchEngineSANormal.runAstar(agent);
+        ArrayDeque<int[]> agent_path = searchEngineSANormal.getPath();
+        int[] agent_goal = agent_path.pop();
+        assert (Coordinates.getRow(agent_goal) == box_to_search.getRowPosition()) && (Coordinates.getCol(agent_goal) == box_to_search.getColumnPosition());
+        int[] agent_end_path = agent_path.peek();
+        ArrayList<String> agent_moves = this.getMoves(agent_path);
+
+
+        searchEngineSANormal.runAstar(box_to_search);
+        ArrayDeque<int[]> box_path = searchEngineSANormal.getPath();
+        ArrayList<String> box_moves = this.getBoxMoves(agent, agent_end_path, box_path);
+
+        box_moves.addAll(agent_moves);
+
+        return box_moves;
+    }
+
+
 
     public ArrayList<String> outputPathsMA(ArrayDeque<int[]> agents_paths){
         int[] goal_cell = agents_paths.pop();

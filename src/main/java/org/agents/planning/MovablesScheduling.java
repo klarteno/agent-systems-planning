@@ -8,7 +8,7 @@ import org.agents.planning.schedulling.TrackedGroups;
 
 import java.util.*;
 
-public class MovablesScheduling {
+public final class MovablesScheduling {
     private final ArrayList<Agent> agents_scheduled;
     private final LinkedList<Box> boxes_scheduled;
 

@@ -7,7 +7,7 @@ import org.agents.planning.schedulling.TrackedGroups;
 import java.io.Serializable;
 import java.util.*;
 
-class PathsStoreQuerying implements Serializable {
+final class PathsStoreQuerying implements Serializable {
     //make ia a matrix of aarays of java bitset , one bitset holding the time for each id
     private int[][][] table_for_paths;
     private int[] path_lenghs; //indexed by table_ids which is in other class
@@ -53,6 +53,8 @@ class PathsStoreQuerying implements Serializable {
         int id_index = this.getIndexFor(mark_id);
         this.table_for_paths[id_index][y_loc][x_loc] = start_time_step;
     }
+
+
 
     private int getIndexFor(int mark_id){
         return this.tracked_groups.getIndexFor(mark_id);
@@ -141,6 +143,9 @@ class PathsStoreQuerying implements Serializable {
         return false;
     }
 
+
+
+
     public static int[] getFirstOverlapFor(int[][] first_path, int[][] second_path){
         int row_index = 0;
 
@@ -155,6 +160,15 @@ class PathsStoreQuerying implements Serializable {
         }
         return Coordinates.createCoordinates();
     }
+
+
+
+
+
+
+
+
+
 
     public static ArrayDeque<int[]> getAllOverlapsFor(int[][] first_path, int[][] second_path){
         int row_index = 0;
@@ -203,11 +217,26 @@ class PathsStoreQuerying implements Serializable {
             for (int row = 0; row < rows; row++) {
                 clone_paths[i][row] = Arrays.copyOf(next_path[row], next_path[row].length);
             }
-
         }
 
         return clone_paths;
     }
+
+    public int[][][] getPathsForGroup(int[] group_marks) {
+        assert Objects.requireNonNull(group_marks).length > 0;
+
+        int rows = getPathsRowsNo();
+        int[][][] group_paths = new int[group_marks.length][rows][];
+        int[][] next_path;
+
+        for (int i = 0; i < group_marks.length; i++) {
+            next_path = getPathFor(group_marks[i]);
+            group_paths[i] = next_path;
+        }
+
+        return group_paths;
+    }
+
 
 
     public  int getPathLenght(int mark_id) {

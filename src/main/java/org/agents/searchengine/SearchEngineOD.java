@@ -52,6 +52,10 @@ public class SearchEngineOD {
     }
 
     public void runOperatorDecomposition(int[] start_coordinates, int[] goal_coordinates, int[][][] conflicting_paths){
+        assert start_coordinates.length == goal_coordinates.length;
+        assert ( start_coordinates.length % Coordinates.getLenght() )== 0;
+        assert start_coordinates.length/Coordinates.getLenght() > 1;
+
         frontier.clear();
         StateSearchMAFactory.setGoals(goal_coordinates);
         StateSearchMAFactory.createCostSoFar();

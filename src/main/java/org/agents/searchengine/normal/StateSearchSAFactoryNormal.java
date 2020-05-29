@@ -1,4 +1,4 @@
-package org.agents.searchengine;
+package org.agents.searchengine.normal;
 
 import org.agents.MapFixedObjects;
 import org.agents.markings.Coordinates;
@@ -6,7 +6,7 @@ import org.agents.markings.Coordinates;
 import java.util.Arrays;
 import java.util.HashMap;
 
-final class StateSearchSAFactory {
+final class StateSearchSAFactoryNormal {
     public static final int G_COST = 0;
     public static final int F_COST = 1;
     public static final int IN_HEAP = 2;
@@ -15,7 +15,7 @@ final class StateSearchSAFactory {
     private static int [][][] cost_so_far;
     private static int [][][] closed_states;
 
-    SearchSAState searchState;
+    SearchSAStateNormal searchState;
 
     //this methos is once when the prority queue is created
     //avoid recomputing the formula for heuristic
@@ -47,28 +47,26 @@ final class StateSearchSAFactory {
      }
 
      public static void putCostSoFar(int[][] state) {
-        assert SearchSAState.getGCost(state) >= 0;
+        assert SearchSAStateNormal.getGCost(state) >= 0;
 
-        int[] pos_state = SearchSAState.getStateCoordinates(state);
-        int time_state = SearchSAState.getTimeStep(state);
-        int y = SearchSAState.getYCoordinate(state);
-        int x = SearchSAState.getXCoordinate(state);
+        int[] pos_state = SearchSAStateNormal.getStateCoordinates(state);
+        int time_state = SearchSAStateNormal.getTimeStep(state);
+        int y = SearchSAStateNormal.getYCoordinate(state);
+        int x = SearchSAStateNormal.getXCoordinate(state);
 
-        int g_cost = SearchSAState.getGCost(state);
-        int f_cost = SearchSAState.getFCost(state);
-        cost_so_far[y][x][G_COST] = g_cost;
-        cost_so_far[y][x][F_COST] = f_cost;
+        cost_so_far[y][x][G_COST] = SearchSAStateNormal.getGCost(state);
+        cost_so_far[y][x][F_COST] = SearchSAStateNormal.getFCost(state);
 
     }
 
     //can mark state as in heap by writting a value true for is_in_heap
     public static void mark_state_inqueue(int[][] state, boolean is_in_heap) {
-        assert SearchSAState.getGCost(state) >= 0;
+        assert SearchSAStateNormal.getGCost(state) >= 0;
 
-        int[] pos_state = SearchSAState.getStateCoordinates(state);
-        int time_state = SearchSAState.getTimeStep(state);
-        int y = SearchSAState.getYCoordinate(state);
-        int x = SearchSAState.getXCoordinate(state);
+        int[] pos_state = SearchSAStateNormal.getStateCoordinates(state);
+        int time_state = SearchSAStateNormal.getTimeStep(state);
+        int y = SearchSAStateNormal.getYCoordinate(state);
+        int x = SearchSAStateNormal.getXCoordinate(state);
 
         if (is_in_heap){
             cost_so_far[y][x][IN_HEAP] = 1;
@@ -106,15 +104,15 @@ final class StateSearchSAFactory {
         //int time_state = Coordinates.getTime(next_);
         //int time_state = SearchState.getTimeStep(state);
         //int y = Coordinates.getRow(next_);
-        int y = SearchSAState.getYCoordinate(next_);
+        int y = SearchSAStateNormal.getYCoordinate(next_);
         //int x = Coordinates.getCol(next_);
-        int x = SearchSAState.getXCoordinate(next_);
+        int x = SearchSAStateNormal.getXCoordinate(next_);
 
         return cost_so_far[y][x][IN_HEAP] > 0 ;
     }
 
     public static int[][] createDummyState() {
-        return SearchSAState.createDummyState();
+        return SearchSAStateNormal.createDummyState();
     }
 
     //is used many times to create a state for the a_star
@@ -122,22 +120,22 @@ final class StateSearchSAFactory {
         assert (goal_coordinates.length == 3);
         assert (cell_coordinates.length == 3);
 
-        int heuristc_value = SearchEngineSA.getHeuristic(cell_coordinates, goal_coordinates);
+        int heuristc_value = SearchEngineSANormal.getHeuristic(cell_coordinates, goal_coordinates);
         //int heuristc_value2 = SearchEngineSA.getConsistentHeuristic(cost_time,cell_coordinates, goal_coordinates);
-        state  = SearchSAState.createNew(cell_coordinates, total_gcost, heuristc_value + total_gcost);
+        state  = SearchSAStateNormal.createNew(cell_coordinates, total_gcost, heuristc_value + total_gcost);
 
         return state;
     }
 
     public static int[][] createState(int[] cell_neighbour, int neighbour_gcost, int f_value) {
         assert (cell_neighbour.length == 3);
-        state  = SearchSAState.createNew(cell_neighbour, neighbour_gcost, f_value);
+        state  = SearchSAStateNormal.createNew(cell_neighbour, neighbour_gcost, f_value);
 
         return state;
     }
 
     public static int getGCost(int[][] state) {
-        return SearchSAState.getGCost(state);
+        return SearchSAStateNormal.getGCost(state);
     }
 
     public static void updateCameFromPrevCell(HashMap<int[],int[]> came_from, int[][] state, int[][] previouse_coordinates) {
@@ -147,19 +145,19 @@ final class StateSearchSAFactory {
     }
 
     public static int[] getCellCoordinates(int[][] state){
-        return SearchSAState.getStateCoordinates(state);
+        return SearchSAStateNormal.getStateCoordinates(state);
     }
 
     private static int  getYCoordinate(int[][] state){
-        return SearchSAState.getYCoordinate(state);
+        return SearchSAStateNormal.getYCoordinate(state);
     }
 
     private static int  getXCoordinate(int[][] state){
-        return SearchSAState.getXCoordinate(state);
+        return SearchSAStateNormal.getXCoordinate(state);
     }
 
     private static int  getTimeStep(int[][] state){
-       return SearchSAState.getTimeStep( state);
+       return SearchSAStateNormal.getTimeStep( state);
     }
 
     public static boolean isGoal(int[] state_coordinates, int[] goal_coordinates){
@@ -184,14 +182,14 @@ final class StateSearchSAFactory {
     //it will be ok if the states in prority quees sorts after time deadline
     //the remaining of the prority quee could be checked for  existing time steps not polled????
     public static void addToClosedSet(int[][] state) {
-        int[] pos_state = SearchSAState.getStateCoordinates(state);
-        int g_cost = SearchSAState.getGCost(state);
+        int[] pos_state = SearchSAStateNormal.getStateCoordinates(state);
+        int g_cost = SearchSAStateNormal.getGCost(state);
         //int time_state = Coordinates.getTime(pos_state);
-        int time_state = SearchSAState.getTimeStep(state);
+        int time_state = SearchSAStateNormal.getTimeStep(state);
         //int y = Coordinates.getRow(pos_state);
-        int y = SearchSAState.getYCoordinate(state);
+        int y = SearchSAStateNormal.getYCoordinate(state);
         //int x = Coordinates.getCol(pos_state);
-        int x = SearchSAState.getXCoordinate(state);
+        int x = SearchSAStateNormal.getXCoordinate(state);
 
         int prev_g_cost = closed_states[y][x][0];
 /*
@@ -200,7 +198,7 @@ final class StateSearchSAFactory {
             return;
         }
 */
-        if (g_cost <= prev_g_cost) {
+        if (g_cost < prev_g_cost) {
             closed_states[y][x][0] = g_cost;
             return;
         }else {
@@ -218,8 +216,7 @@ final class StateSearchSAFactory {
 
         if(new_g_cost == prev_g_cost){
             int time_state = Coordinates.getTime(coordinate);
-            int cost_time = SearchEngineSA.getCostCoordinate(coordinate, new_g_cost);
-            if(time_state > cost_time){
+            if(Coordinates.getTime(coordinate) > SearchEngineSANormal.getCostCoordinate(coordinate, new_g_cost)){
                 return true;
             }else{
                 return false;

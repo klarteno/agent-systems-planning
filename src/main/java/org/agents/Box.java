@@ -3,19 +3,18 @@ package org.agents;
 import org.agents.markings.BoxField;
 import org.agents.markings.Coordinates;
 import org.agents.markings.SolvedStatus;
-import org.agents.searchengine.SearchEngineSA;
 
 import java.io.Serializable;
 
 public final class Box implements Serializable {
-    private static int COST_G = 0;
-    private static int COST_HEURISTIC = 1;
+    private static final int COST_G = 0;
+    private static final int COST_HEURISTIC = 1;
 
     private final int[] box_object;
     private final int[] box_object_coordinates;
     private int[] box_goal_coordinates;
 
-    private int[] box_costs = new int[2];
+    private final int[] box_costs = new int[2];
 
 
     public Box(char letter_mark, int color_mark) {
@@ -35,7 +34,7 @@ public final class Box implements Serializable {
         Coordinates.setRow(this.box_goal_coordinates,goal_row);
         Coordinates.setCol(this.box_goal_coordinates,goal_column);
 
-        this.box_costs[COST_HEURISTIC] = SearchEngineSA.getHeuristic(box_object_coordinates, box_goal_coordinates);
+        this.box_costs[COST_HEURISTIC] = MapFixedObjects.getManhattenHeuristic(box_object_coordinates, box_goal_coordinates);
     }
 
     public int[] getGoalPosition() {

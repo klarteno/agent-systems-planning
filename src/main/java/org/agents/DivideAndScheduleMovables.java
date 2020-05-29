@@ -103,7 +103,8 @@ public class DivideAndScheduleMovables {
 
                 for (int agent_i = 0; agent_i < agentss.length ; agent_i++) {
                     agent = MapFixedObjects.getByAgentMarkId(agentss[agent_i]);
-                    int heuristic_value = box_to_next.getCostHeuristic() + SearchEngineSA.getHeuristic(agent.getCoordinates(), box_to_next.getCoordinates());
+
+                    int heuristic_value = box_to_next.getCostHeuristic() + MapFixedObjects.getManhattenHeuristic(agent.getCoordinates(), box_to_next.getCoordinates());
                     heuristc_costs[box_no][agent_i] = heuristic_value;
                 }
             }

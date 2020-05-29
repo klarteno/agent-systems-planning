@@ -5,9 +5,11 @@ import org.agents.Box;
 import org.agents.MapFixedObjects;
 import org.agents.markings.SolvedStatus;
 import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
+import org.agents.planning.schedulling.Synchronization;
 import org.agents.planning.schedulling.TaskScheduled;
 import org.agents.searchengine.PathProcessing;
 import org.agents.searchengine.SearchEngineSA;
+import org.agents.searchengine.normal.SearchEngineSANormal;
 
 import java.io.Serializable;
 import java.util.ArrayDeque;
@@ -16,14 +18,14 @@ import java.util.LinkedList;
 import java.util.ListIterator;
 
 //TO DO send  TaskScheduled to SearchEngineSA instead of depeding on it on some publih subscribe
-public class SearchStrategy {
+public final class SearchStrategy {
     private final MovablesScheduling movablesScheduling;
     ConflictAvoidanceCheckingRules avoidanceCheckingRules;
 
-    public SearchStrategy(MovablesScheduling movablesScheduling) {
+    public SearchStrategy(MovablesScheduling movablesScheduling, Synchronization synchronised_time) {
         this.movablesScheduling = movablesScheduling;
         //TrackedGroups trackedGroups = movablesScheduling.getTrackedGroups();
-        this.avoidanceCheckingRules = new ConflictAvoidanceCheckingRules(movablesScheduling.getTrackedGroups());
+        this.avoidanceCheckingRules = new ConflictAvoidanceCheckingRules(movablesScheduling.getTrackedGroups(), synchronised_time);
     }
 
     public ArrayDeque<ListIterator<String>> getPathsSequencial() {
@@ -32,10 +34,10 @@ public class SearchStrategy {
         ArrayDeque<ListIterator<String>> paths_iterations = new ArrayDeque<>();
         ArrayList<String> path;
 
-        SearchEngineSA searchEngine = new SearchEngineSA(this.avoidanceCheckingRules);
+        SearchEngineSANormal searchEngineSANormal = new SearchEngineSANormal(this.avoidanceCheckingRules);
 
         for (Agent agent:this.movablesScheduling.getAgentsScheduled()) {
-            path = pathProcessing.get_moves_agent_goal(agent, searchEngine);
+            path = pathProcessing.get_moves_agent_goal(agent, searchEngineSANormal);
             path_iter = path.listIterator(path.size());
             paths_iterations.add(path_iter);
         }
@@ -62,15 +64,15 @@ public class SearchStrategy {
     //the agents has to have goals for the boxes set up
     //TO DO decouple to agregation or commands together with conflict_avoidance_table
     public TaskScheduled runDescenteralizedSearch() {
-        SearchEngineSA searchEngine = new SearchEngineSA(avoidanceCheckingRules);
+        SearchEngineSANormal searchEngineSANormal = new SearchEngineSANormal(avoidanceCheckingRules);
 
         ArrayList<Agent> agents = movablesScheduling.getAgentsScheduled();
         TaskScheduled taskScheduled = new TaskScheduled();
 
         for (Agent agent : agents){
-            searchEngine.runAstar(agent);
-            if(searchEngine.isPathFound()){
-                ArrayDeque<int[]> agent_path = searchEngine.getPath();
+            searchEngineSANormal.runAstar(agent);
+            if(searchEngineSANormal.isPathFound()){
+                ArrayDeque<int[]> agent_path = searchEngineSANormal.getPath();
                 int agent_mark = agent.getNumberMark();
                 agent.setSolvedStatus(SolvedStatus.GOAL_STEP_SOLVED);
                 //conflict_avoidance_table.replaceMarkedPathFor(agent_mark, agent_path);//asyncrounouse
@@ -84,9 +86,9 @@ public class SearchStrategy {
 
         LinkedList<Box> boxes = movablesScheduling.getBoxesScheduled();//by agent with goal satisfied???
         for (Box box : boxes){
-            searchEngine.runAstar(box);
-            if(searchEngine.isPathFound()){
-                ArrayDeque<int[]> box_path = searchEngine.getPath();
+            searchEngineSANormal.runAstar(box);
+            if(searchEngineSANormal.isPathFound()){
+                ArrayDeque<int[]> box_path = searchEngineSANormal.getPath();
                 int box_mark = box.getLetterMark();
                 box.setSolvedStatus(SolvedStatus.GOAL_FINAL_SOLVED);
                 //conflict_avoidance_table.replaceMarkedPathFor(box_mark, box_path);
@@ -110,9 +112,9 @@ public class SearchStrategy {
         GroupIndependenceDetection searchGroupStrategy = new GroupIndependenceDetection(this.avoidanceCheckingRules);
         searchGroupStrategy.runIndependenceDetection();
 
-        TaskScheduled task_result = this.avoidanceCheckingRules.getNextValidTask();
+        LinkedList<TaskScheduled> task_result = this.avoidanceCheckingRules.getValidTasks();
 
-        return task_result;
+        return task_result.getFirst();
     }
 
     public ArrayDeque<int[]> runSearch(SearchEngineSA searchEngine, int movable_id) {

@@ -6,7 +6,7 @@ import org.agents.planning.conflicts.ConflictAvoidanceTable;
 
 import java.util.*;
 
-public class GroupIndependenceDetection {
+public final class GroupIndependenceDetection {
     private final ConflictAvoidanceCheckingRules conflict_avoidance_checking_rules;
     public ConflictAvoidanceTable conflict_avoidance_table;
     private final GroupSearch group_search_strategy;
@@ -55,8 +55,9 @@ public class GroupIndependenceDetection {
             if (this.conflict_avoidance_table.isNewConflict(group_one, group_two)){
                 int path_lenght_one = this.conflict_avoidance_table.getPathLenght(group_one);
                 conflicting_path = this.conflict_avoidance_table.getMarkedPaths(group_two);
-                ArrayDeque<int[]> new_path_one = this.group_search_strategy.runGroupSearchMA(group_one, conflicting_path);
-               //group_one and new_path_one have the same ordering of indexes
+
+                ArrayDeque<int[]> new_path_one= this.group_search_strategy.runGroupSearch(group_one,group_two, conflicting_path, this.conflict_avoidance_checking_rules);
+
                 assert new_path_one != null;
 
                 if (path_lenght_one == new_path_one.size()){
@@ -69,9 +70,14 @@ public class GroupIndependenceDetection {
                 }else {
                     int path_lenght_two = this.conflict_avoidance_table.getPathLenght(group_two);
                     conflicting_path = this.conflict_avoidance_table.getMarkedPaths(group_one);
-                    ArrayDeque<int[]> new_path_two = this.group_search_strategy.runGroupSearchMA(group_two, conflicting_path);
+
+
+                    ArrayDeque<int[]> new_path_two = this.group_search_strategy.runGroupSearch(group_two, group_one, conflicting_path ,this.conflict_avoidance_checking_rules);
+
                     //group_two and new_path_two have the same ordering of indexes
                     assert new_path_two != null;
+
+
                     if (path_lenght_two == new_path_two.size()){
                         //replace with new path optimal
                         this.conflict_avoidance_table.replaceMarkedPathFor(group_two, new_path_two);
@@ -86,7 +92,10 @@ public class GroupIndependenceDetection {
                         isColided = this.conflict_avoidance_table.setNextConflictedMovables(colided_ids);
                     }
                 }
-            }else{
+            }
+
+
+            else{
                 int[][] group_marks_total = this.conflict_avoidance_table.groupIDs(group_one, group_two);
                 ArrayDeque<int[]> paths = this.group_search_strategy.runGroupSearchMA(group_marks_total);
                 this.conflict_avoidance_table.addMarkedPathsFor(group_marks_total, paths);

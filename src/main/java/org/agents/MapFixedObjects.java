@@ -275,10 +275,24 @@ public final class MapFixedObjects implements Serializable {
 
         //this opearation is used the most in searching :TO DO replace with matrix look up
         //checks for cell free and compares also the time of boxes and agents
-        public static boolean isFreeCell(int[] cell, int movable_color) {
+        public static boolean isFreeCell(int[] cell, int mark_id) {
                 assert cell.length == 3;
                 if(!isEmptyCell(cell))
                         return false;
+
+
+                int movable_color = -1;
+
+                if(agents_ids.containsKey(mark_id))
+                        movable_color = agents_ids.get(mark_id).getColor();
+                else{
+                        if (boxes_ids.containsKey(mark_id)){
+                                movable_color = boxes_ids.get(mark_id).getColor();
+                        }else {
+                                System.out.println("#mark_id: " +mark_id + " not found  ");
+                        }
+                }
+
 
                 boolean isFreeCell = true;
                 int y = Coordinates.getRow(cell);
@@ -338,7 +352,7 @@ public final class MapFixedObjects implements Serializable {
         }
 
         //use roll unloop instead of java colection
-        public static ArrayDeque<int[]> getNeighbours(int[] coordinates, int color_movable){
+        public static ArrayDeque<int[]> getNeighbours(int[] coordinates, int mark_id){
                 assert coordinates.length == 3;
                 ArrayDeque<int[]> neighbours_indexes = new ArrayDeque<>();
 
@@ -348,19 +362,19 @@ public final class MapFixedObjects implements Serializable {
 
 
                 int[] dir_south = new int[]{time_step+1, row+1, col };
-                if (isFreeCell(dir_south, color_movable))
+                if (isFreeCell(dir_south, mark_id))
                         neighbours_indexes.add(dir_south);
 
                 int[] dir_north = new int[]{time_step+1, row-1, col};
-                if (isFreeCell(dir_north, color_movable))
+                if (isFreeCell(dir_north, mark_id))
                         neighbours_indexes.add(dir_north);
 
                 int[] dir_east = new int[]{time_step+1, row, col+1};
-                if (isFreeCell(dir_east, color_movable))
+                if (isFreeCell(dir_east, mark_id))
                         neighbours_indexes.add(dir_east);
 
                 int[] dir_west = new int[]{time_step+1, row, col-1};
-                if (isFreeCell(dir_west, color_movable))
+                if (isFreeCell(dir_west, mark_id))
                         neighbours_indexes.add(dir_west);
 
                 return neighbours_indexes;
@@ -389,5 +403,9 @@ public final class MapFixedObjects implements Serializable {
 
         public int getIndexFor(int movable_id) {
                  return this.tracked_marking_ids.get(movable_id);
+        }
+
+        public static int getManhattenHeuristic(int[] cell_coordinates, int[] goal_coordinates){
+                return Math.abs(Coordinates.getRow(cell_coordinates) - Coordinates.getRow(goal_coordinates)) + Math.abs(Coordinates.getCol(cell_coordinates) - Coordinates.getCol(goal_coordinates))  ;
         }
 }
