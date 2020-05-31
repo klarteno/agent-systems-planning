@@ -21,6 +21,17 @@ public final class IllegalPathsStore {
         ilegalPaths.add(illegalPath);
     }
 
+
+    public boolean removeAllIlegalPaths(){
+        if(ilegalPaths.size() > 0){
+            ilegalPaths.clear();
+            return true;
+        }
+
+        return false;
+    }
+
+
     ArrayList<int[][][]> checkIllegalPath(int mark_id){
         IllegalPath group_paths;
         ArrayList<int[][][]> paths = new ArrayList<>();
@@ -71,17 +82,19 @@ public final class IllegalPathsStore {
         return conflicts_set;
     }
 
-
     private ArrayList<SimulationConflict> getAllConflicts(int mark_id, int[] groups){
         //int[] groups = this.conflict_avoidance_table.getAllUnGroupedIDs();
-        int[][][] groups_paths = this.conflict_avoidance_table.getMarkedPaths(groups);
-        int[][][] paths_to_check_temp = this.conflict_avoidance_table.getMarkedPaths(new int[]{mark_id});
-        int[][] paths_to_check = paths_to_check_temp[0];
-
         ArrayList<SimulationConflict> conflicts_set = new ArrayList<>();
         EdgeConflict edgeConflicts = new EdgeConflict(mark_id);
         VertexConflict vertexConflicts = new VertexConflict(mark_id);
 
+        if (groups.length == 0){
+            return conflicts_set;
+        }
+
+        int[][][] groups_paths = this.conflict_avoidance_table.getMarkedPaths(groups);
+        int[][][] paths_to_check_temp = this.conflict_avoidance_table.getMarkedPaths(new int[]{mark_id});
+        int[][] paths_to_check = paths_to_check_temp[0];
 
         int index = 0;
 
@@ -160,7 +173,6 @@ public final class IllegalPathsStore {
             }
             }
         }
-
 
         if(edgeConflicts.getConflictedIds().size()>0){
             conflicts_set.add(edgeConflicts);

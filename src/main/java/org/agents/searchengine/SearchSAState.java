@@ -20,7 +20,7 @@ public enum SearchSAState {
         dummy_state[getLocationIndex()] = new  int[Coordinates.getLenght()];
         dummy_state[getCostsIndex()] = new  int[Costs.values().length];
 
-        dummy_state[getLocationIndex()][0]=Integer.MAX_VALUE; //time
+        dummy_state[getLocationIndex()][0]= -1; //time
         dummy_state[getLocationIndex()][1]=Integer.MAX_VALUE; //row
         dummy_state[getLocationIndex()][2]=Integer.MAX_VALUE; //column
 

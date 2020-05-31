@@ -15,8 +15,6 @@ final class StateSearchSAFactory {
     private static int [][][] cost_so_far;
     private static int [][][] closed_states;
 
-    SearchSAState searchState;
-
     //this methos is once when the prority queue is created
     //avoid recomputing the formula for heuristic
     public static void createCostSoFar() {
@@ -211,7 +209,6 @@ final class StateSearchSAFactory {
         int y = Coordinates.getRow(coordinate);
         int x = Coordinates.getCol(coordinate);
 
-
         int prev_g_cost = closed_states[y][x][0];
         if(new_g_cost < prev_g_cost)
             return false;
@@ -224,8 +221,6 @@ final class StateSearchSAFactory {
             }else{
                 return false;
             }
-
-
         }
 
         return  true;

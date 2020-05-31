@@ -75,13 +75,13 @@ public enum Coordinates {
 
     public static int[] getCoordinatesAt(int index, int[] pos_coordinates) {
         int [] coord_pos = new int[0];
-        for (int coordinate = 0; coordinate < pos_coordinates.length; coordinate = coordinate + Coordinates.getLenght()) {
-                if (index == coordinate){
-                    coord_pos = new int[Coordinates.getLenght()];
-                    Coordinates.setTime(coord_pos, Coordinates.getTime(coordinate, pos_coordinates));
-                    Coordinates.setRow(coord_pos, Coordinates.getRow(coordinate, pos_coordinates));
-                    Coordinates.setCol(coord_pos, Coordinates.getCol(coordinate, pos_coordinates));
-                }
+        for (int coordinate = 0; coordinate < pos_coordinates.length/Coordinates.getLenght(); coordinate = coordinate + 1) {
+             if (index == coordinate){
+                coord_pos = new int[Coordinates.getLenght()];
+                Coordinates.setTime(coord_pos, Coordinates.getTime(coordinate, pos_coordinates));
+                Coordinates.setRow(coord_pos, Coordinates.getRow(coordinate, pos_coordinates));
+                Coordinates.setCol(coord_pos, Coordinates.getCol(coordinate, pos_coordinates));
+            }
         }
         return coord_pos;
     }
@@ -90,7 +90,7 @@ public enum Coordinates {
         if(!isValid(coordinates) || !isValid(coordinate)){
             throw new IndexOutOfBoundsException("coordinate not valid");
         }
-        for (int i = 0; i < coordinates.length; i = i + Coordinates.getLenght()) {
+        for (int i = 0; i < coordinates.length/Coordinates.getLenght(); i = i + 1) {
             if (i == index){
                 Coordinates.setTime(index, coordinates, Coordinates.getTime(coordinate));
                 Coordinates.setRow(index, coordinates, Coordinates.getRow(coordinate));
@@ -102,6 +102,19 @@ public enum Coordinates {
     public static boolean isValid(int[] pos_coordinates){
         //if it has a lenght multiple of of the coordinates lenght is valid
         return (pos_coordinates.length % Coordinates.getLenght() == 0) ;
+    }
+
+    public static boolean areNeighbours(int[] prev__, int[] next__) {
+        int prev__row = Coordinates.getRow(prev__);
+        int prev__col = Coordinates.getCol(prev__);
+
+        int next__row = Coordinates.getRow(next__);
+        int next__col = Coordinates.getCol(next__);
+
+        if(prev__row == next__row  && Math.abs(prev__col - next__col) == 1   )
+            return true;
+
+        return prev__col == next__col && Math.abs(prev__row - next__row) == 1;
     }
 }
 //https://docs.oracle.com/javase/1.5.0/docs/guide/language/enums.html

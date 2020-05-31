@@ -23,8 +23,47 @@ public class SearchEngineSA {
     }
 
     public ArrayDeque<int[]> getPath(){
-        //assert this.path.size() > 0;
-        return path;
+        /*  remove the cells positions  that do not lead to goal
+
+            by keeping previouse time step for previouse state
+            then pop out the cells that do not have a diffrence of g of 1 when the time step decresses
+            accumulate the time from poped cells and added to the previouse branching cells
+        */
+        ArrayDeque<int[]> path_valid = new ArrayDeque<>();
+        int path_explored_size = this.path.size();
+        if (path_explored_size > 0){
+
+            int[] prev__ = this.path.pop();
+            int time_prev ;
+            path_valid.add(prev__);
+
+            int[] next__ ;
+            int time_next;
+            int time_steps_skipped = 0;
+            while (!this.path.isEmpty())  {
+                next__ = this.path.pop();
+                time_prev = Coordinates.getTime(prev__);
+                time_next = Coordinates.getTime(next__);
+                if( time_prev - time_next == 1 && Coordinates.areNeighbours(prev__, next__) ){
+                    path_valid.add(next__);
+                    prev__ = next__;
+                }else if( Coordinates.areNeighbours(prev__, next__) ){
+                    if(time_steps_skipped > 0){
+                        Coordinates.setTime(next__, Coordinates.getTime(next__) + time_steps_skipped);
+                        path_valid.add(next__);
+
+                        prev__ = next__;
+                        time_steps_skipped = 0;
+                    }
+                }else{
+                    time_steps_skipped +=1;
+                }
+            }
+
+            assert path_valid.size() > 0;
+        }
+
+        return path_valid;
     }
 
     public int getPathCost(){
@@ -98,6 +137,12 @@ public class SearchEngineSA {
             previouse_state = current_state;
 
             current_state = frontier.poll();
+
+            int time_step_path = Coordinates.getTime(SearchSAState.getStateCoordinates(previouse_state));
+            int time_step_exapanded = Coordinates.getTime(SearchSAState.getStateCoordinates(current_state));
+            if (time_step_exapanded - time_step_path != 1)
+                Coordinates.setTime(SearchSAState.getStateCoordinates(current_state), time_step_path + 1);
+
             assert current_state.length == 2;
             if (StateSearchSAFactory.isInHeap(current_state)){
             StateSearchSAFactory.mark_state_inqueue(current_state,false);
@@ -130,7 +175,6 @@ public class SearchEngineSA {
 
                 }else {
                      neighbour_gcost = SearchSAState.getGCost(current_state) + COST_NEXT_CELL;
-
                 }
 
                 if (!StateSearchSAFactory.isInClosedSet(cell_neighbour, neighbour_gcost)){

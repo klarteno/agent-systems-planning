@@ -1,8 +1,12 @@
 package org.agents.searchengine;
 
+import org.agents.Agent;
+import org.agents.Box;
 import org.agents.MapFixedObjects;
 import org.agents.markings.Coordinates;
+import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
 
+import java.io.Serializable;
 import java.util.*;
 
 final class StateSearchMAFactory {
@@ -17,42 +21,109 @@ final class StateSearchMAFactory {
     private static int [][][][] cost_so_far;
     //switch to bits shifting
     private static int [][][][] closed_states;
-    private static int[] deadline_constraint;
+    private static HashMap<Integer,Integer> closed_states_MA;
+    private static int[][] index_map_cells;
     private static int number_of_movables;
-    private static int[] goals_coordinates;
-    private static int[][][] conflicting_paths;
 
-    public static void setGoals(int[] goals__coordinates) {
-        goals_coordinates =  goals__coordinates;
-        number_of_movables = goals_coordinates.length/Coordinates.getLenght();//to do divide goals__coordinates by the length of the coordinates
+    private static int[] start_coordinates;
+    private static int[] goals_coordinates;
+    private static  int[] group_marks_ids;
+
+    private static ConflictAvoidanceCheckingRules conflict_avoidance_checking_rules;
+
+    public static void setAvoidanceCheckingRules(ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules) {
+        conflict_avoidance_checking_rules = conflictAvoidanceCheckingRules;
     }
 
-    public static void setConflictingPaths(int[][][] conflicting__paths) {
-        conflicting_paths = conflicting__paths;
 
+    public static void setStartGroup(int[] start_group) {
+        group_marks_ids = start_group;
+        start_coordinates = new int[start_group.length * Coordinates.getLenght()];
+        goals_coordinates = new int[start_group.length * Coordinates.getLenght()];
+
+        int coordinate_index = 0;
+        ///Arrays.stream(start_group).parallel().
+        Agent agent;
+        Box box;
+        int[] movable_coordinate;
+        int[] goal_cordinate;
+        for (int movable_id : start_group) {
+            Serializable next_movable = MapFixedObjects.getByMarkNo(movable_id);
+            if (next_movable instanceof Agent) {
+                agent = (Agent) next_movable;
+                movable_coordinate = agent.getCoordinates();
+                goal_cordinate = agent.getGoalPosition();
+
+                for (int j = 0; j < Coordinates.getLenght(); j++) {
+                    start_coordinates[coordinate_index] = movable_coordinate[j];
+                    goals_coordinates[coordinate_index++] = goal_cordinate[j];
+                }
+
+            } else if (next_movable instanceof Box) {
+                box = (Box) next_movable;
+                movable_coordinate = box.getCoordinates();
+                goal_cordinate = box.getGoalPosition();
+
+                for (int j = 0; j < Coordinates.getLenght(); j++) {
+                    start_coordinates[coordinate_index] = movable_coordinate[j];
+                    goals_coordinates[coordinate_index++] = goal_cordinate[j];
+                }
+            }
+            //coordinate_index += Coordinates.getLenght();
+        }
+        number_of_movables = goals_coordinates.length/Coordinates.getLenght();//to do divide goals__coordinates by the length of the coordinates
+
+    }
+
+    public static int[] getStartCoordinatesGroup() {
+            return start_coordinates;
+    }
+
+    public static int[] getGoalsCoordinatesGroup() {
+        return goals_coordinates;
     }
 
     //this methos is once when the prority queue is created
     //avoid recomputing the formula for heuristic
-    public static void createCostSoFar() {
+    public static void createTimeCostSoFarUnused() {
         //check later if should be encapsulated in a staic class like SearchState.java
         //third index : one for g_cost   and second one for f_cost
         //
         cost_so_far = new int[number_of_movables][MapFixedObjects.MAX_ROW][MapFixedObjects.MAX_COL][3];
         //cost_so_far[agent_index][coord_y][coord_x] = new int[]{g_cost,f_cost,is_in_heap};
     }
-
     /*
         public static void updateCost(HashMap<Integer, Integer> cost_so_far) {
             cost_so_far.put(Arrays.hashCode(state[SearchState.ARRAYPOS]), state[ARRAYCOSTS][Costs.COST_G.ordinal()]);
         }
     */
-    public static void putCostSoFar(int[] next_pos, int g_cost, int f_cost, boolean is_in_heap) {
+
+    public static void createClosedSet() {
+        closed_states_MA = new HashMap<>();
+        //example of usage:
+        /*
+        int hash_key = Arrays.hashCode(new int[]{1, 2, 3});
+        closed_states_MA.put(hash_key,4);
+        */
+
+        //store the index of every cell
+        index_map_cells = new int[MapFixedObjects.MAX_ROW][MapFixedObjects.MAX_COL];
+        int counter_value = 0;
+        int rows_lengh = index_map_cells.length;
+        int coll_lengh = index_map_cells[0].length;
+        for (int row_index = 0; row_index < rows_lengh ; row_index++) {
+            for (int col_index = 0; col_index < coll_lengh ; col_index++) {
+                index_map_cells[row_index][col_index] = counter_value++;
+            }
+        }
+    }
+
+    public static void putCostSoFarUnused(int[] next_pos, int g_cost, int f_cost, boolean is_in_heap) {
         assert g_cost > 0;
         //int time_state = Coordinates.getTime(0, next_pos);
         int y;
         int x;
-        for (int coordinate = 0; coordinate < next_pos.length; coordinate = coordinate + Coordinates.getLenght()) {
+        for (int coordinate = 0; coordinate < next_pos.length/Coordinates.getLenght(); coordinate = coordinate + 1) {
             y = Coordinates.getRow(coordinate, next_pos);
             x = Coordinates.getCol(coordinate, next_pos);
 
@@ -63,14 +134,12 @@ final class StateSearchMAFactory {
          }
     }
 
-
-    public static void putCostSoFar(int[][] state) {
+    public static void putCostSoFarUnused(int[][] state) {
         //assert SearchMAState.getGCost(state) > 0;
-
         int y;
         int x;
         int[] coordinates = SearchMAState.getStateCoordinates(state);
-        for (int coordinate = 0; coordinate < coordinates.length; coordinate = coordinate + Coordinates.getLenght()) {
+        for (int coordinate = 0; coordinate < coordinates.length/Coordinates.getLenght(); coordinate = coordinate + 1) {
             y = Coordinates.getRow(coordinate, coordinates);
             x = Coordinates.getCol(coordinate, coordinates);
 
@@ -80,13 +149,12 @@ final class StateSearchMAFactory {
     }
 
     //can mark state as in heap by writting a value true for is_in_heap
-    public static void mark_state_inqueue(int[][] state, boolean is_in_heap) {
+    public static void mark_state_inqueueUnused(int[][] state, boolean is_in_heap) {
        // assert SearchMAState.getGCost(state) > 0;
-
         int y;
         int x;
         int[] coordinates = SearchMAState.getStateCoordinates(state);
-        for (int coordinate = 0; coordinate < coordinates.length; coordinate = coordinate + Coordinates.getLenght()) {
+         for (int coordinate = 0; coordinate < coordinates.length/Coordinates.getLenght(); coordinate = coordinate + 1) {
             y = Coordinates.getRow(coordinate, coordinates);
             x = Coordinates.getCol(coordinate, coordinates);
 
@@ -99,11 +167,11 @@ final class StateSearchMAFactory {
         }
     }
 
-    public static boolean isInCostSoFar(int[] next_pos) {
+    public static boolean isInCostSoFarUnused(int[] next_pos) {
         int y;
         int x;
         boolean is_present = false;
-        for (int coordinate = 0; coordinate < next_pos.length; coordinate = coordinate + Coordinates.getLenght()) {
+        for (int coordinate = 0; coordinate < next_pos.length/Coordinates.getLenght(); coordinate = coordinate + 1) {
             y = Coordinates.getRow(coordinate, next_pos);
             x = Coordinates.getCol(coordinate, next_pos);
 
@@ -114,33 +182,31 @@ final class StateSearchMAFactory {
                 return false;
             }
         }
-
         return is_present;
     }
 //returns the sum of paths for all agents
-    public static int[] getCostSoFar(int[] next_pos) {
+    public static int[] getCostSoFarUnused(int[] next_pos) {
         int y;
         int x;
         int g_cost = 0;
         int f_cost = 0;
         int[] cost = cost_so_far[0][Coordinates.getRow(0, next_pos)][Coordinates.getCol(0, next_pos)];
-        for (int coordinate = 1; coordinate < next_pos.length; coordinate = coordinate + Coordinates.getLenght()) {
+        for (int coordinate = 1; coordinate < next_pos.length/Coordinates.getLenght(); coordinate = coordinate + 1) {
             y = Coordinates.getRow(coordinate, next_pos);
             x = Coordinates.getCol(coordinate, next_pos);
 
             cost[G_COST] += cost_so_far[coordinate][y][x][G_COST];
             cost[F_COST] += cost_so_far[coordinate][y][x][F_COST];
         }
-
         return cost;
     }
 
-    public static boolean isInHeap(int[][] state) {
+    public static boolean isInHeapUnused(int[][] state) {
         int y;
         int x;
         boolean is_present = false;
         int[] coordinates = SearchMAState.getStateCoordinates(state);
-        for (int coordinate = 0; coordinate < coordinates.length; coordinate = coordinate + Coordinates.getLenght()) {
+        for (int coordinate = 0; coordinate < coordinates.length/Coordinates.getLenght(); coordinate = coordinate + 1) {
             y = Coordinates.getRow(coordinate, coordinates);
             x = Coordinates.getCol(coordinate, coordinates);
 
@@ -166,60 +232,20 @@ final class StateSearchMAFactory {
         return Math.abs(y - y_goal) + Math.abs(x - x_goal);
     }
 
-    public static int getConsistentHeuristic(int cost_time, int y, int x , int y_goal, int x_goal){
-        int time_left = StateSearchMAFactory.getDeadlineTimeConstraint() - cost_time;
-        int y_sub_goal = Coordinates.getRow(deadline_constraint);
-        int x_sub_goal = Coordinates.getCol(deadline_constraint);
-
-        if (time_left <= 0){
-            return getHeuristic(y, x, y_goal, x_goal);
-        } else{
-            return time_left + getHeuristic(y_sub_goal, x_sub_goal, y_goal, x_goal);
-        }
-    }
-
-    public static void setDeadlineConstraint() {
-        int[][] path;
-        int time_deadline = -1;
-        int row_deadline = -1;
-        int column_deadline = -1;
-        for (int i = 0; i < conflicting_paths.length ; i++) {
-            path = conflicting_paths[i];
-            for (int row = 0; row < path.length; row++) {
-                for (int column = 0; column < path[row].length; column++) {
-                    if(path[row][column] > time_deadline){
-                        time_deadline = path[row][column];
-                        row_deadline = row;
-                        column_deadline = column;
-                    }
-                }
-            }
-        }
-
-        deadline_constraint = Coordinates.createCoordinates(time_deadline, row_deadline, column_deadline);
-    }
-
-    private static int getDeadlineTimeConstraint() {
-        return Coordinates.getTime(deadline_constraint);
-    }
-
-    private static int getHeuristcOf(int[] cell_coordinates){
+    public static int getHeuristcOf(int[] cell_coordinates){
         int heuristc_value = 0;
         int y;
         int x;
         int y_goal;
         int x_goal;
-
-        for (int coordinate = 0; coordinate < cell_coordinates.length; coordinate = coordinate + Coordinates.getLenght()) {
+        for (int coordinate = 0; coordinate < cell_coordinates.length/Coordinates.getLenght(); coordinate = coordinate + 1) {
             int time_state = Coordinates.getTime(coordinate, cell_coordinates);
-
             y = Coordinates.getRow(coordinate, cell_coordinates);
             x = Coordinates.getCol(coordinate, cell_coordinates);
-
             y_goal = Coordinates.getRow(coordinate, goals_coordinates);
             x_goal = Coordinates.getCol(coordinate, goals_coordinates);
 
-            heuristc_value += getConsistentHeuristic(time_state, y, x , y_goal, x_goal);
+            heuristc_value += conflict_avoidance_checking_rules.getHeuristicOf(group_marks_ids[coordinate], time_state, y, x , y_goal, x_goal);
         }
         return heuristc_value;
     }
@@ -230,10 +256,9 @@ final class StateSearchMAFactory {
         int x;
         int y_goal;
         int x_goal;
-        for (int coordinate = 0; coordinate < cell_coordinates.length; coordinate = coordinate + Coordinates.getLenght()) {
+        for (int coordinate = 0; coordinate < cell_coordinates.length/Coordinates.getLenght(); coordinate = coordinate + 1) {
             y = Coordinates.getRow(coordinate, cell_coordinates);
             x = Coordinates.getCol(coordinate, cell_coordinates);
-
             y_goal = Coordinates.getRow(coordinate, goals_coordinates);
             x_goal = Coordinates.getCol(coordinate, goals_coordinates);
 
@@ -309,7 +334,7 @@ final class StateSearchMAFactory {
         int x_goal;
 
         boolean isGoal = false;
-        for (int coordinate = 0; coordinate < state_coordinates.length; coordinate = coordinate + Coordinates.getLenght()) {
+        for (int coordinate = 0; coordinate < state_coordinates.length/Coordinates.getLenght(); coordinate = coordinate + 1) {
             y = Coordinates.getRow(coordinate, state_coordinates);
             x = Coordinates.getCol(coordinate, state_coordinates);
 
@@ -320,11 +345,10 @@ final class StateSearchMAFactory {
             if (!isGoal)
                 return false;
         }
-
         return isGoal;
     }
 
-    public static void createClosedSet() {
+    public static void createClosedTimeSet() {
         int time_steps_counter = 1;
         closed_states = new int[number_of_movables][MapFixedObjects.MAX_ROW][MapFixedObjects.MAX_COL][time_steps_counter];
     }
@@ -333,110 +357,128 @@ final class StateSearchMAFactory {
     //time step we update that coordinates with the bigger time step
     //it will be ok if the states in prority quees sorts after time deadline
     //the remaining of the prority quee could be checked for  existing time steps not polled????
-    public static void addToClosedSet(int[][] state) {
+    public static void addToClosedTimeSet(int[][] state) {
         int[] pos_coordinates = SearchMAState.getStateCoordinates(state);
-        int time_state = SearchMAState.getTimeStep(0, state);//arbitarily 0 chosen
+        int coordinate_index = 0;
+        int time_state = SearchMAState.getTimeStep(coordinate_index, state);//arbitarily 0 chosen
 
         int prev_time_step;
         int y;
         int x;
-        for (int coordinate = 0; coordinate < pos_coordinates.length; coordinate = coordinate + Coordinates.getLenght()) {
+        int count_of_movables = pos_coordinates.length/Coordinates.getLenght();
+        for (int coordinate = 0; coordinate < count_of_movables; coordinate = coordinate + 1) {
             y = Coordinates.getRow(coordinate, pos_coordinates);
             x = Coordinates.getCol(coordinate, pos_coordinates);
 
-            for (int i = 0; i < number_of_movables; i++) {
-                prev_time_step = closed_states[i][y][x][0];
+            prev_time_step = closed_states[coordinate][y][x][0];
 
-                if (!(prev_time_step > 0 )) {
-                    closed_states[i][y][x][0] = time_state ;
-                }
+            if (!(prev_time_step > 0 )) {
+                closed_states[coordinate][y][x][0] = time_state ;
+            }
 
-                if (prev_time_step < time_state ) {
-                    closed_states[i][y][x][0] = time_state;
-                }else {
-                    System.out.println("#StateSearchFactory: prev_time_step > time_state ");
-                }
+            if (prev_time_step < time_state ) {
+                closed_states[coordinate][y][x][0] = time_state;
+            }else {
+                System.out.println("#StateSearchFactory: prev_time_step > time_state ");
             }
         }
     }
 
-    public static boolean isInClosedSet(int[] coordinates) {
+
+    public static void addToClosedSet(int[][] state) {
         int[] pos_coordinates = SearchMAState.getStateCoordinates(state);
-        int time_state = Coordinates.getTime(0, coordinates);
+        int g_cost_state = SearchMAState.getGCost(state);
+
         int y;
         int x;
-        boolean is_present = false;
-        for (int coordinate = 0; coordinate < pos_coordinates.length; coordinate = coordinate + Coordinates.getLenght()) {
+        int count_of_movables = pos_coordinates.length/Coordinates.getLenght();
+        int[] state_to_close = new int[count_of_movables];
+        int __index = 0;
+        int g_cost_acumulated = 0;
+        for (int coordinate = 0; coordinate < count_of_movables; coordinate = coordinate + 1) {
             y = Coordinates.getRow(coordinate, pos_coordinates);
             x = Coordinates.getCol(coordinate, pos_coordinates);
 
-            for (int i = 0; i < number_of_movables; i++) {
-                //the time_state can not decrease
-                if (closed_states[i][y][x][0] >= time_state) {
-                    is_present = true;
-                }else {
-                    return false;
-                }
+            int index_counter = index_map_cells[y][x];
+            state_to_close[__index++] = index_counter;
+        }
+
+        int hash_key = Arrays.hashCode(state_to_close);
+        if(!closed_states_MA.containsKey(hash_key)){
+            closed_states_MA.put(hash_key, g_cost_state);
+        }else {
+            int __cost = closed_states_MA.get(hash_key);
+            if(closed_states_MA.get(hash_key) > g_cost_state)
+                    closed_states_MA.replace(hash_key, g_cost_state);
+        }
+    }
+
+    public static boolean isInClosedSet(int[][] state) {
+        int g_cost_state = SearchMAState.getGCost(state);
+        int[] pos_coordinates = SearchMAState.getStateCoordinates(state);
+        int y;
+        int x;
+        int count_of_movables = pos_coordinates.length/Coordinates.getLenght();
+        int[] state_to_check = new int[count_of_movables];
+        int __index = 0;
+        int index_counter;
+        for (int coordinate = 0; coordinate < count_of_movables; coordinate = coordinate + 1) {
+            y = Coordinates.getRow(coordinate, pos_coordinates);
+            x = Coordinates.getCol(coordinate, pos_coordinates);
+
+            index_counter = index_map_cells[y][x];
+            state_to_check[__index++] = index_counter;
+        }
+
+        int hash_key = Arrays.hashCode(state_to_check);
+        if(!closed_states_MA.containsKey(hash_key)){
+            return false;
+         }else {
+            int value__ = closed_states_MA.get(hash_key);
+            return closed_states_MA.get(hash_key) <= g_cost_state;
+        }
+    }
+
+    public static boolean isInClosedTimeSet(int[] coordinates) {
+        int[] pos_coordinates = SearchMAState.getStateCoordinates(state);
+        int coordinate_index = 0;
+        int time_state = Coordinates.getTime(coordinate_index, coordinates);
+        int y;
+        int x;
+        boolean is_present = false;
+
+        int count_of_movables = pos_coordinates.length/Coordinates.getLenght();
+        for (int coordinate = 0; coordinate < count_of_movables; coordinate = coordinate + 1) {
+            y = Coordinates.getRow(coordinate, pos_coordinates);
+            x = Coordinates.getCol(coordinate, pos_coordinates);
+
+            //the time_state can not decrease
+            if (closed_states[coordinate][y][x][0] >= time_state) {
+                is_present = true;
+            }else {
+                return false;
             }
         }
         return is_present;
     }
+
 
     public static boolean isStandardNode(int[] pos_coordinates) {
         int prev_time = Coordinates.getTime(0, pos_coordinates);
         int next_time;
 
         if(pos_coordinates.length > Coordinates.getLenght()){
-            for (int coordinate = 1; coordinate < pos_coordinates.length; coordinate = coordinate + Coordinates.getLenght()) {
+            for (int coordinate = 0; coordinate < pos_coordinates.length/Coordinates.getLenght(); coordinate = coordinate + 1) {
                 next_time = Coordinates.getTime(coordinate, pos_coordinates);
                 if (prev_time != next_time)
                     return false;
             }
         }
-
         return true;
     }
 
     public static boolean isIntermediateNode(int[] pos_coordinates) {
         return !isStandardNode(pos_coordinates);
-    }
-
-    private static void discardConflictsMA(LinkedList<int[]> dirs, ArrayDeque<int[]> conflicts_avoidance) {
-        int index_last;
-        int [] temp;
-        while (!conflicts_avoidance.isEmpty()){
-            int[] cell = conflicts_avoidance.pop();
-            for (int i = 0; i < dirs.size(); i++) {
-                if (Arrays.equals(cell, dirs.get(i))){
-                    int[] res = dirs.remove(i);
-                }
-            }
-        }
-        /*
-        ArrayDeque<int[]> neighbours_indexes = new ArrayDeque<>();
-        for (int[] dir : dirs) {
-            if (dir != null) {
-                neighbours_indexes.add(dir);
-            }
-        }
-        */
-    }
-
-    private static void discardConflictingPaths(LinkedList<int[]> directions){
-        //int[][] new_directions = directions;
-        for (int i = 0; i < directions.size(); i++){
-            int[] dir = directions.get(i);
-            int row = Coordinates.getRow(0, dir);
-            int col = Coordinates.getCol(0, dir);
-            int time_step = Coordinates.getTime(0, dir);
-
-            for (int[][] path : conflicting_paths){
-                if(path[row][col] == time_step){
-                    directions.remove(i);
-                    break;
-                }
-            }
-        }
     }
 
     public static ArrayDeque<int[][]> expandStandardState(int[] pos_coordinates, int g_cost, int f_cost) {
@@ -447,8 +489,9 @@ final class StateSearchMAFactory {
         ArrayDeque<int [][]> next_state_nodes = new ArrayDeque<>();
 
         int[] position_to_expand = Coordinates.getCoordinatesAt(index_to_expand, pos_coordinates);
-        LinkedList<int[]> neighbours = MapFixedObjects.getNeighboursMA(position_to_expand, Coordinates.getTime(deadline_constraint));
-        discardConflictingPaths(neighbours);//last step , now the neighbours are valid
+
+        int mark_id = group_marks_ids[index_to_expand];
+        LinkedList<int[]> neighbours = conflict_avoidance_checking_rules.getFreeNeighboursMA(mark_id, position_to_expand, new ArrayDeque<int[]>());
 
         int[] next_state_node;
          for(int [] cell_pos : neighbours){
@@ -460,17 +503,61 @@ final class StateSearchMAFactory {
         return next_state_nodes;
     }
 
+
     public static ArrayDeque<int [][]> expandIntermediateState(int[] pos_coordinates, int g_cost, int f_cost) {
-         int prev_time = Coordinates.getTime(0, pos_coordinates);
+        ArrayDeque<int [][]> next_state_nodes = new ArrayDeque<>();
+
+        int min_time = Integer.MAX_VALUE;
+        int coord_to_expand = -1;
+        int __time ;
+        for (int coordinate = 0; coordinate < pos_coordinates.length/Coordinates.getLenght(); coordinate = coordinate + 1) {
+            __time = Coordinates.getTime(coordinate, pos_coordinates);
+            if(__time < min_time){
+                min_time = __time;
+                coord_to_expand = coordinate;
+            }
+        }
+
+        if(coord_to_expand > -1) {
+            int[] arr = Arrays.copyOf(pos_coordinates, pos_coordinates.length);
+            Coordinates.setTime(coord_to_expand, arr,min_time+1);
+
+            ArrayDeque<int []> conflicts_avoidance = new ArrayDeque<>();
+            for (int index = 0; index < pos_coordinates.length/Coordinates.getLenght(); index = index + 1){
+                int next_time = Coordinates.getTime(index, pos_coordinates);
+                if (min_time < next_time){
+                    int[] __coord = Coordinates.getCoordinatesAt(index, pos_coordinates);
+                    conflicts_avoidance.add(__coord);
+                }
+            }
+            int[] to_expand = Coordinates.getCoordinatesAt(coord_to_expand, pos_coordinates);
+
+            int mark_id = group_marks_ids[coord_to_expand];
+            LinkedList<int[]> neighbours = conflict_avoidance_checking_rules.getFreeNeighboursMA(mark_id, to_expand, conflicts_avoidance);
+
+            int[] next_state_node;
+            for(int [] cell_pos : neighbours){
+                next_state_node = Arrays.copyOf(pos_coordinates, pos_coordinates.length);
+                Coordinates.setCoordinateAtIndex(coord_to_expand, next_state_node, cell_pos);
+                next_state_nodes.add(SearchMAState.createNew(next_state_node, g_cost, f_cost));
+            }
+        }
+        return next_state_nodes;
+    }
+
+    public static ArrayDeque<int [][]> expandIntermediateStatePrevProbablyNotGoodToDel(int[] pos_coordinates, int g_cost, int f_cost) {
+        int prev_time = Coordinates.getTime(0, pos_coordinates);
         int next_time;
         int previouse_coordinate_number;
         ArrayDeque<int [][]> next_state_nodes = new ArrayDeque<>();
-        for (int coordinate = 1; coordinate < pos_coordinates.length; coordinate = coordinate + Coordinates.getLenght()) {
+
+        for (int coordinate = 1; coordinate < pos_coordinates.length/Coordinates.getLenght(); coordinate = coordinate + 1) {
             next_time = Coordinates.getTime(coordinate, pos_coordinates);
             if (prev_time < next_time){
                 previouse_coordinate_number = coordinate - 1;
                 int[] arr = Arrays.copyOf(pos_coordinates, pos_coordinates.length);
                 Coordinates.setTime(previouse_coordinate_number, arr,prev_time+1);
+
                 ArrayDeque<int []> conflicts_avoidance = new ArrayDeque<>();
                 for (int index = 0; index < pos_coordinates.length; index = index + Coordinates.getLenght()){
                     next_time = Coordinates.getTime(index, pos_coordinates);
@@ -480,11 +567,9 @@ final class StateSearchMAFactory {
                 }
                 int[] to_expand = Coordinates.getCoordinatesAt(previouse_coordinate_number, pos_coordinates);
 
-                LinkedList<int[]> neighbours = MapFixedObjects.getNeighboursMA(to_expand, Coordinates.getTime(deadline_constraint));
-                discardConflictingPaths(neighbours);
+                int mark_id = group_marks_ids[previouse_coordinate_number];
+                LinkedList<int[]> neighbours = conflict_avoidance_checking_rules.getFreeNeighboursMA(mark_id, to_expand, conflicts_avoidance);
 
-                discardConflictsMA(neighbours, conflicts_avoidance);
-                assert conflicts_avoidance.size() == 0;
 
                 int[] next_state_node;
                 for(int [] cell_pos : neighbours){
@@ -495,8 +580,9 @@ final class StateSearchMAFactory {
             }
             prev_time = next_time;
         }
-            return next_state_nodes;
+        return next_state_nodes;
     }
+
 
 
 }
