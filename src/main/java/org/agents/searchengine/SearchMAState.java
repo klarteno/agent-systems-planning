@@ -22,7 +22,7 @@ public enum SearchMAState {
         dummy_state[getCostsIndex()] = new int[Costs.values().length];
 
         for (int i = 0; i < number_movables; i++) {
-            Coordinates.setTime(i, dummy_state[getLocationIndex()], Integer.MAX_VALUE);
+            Coordinates.setTime(i, dummy_state[getLocationIndex()], -1);
             Coordinates.setRow(i, dummy_state[getLocationIndex()], Integer.MAX_VALUE);
             Coordinates.setCol(i, dummy_state[getLocationIndex()], Integer.MAX_VALUE);
         }
@@ -125,6 +125,14 @@ public enum SearchMAState {
     public static int  getTimeStep(int movable_index, int[][] state){
         return Coordinates.getTime(movable_index,state[ARRAYPOS.ordinal()]);
     }
+
+    public static void setTimeStep(int[][] state, int time_step){
+        int[] state__ = getStateCoordinates(state);
+        int number_movables = state__.length / Coordinates.getLenght();
+        for (int coordinate = 0; coordinate < number_movables ; coordinate++) {
+            Coordinates.setTime(coordinate, state__, time_step);
+        }
+     }
 
     public static int getGCost(int[][] state) {
         return state[getCostsIndex()][SearchMAState.Costs.COST_G.ordinal()];

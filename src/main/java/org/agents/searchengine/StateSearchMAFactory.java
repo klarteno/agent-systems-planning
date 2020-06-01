@@ -311,6 +311,10 @@ final class StateSearchMAFactory {
         came_from.put(getCellCoordinates(state), getCellCoordinates(previouse_coordinates));
     }
 
+    public static void updateCameFromPrevCell(HashMap<int[],int[]> came_from, int[][] state, int[] previouse_coordinates) {
+        came_from.put(getCellCoordinates(state), previouse_coordinates);
+    }
+
     public static int[] getCellCoordinates(int[][] state){
         return SearchMAState.getStateCoordinates(state);
     }
@@ -480,7 +484,7 @@ final class StateSearchMAFactory {
     public static boolean isIntermediateNode(int[] pos_coordinates) {
         return !isStandardNode(pos_coordinates);
     }
-
+                                                                                            //, set_edge_conflict
     public static ArrayDeque<int[][]> expandStandardState(int[] pos_coordinates, int g_cost, int f_cost) {
         Random random = new Random();
         int index_to_expand = random.nextInt(pos_coordinates.length/Coordinates.getLenght());//or other heuristic to use instead of random
@@ -493,12 +497,17 @@ final class StateSearchMAFactory {
         int mark_id = group_marks_ids[index_to_expand];
         LinkedList<int[]> neighbours = conflict_avoidance_checking_rules.getFreeNeighboursMA(mark_id, position_to_expand, new ArrayDeque<int[]>());
 
+        //if neighbours contains one of the other mark_ids from standard node :
+          //          add it to the set_edge_conflict
+
         int[] next_state_node;
          for(int [] cell_pos : neighbours){
              next_state_node = Arrays.copyOf(pos_coordinates, pos_coordinates.length);
              Coordinates.setCoordinateAtIndex(index_to_expand, next_state_node, cell_pos);
              next_state_nodes.add(SearchMAState.createNew(next_state_node, g_cost, f_cost));
          }
+
+
 
         return next_state_nodes;
     }
@@ -518,11 +527,13 @@ final class StateSearchMAFactory {
             }
         }
 
+
+
         if(coord_to_expand > -1) {
             int[] arr = Arrays.copyOf(pos_coordinates, pos_coordinates.length);
             Coordinates.setTime(coord_to_expand, arr,min_time+1);
 
-            ArrayDeque<int []> conflicts_avoidance = new ArrayDeque<>();
+            ArrayDeque<int []> conflicts_avoidance = new ArrayDeque<>(); //transform it to verstex conflixts and edge conflicts
             for (int index = 0; index < pos_coordinates.length/Coordinates.getLenght(); index = index + 1){
                 int next_time = Coordinates.getTime(index, pos_coordinates);
                 if (min_time < next_time){
@@ -534,6 +545,10 @@ final class StateSearchMAFactory {
 
             int mark_id = group_marks_ids[coord_to_expand];
             LinkedList<int[]> neighbours = conflict_avoidance_checking_rules.getFreeNeighboursMA(mark_id, to_expand, conflicts_avoidance);
+
+           // if neighbours contains a cell at time_step + 1  another cell at time_step
+              //  add edge conflict
+
 
             int[] next_state_node;
             for(int [] cell_pos : neighbours){
