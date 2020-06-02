@@ -4,6 +4,7 @@ package org.agents.searchengine;
  import org.agents.Box;
  import org.agents.markings.Coordinates;
  import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
+ import org.agents.planning.conflicts.dto.SimulationConflict;
 
  import java.util.*;
  import java.util.logging.MemoryHandler;
@@ -58,9 +59,6 @@ public class SearchEngineOD {
     }
 
     public void runOperatorDecomposition(Box box){
-        int y_pos = box.getRowPosition();
-        int x_pos = box.getColumnPosition();
-        int time_pos = box.getTimeStep();
         this.runOperatorDecomposition(box.getCoordinates(), box.getGoalPosition(), new int[0][][]);
     }
 
@@ -73,15 +71,16 @@ public class SearchEngineOD {
         assert ( start_coordinates.length % Coordinates.getLenght() )== 0;
         assert start_coordinates.length/Coordinates.getLenght() > 1;
 
-        HashMap<int[], int[]> intermediate_came_from_standard = new HashMap<>();
-        HashMap<int[], int[]> standard_came_from_intermediate = new HashMap<>();
-        HashMap<int[], int[]> intermediate_came_from_intermediate = new HashMap<>();
+        HashMap<Integer, ArrayList<SimulationConflict>> standard_to_conflicts = new HashMap<>();
+        HashMap<Integer, int[]> intermediate_came_from_standard = new HashMap<>();
+        HashMap<Integer, int[]> standard_came_from_intermediate = new HashMap<>();
+        HashMap<Integer, int[]> intermediate_came_from_intermediate = new HashMap<>();
+
+        ArrayList<int[]> standard_states_expanded_to_del = new ArrayList<>();
+        boolean start_to_add_to_del = false;
 
         ArrayDeque<int[][] > path_to_test = new ArrayDeque<>();
         ArrayDeque<int[]> path = new ArrayDeque<>();
-
-
-
 
         frontier.clear();
         //StateSearchMAFactory.createCostSoFar();
@@ -96,7 +95,7 @@ public class SearchEngineOD {
         //StateSearchMAFactory.putCostSoFar(next_state);
         //StateSearchMAFactory.mark_state_inqueue(next_state,true);
 
-        StateSearchMAFactory.updateCameFromPrevCell(came_from, next_state, next_state);
+        StateSearchMAFactory.updateCameFromPrevCell2(came_from, next_state, next_state);
 
         //init state with dummy variables
         int[][] current_state = null;
@@ -120,10 +119,8 @@ public class SearchEngineOD {
                 if (StateSearchMAFactory.isGoal(SearchMAState.getStateCoordinates(current_state))){
                     this.path = path;
 
-                    int[] next_key;
-
                     path_normal.add(SearchMAState.getStateCoordinates(current_state));
-                    next_key = came_from.get(SearchMAState.getStateCoordinates(current_state));
+                    int[] next_key = came_from.get(SearchMAState.getStateCoordinates(current_state));
 
                     /*
                     path_normal.add(next_key);
@@ -137,14 +134,27 @@ public class SearchEngineOD {
                     int[] next_key2;
                     boolean removed;
                     while (came_from.get(next_key) != start_coordinates){
+
+                        if(Coordinates.getRow(0,next_key) == 3 && Coordinates.getCol(0,next_key) == 5  ){
+                            start_to_add_to_del = true;
+                            standard_states_expanded_to_del.add(next_key);
+                        }
+
+                        if(start_to_add_to_del)
+                            standard_states_expanded_to_del.add(next_key);
+
+
                         next_key2 = next_key;
                         next_key = came_from.get(next_key);
                         path_normal.add(next_key);
                         removed = came_from.remove(next_key2, next_key);
+
+
+                        if(Coordinates.getRow(0, next_key) == 3 && Coordinates.getCol(0, next_key) == 5  ){
+                            start_to_add_to_del = true;
+                            standard_states_expanded_to_del.add(next_key);
+                        }
                     }
-
-
-
                     return;
                     //break;
                 }
@@ -156,7 +166,28 @@ public class SearchEngineOD {
                 int f_cost = h_cost + g_cost;
 
                 int[] pos_coordinates = Arrays.copyOf(SearchMAState.getStateCoordinates(current_state), SearchMAState.getStateCoordinates(current_state).length);
-                ArrayDeque<int[][]> next_intermediate_nodes = StateSearchMAFactory.expandStandardState(pos_coordinates, g_cost, f_cost);
+                //when expanding a standard state the tree rooted at this standard node colects all the conflicts for this tree in standard_to_conflicts
+                ArrayList<SimulationConflict> standard_conflicts;
+                int pos_key = Arrays.hashCode(pos_coordinates);
+                if(standard_to_conflicts.containsKey(pos_key)){
+                    standard_conflicts = standard_to_conflicts.get(pos_key);
+                }else {
+                    standard_conflicts = new ArrayList<>();
+                }
+
+                if(Coordinates.getRow(0,pos_coordinates) == 3 && Coordinates.getCol(0,pos_coordinates) == 5
+                        && Coordinates.getRow(1,pos_coordinates) == 3 && Coordinates.getCol(1, pos_coordinates) == 6 ){
+                    start_to_add_to_del = true;
+                    standard_states_expanded_to_del.add(pos_coordinates);
+                }
+
+                ArrayDeque<int[][]> next_intermediate_nodes = StateSearchMAFactory.expandStandardState(pos_coordinates, g_cost, f_cost, standard_conflicts);
+
+                    standard_to_conflicts.put(pos_key, standard_conflicts);
+
+
+
+
                  //assert StateSearchMAFactory.isIntermediateNode(next_intermediate_nodes);
                 while(!next_intermediate_nodes.isEmpty()){
                     int[][] state = next_intermediate_nodes.pop();
@@ -171,7 +202,31 @@ public class SearchEngineOD {
                 int f_cost = h_cost + g_cost;
 
                 int[] pos_coordinates = Arrays.copyOf(SearchMAState.getStateCoordinates(current_state), SearchMAState.getStateCoordinates(current_state).length);
-                ArrayDeque<int[][]> next_nodes = StateSearchMAFactory.expandIntermediateState(pos_coordinates, g_cost, f_cost);
+
+                //int[] ___intermadiate_state = pos_coordinates;
+                int _intermadiate_state_key = Arrays.hashCode(pos_coordinates);
+                ArrayList<SimulationConflict> standard_node_conflicts = null;
+                if(intermediate_came_from_intermediate.containsKey(_intermadiate_state_key)){
+                    while(intermediate_came_from_intermediate.containsKey(_intermadiate_state_key)){
+                        _intermadiate_state_key =  Arrays.hashCode(intermediate_came_from_intermediate.get(_intermadiate_state_key))  ;
+                    }
+                    int[] prev_standard_state__ = intermediate_came_from_standard.get(_intermadiate_state_key);
+                    int prev_standard_state_key = Arrays.hashCode(prev_standard_state__);
+                    standard_node_conflicts = standard_to_conflicts.get(prev_standard_state_key);
+                }
+                if(intermediate_came_from_standard.containsKey(_intermadiate_state_key)){
+                    int[] prev_standard_state__ = intermediate_came_from_standard.get(_intermadiate_state_key);
+                    int prev_standard_state_key = Arrays.hashCode(prev_standard_state__);
+                    standard_node_conflicts = standard_to_conflicts.get(Arrays.hashCode(prev_standard_state__));
+                }
+
+                assert standard_node_conflicts != null;
+
+                ArrayDeque<int[][]> next_nodes = StateSearchMAFactory.expandIntermediateState(pos_coordinates, g_cost, f_cost, standard_node_conflicts);
+                int ___key = Arrays.hashCode(pos_coordinates);
+                if (standard_node_conflicts.size() > 0){
+                    standard_to_conflicts.put(___key, standard_node_conflicts);
+                }
 
                 for (int[][] state : next_nodes) {
                     int[] pos = SearchMAState.getStateCoordinates(state);
@@ -180,15 +235,17 @@ public class SearchEngineOD {
                         int[] next_time_step_state = SearchMAState.getStateCoordinates(state);
                         if (!StateSearchMAFactory.isInClosedSet(state)){
                             StateSearchMAFactory.updateCameFromPrevCell(standard_came_from_intermediate, state, current_state);
-                            int[] intermadiate_state = standard_came_from_intermediate.get(pos);
+                            int _pos_key = Arrays.hashCode(pos);
+                            int[] intermadiate_state = standard_came_from_intermediate.get(_pos_key);
+                            int intermadiate_state_key = Arrays.hashCode(intermadiate_state);
                             int[] intermadiate_state2 = intermadiate_state;
 
-                            while(intermediate_came_from_intermediate.containsKey(intermadiate_state)){
+                            while(intermediate_came_from_intermediate.containsKey(intermadiate_state_key)){
                                 intermadiate_state2 = intermadiate_state;
-                                intermadiate_state = intermediate_came_from_intermediate.get(intermadiate_state);
+                                intermadiate_state_key =  Arrays.hashCode(intermediate_came_from_intermediate.get(intermadiate_state_key)) ;
                                 //intermediate_came_from_intermediate.remove(intermadiate_state2,intermadiate_state);
                             }
-                            prev_standard_state = intermediate_came_from_standard.get(intermadiate_state);
+                            prev_standard_state = intermediate_came_from_standard .get(intermadiate_state_key);
                             //intermediate_came_from_standard.remove(intermadiate_state, prev_standard_state);
                             StateSearchMAFactory.updateCameFromPrevCell(came_from, state, prev_standard_state);
                                  //how to prune

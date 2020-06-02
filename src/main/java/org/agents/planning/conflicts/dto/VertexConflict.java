@@ -2,6 +2,7 @@ package org.agents.planning.conflicts.dto;
 
 import org.agents.markings.Coordinates;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -47,4 +48,16 @@ public final class VertexConflict extends SimulationConflict{
 
         return max_coordinate_deadline;
     }
+
+    @Override
+    public ArrayDeque<int[]> getCoordinatesToAvoid(){
+        ArrayDeque<int[]> list_to_avoid = new ArrayDeque<>();
+        for (Integer key : conflicted_ids_to_cells.keySet()){
+            ArrayList<int[]> conflicted_vertices = conflicted_ids_to_cells.get(key);
+            list_to_avoid.addAll(conflicted_vertices);
+        }
+
+        return list_to_avoid;
+    }
+
 }

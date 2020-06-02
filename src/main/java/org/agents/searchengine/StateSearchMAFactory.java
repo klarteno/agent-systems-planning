@@ -5,11 +5,14 @@ import org.agents.Box;
 import org.agents.MapFixedObjects;
 import org.agents.markings.Coordinates;
 import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
+import org.agents.planning.conflicts.dto.EdgeConflict;
+import org.agents.planning.conflicts.dto.SimulationConflict;
+import org.agents.planning.conflicts.dto.VertexConflict;
 
 import java.io.Serializable;
 import java.util.*;
 
-final class StateSearchMAFactory {
+public final class StateSearchMAFactory {
     public static final int G_COST = 0;
     public static final int F_COST = 1;
     public static final int IN_HEAP = 2;
@@ -307,8 +310,12 @@ final class StateSearchMAFactory {
         return SearchMAState.getGCost(state);
     }
 
-    public static void updateCameFromPrevCell(HashMap<int[],int[]> came_from, int[][] state, int[][] previouse_coordinates) {
+    public static void updateCameFromPrevCell2(HashMap<int[],int[]> came_from, int[][] state, int[][] previouse_coordinates) {
         came_from.put(getCellCoordinates(state), getCellCoordinates(previouse_coordinates));
+    }
+
+    public static void updateCameFromPrevCell(HashMap<Integer,int[]> came_from, int[][] state, int[][] previouse_coordinates) {
+        came_from.put( Arrays.hashCode(getCellCoordinates(state)) , getCellCoordinates(previouse_coordinates));
     }
 
     public static void updateCameFromPrevCell(HashMap<int[],int[]> came_from, int[][] state, int[] previouse_coordinates) {
@@ -484,10 +491,84 @@ final class StateSearchMAFactory {
     public static boolean isIntermediateNode(int[] pos_coordinates) {
         return !isStandardNode(pos_coordinates);
     }
-                                                                                            //, set_edge_conflict
-    public static ArrayDeque<int[][]> expandStandardState(int[] pos_coordinates, int g_cost, int f_cost) {
+
+
+
+     //if neighbours contains one of the other mark_ids from standard node :
+    //add it to the set of SimulationConflicts
+    //edge conflict only for overstepped movable object
+    //vertex conflicts for all others movable objects
+    public static void setConflictsStandardStateExpansion(int index_to_expand, int[] pos_coordinates, int [] cell_pos_neighbour, ArrayList<SimulationConflict> standard_to_conflicts){
+        int row_neigbour = Coordinates.getRow(cell_pos_neighbour);
+        int col_neigbour = Coordinates.getCol(cell_pos_neighbour);
+        int time_neigbour = Coordinates.getTime(cell_pos_neighbour);
+
+        int number_of_coordinates = pos_coordinates.length / Coordinates.getLenght();
+        int[] position_to_expand = Coordinates.getCoordinatesAt(index_to_expand, pos_coordinates);
+
+        boolean found_e = false;
+        boolean found_v = false;
+        for (int i = 0; i < number_of_coordinates; i++) {
+            if(i == index_to_expand) continue;
+
+
+            int row_coord = Coordinates.getRow(i, pos_coordinates);
+            int col_coord = Coordinates.getCol(i, pos_coordinates);
+            int time_coord = Coordinates.getTime(i, pos_coordinates);
+
+            //do not impose constraints on the previouse expanded cell_positions
+            if(time_coord == time_neigbour) continue;
+
+            if ( row_coord == row_neigbour && col_coord == col_neigbour) {
+                int[] cell_pos_neighbour1;
+                int[] position_to_expand1;
+                if(standard_to_conflicts.size() > 0){
+                for (SimulationConflict simulationConflict : standard_to_conflicts) {
+                    if (simulationConflict instanceof EdgeConflict) {
+                        int mark_id_conflicted = simulationConflict.getMarkedId();
+                        if (mark_id_conflicted == group_marks_ids[i]) {
+                            found_e = true;
+                            cell_pos_neighbour1 = Coordinates.createCoordinates(time_coord, Coordinates.getRow(cell_pos_neighbour), Coordinates.getCol(cell_pos_neighbour));
+                            position_to_expand1 = Coordinates.createCoordinates( time_coord +1, Coordinates.getRow(position_to_expand), Coordinates.getCol(position_to_expand));
+                            ((EdgeConflict) simulationConflict).addConflictedEdge(group_marks_ids[index_to_expand], cell_pos_neighbour1, position_to_expand1);
+                        }
+                    }
+                }
+            }
+                if (!found_e) {
+                    EdgeConflict edge_conflict_found = new EdgeConflict(group_marks_ids[i]);
+                    cell_pos_neighbour1 = Coordinates.createCoordinates(time_coord, Coordinates.getRow(cell_pos_neighbour), Coordinates.getCol(cell_pos_neighbour));
+                    position_to_expand1 = Coordinates.createCoordinates( time_coord +1, Coordinates.getRow(position_to_expand), Coordinates.getCol(position_to_expand));
+                    ((EdgeConflict) edge_conflict_found).addConflictedEdge(group_marks_ids[index_to_expand], cell_pos_neighbour1, position_to_expand1);//the time steps should be reversed
+
+                    standard_to_conflicts.add(edge_conflict_found);
+                }
+                found_e = false;
+            }
+
+            if(standard_to_conflicts.size() > 0){
+                for (SimulationConflict simulationConflict : standard_to_conflicts){
+                    if ( simulationConflict instanceof VertexConflict ){
+                        int mark_id_conflicted = simulationConflict.getMarkedId();
+                        if(mark_id_conflicted == group_marks_ids[i]){
+                            found_v = true;
+                            ((VertexConflict)simulationConflict).addConflictedCell(group_marks_ids[index_to_expand], cell_pos_neighbour);////the time steps should be increased
+                        }
+                    }
+                }
+            }if (!found_v) {
+                VertexConflict vertex_conflict_found = new VertexConflict(group_marks_ids[i]);
+                vertex_conflict_found.addConflictedCell(group_marks_ids[index_to_expand], cell_pos_neighbour);////the time steps should be increased
+                standard_to_conflicts.add(vertex_conflict_found);
+            }
+            found_v = false;
+        }
+    }
+
+    public static ArrayDeque<int[][]> expandStandardState(int[] pos_coordinates, int g_cost, int f_cost, ArrayList<SimulationConflict> standard_to_conflicts) {
         Random random = new Random();
-        int index_to_expand = random.nextInt(pos_coordinates.length/Coordinates.getLenght());//or other heuristic to use instead of random
+        int number_of_coordinates = pos_coordinates.length / Coordinates.getLenght();
+        int index_to_expand = random.nextInt(number_of_coordinates);//or other heuristic to use instead of random
 
         int prev_time = Coordinates.getTime(index_to_expand, pos_coordinates);
         ArrayDeque<int [][]> next_state_nodes = new ArrayDeque<>();
@@ -497,59 +578,75 @@ final class StateSearchMAFactory {
         int mark_id = group_marks_ids[index_to_expand];
         LinkedList<int[]> neighbours = conflict_avoidance_checking_rules.getFreeNeighboursMA(mark_id, position_to_expand, new ArrayDeque<int[]>());
 
-        //if neighbours contains one of the other mark_ids from standard node :
-          //          add it to the set_edge_conflict
+        for(int [] cell_pos_neighbour : neighbours){
+            setConflictsStandardStateExpansion(index_to_expand, pos_coordinates, cell_pos_neighbour, standard_to_conflicts);
 
-        int[] next_state_node;
-         for(int [] cell_pos : neighbours){
-             next_state_node = Arrays.copyOf(pos_coordinates, pos_coordinates.length);
-             Coordinates.setCoordinateAtIndex(index_to_expand, next_state_node, cell_pos);
-             next_state_nodes.add(SearchMAState.createNew(next_state_node, g_cost, f_cost));
+            int[] next_state_node = Arrays.copyOf(pos_coordinates, pos_coordinates.length);
+            Coordinates.setCoordinateAtIndex(index_to_expand, next_state_node, cell_pos_neighbour);
+            next_state_nodes.add(SearchMAState.createNew(next_state_node, g_cost, f_cost));
          }
-
-
 
         return next_state_nodes;
     }
 
-
-    public static ArrayDeque<int [][]> expandIntermediateState(int[] pos_coordinates, int g_cost, int f_cost) {
-        ArrayDeque<int [][]> next_state_nodes = new ArrayDeque<>();
-
+    public static ArrayDeque<int [][]> expandIntermediateState(int[] pos_coordinates, int g_cost, int f_cost, ArrayList<SimulationConflict> standard_to_conflicts) {
         int min_time = Integer.MAX_VALUE;
-        int coord_to_expand = -1;
+        ArrayList<Integer> coord_candidates = new ArrayList<>();
+        int number__of__movables = pos_coordinates.length / Coordinates.getLenght();
+
         int __time ;
-        for (int coordinate = 0; coordinate < pos_coordinates.length/Coordinates.getLenght(); coordinate = coordinate + 1) {
+        for (int coordinate = 0; coordinate < number__of__movables; coordinate = coordinate + 1) {
             __time = Coordinates.getTime(coordinate, pos_coordinates);
             if(__time < min_time){
                 min_time = __time;
-                coord_to_expand = coordinate;
             }
         }
 
+        for (int coordinate = 0; coordinate < number__of__movables; coordinate = coordinate + 1) {
+            __time = Coordinates.getTime(coordinate, pos_coordinates);
+            if(__time == min_time){
+                coord_candidates.add(coordinate);
+            }
+        }
 
+        Random random = new Random();
+        int coord_to_expand = -1;
+        if (coord_candidates.size() > 0){
+            int __index = random.nextInt(coord_candidates.size());//or other heuristic to use instead of random
+            coord_to_expand = coord_candidates.get(__index);
+        }
+
+        ArrayDeque<int [][]> next_state_nodes = new ArrayDeque<>();
 
         if(coord_to_expand > -1) {
-            int[] arr = Arrays.copyOf(pos_coordinates, pos_coordinates.length);
-            Coordinates.setTime(coord_to_expand, arr,min_time+1);
-
+            //int[] arr = Arrays.copyOf(pos_coordinates, pos_coordinates.length);
+            //Coordinates.setTime(coord_to_expand, arr,min_time+1);
             ArrayDeque<int []> conflicts_avoidance = new ArrayDeque<>(); //transform it to verstex conflixts and edge conflicts
-            for (int index = 0; index < pos_coordinates.length/Coordinates.getLenght(); index = index + 1){
+            /*
+            for (int index = 0; index < number__of__movables; index = index + 1){
                 int next_time = Coordinates.getTime(index, pos_coordinates);
                 if (min_time < next_time){
                     int[] __coord = Coordinates.getCoordinatesAt(index, pos_coordinates);
                     conflicts_avoidance.add(__coord);
                 }
             }
+            */
             int[] to_expand = Coordinates.getCoordinatesAt(coord_to_expand, pos_coordinates);
-
             int mark_id = group_marks_ids[coord_to_expand];
-            LinkedList<int[]> neighbours = conflict_avoidance_checking_rules.getFreeNeighboursMA(mark_id, to_expand, conflicts_avoidance);
 
-           // if neighbours contains a cell at time_step + 1  another cell at time_step
-              //  add edge conflict
+            for ( SimulationConflict simulationConflict  : standard_to_conflicts ){
+                if(simulationConflict.getMarkedId() == mark_id ){
+                    ArrayDeque<int []> coord = simulationConflict.getCoordinatesToAvoid();
+                    conflicts_avoidance.addAll(coord);
+                }
+            }
 
+        LinkedList<int[]> neighbours = conflict_avoidance_checking_rules.getFreeNeighboursMA(mark_id, to_expand, conflicts_avoidance);
 
+        for(int[]  cell_pos_neighbour : neighbours){
+            //it imposes the same constraints but not on the already expanded positions
+            setConflictsStandardStateExpansion(coord_to_expand, pos_coordinates, cell_pos_neighbour, standard_to_conflicts);
+        }
             int[] next_state_node;
             for(int [] cell_pos : neighbours){
                 next_state_node = Arrays.copyOf(pos_coordinates, pos_coordinates.length);
@@ -597,9 +694,6 @@ final class StateSearchMAFactory {
         }
         return next_state_nodes;
     }
-
-
-
 }
 
 

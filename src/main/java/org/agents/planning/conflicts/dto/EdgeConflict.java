@@ -2,6 +2,7 @@ package org.agents.planning.conflicts.dto;
 
 import org.agents.markings.Coordinates;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -15,11 +16,10 @@ public final class EdgeConflict extends SimulationConflict {
     //edge is the connection betweeen two cell location
     //coordinate_edge_start is the start of the edge conflicted
     //coordinates_edge_end is the end of the edge conflicted
-    //mark_id_start is the movable (agent or box) id at the start of the edge conflicted
-    //mark_id_end is the movable (agent or box) id at the end of the edge conflicted
+    //movable_mark_id is the movable (agent or box) id at the start of the edge conflicted
+    //mark_id_conflicted is the movable (agent or box) id at the end of the edge conflicted
     public EdgeConflict(int movable_mark_id) {
         super(movable_mark_id);
-
         conflicted_ids_to_edges = new HashMap<>();
     }
 
@@ -67,5 +67,22 @@ public final class EdgeConflict extends SimulationConflict {
     private static int getTimeEdgeEnd(int[][] edge){
         return  Coordinates.getTime(edge[COORDINATE_END]);
     }
+
+    @Override
+   public ArrayDeque<int[]> getCoordinatesToAvoid(){
+        ArrayDeque<int[]> list_to_avoid = new ArrayDeque<>();
+        for(Integer key : this.conflicted_ids_to_edges.keySet()){
+           ArrayList<int[][]> list_edges = conflicted_ids_to_edges.get(key);
+           for (int[][] edge : list_edges){
+               int[] cell_pos__ = edge[COORDINATE_END];
+               list_to_avoid.add(cell_pos__);
+           }
+       }
+       return list_to_avoid;
+   }
+
 }
+
+
+
 
