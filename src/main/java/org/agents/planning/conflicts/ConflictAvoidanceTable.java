@@ -36,6 +36,9 @@ public final class ConflictAvoidanceTable implements Serializable {
 
        // return this.tracked_groups.getAllUnGroupedIDs().toArray(new Integer[0]);
     }
+    public Set<Integer> getAllUnGroupedIDsAsSet(){
+        return this.tracked_groups.getAllUnGroupedIDs();
+     }
 
     public Set<Integer> getGroupOf(int mark_id) {
         Set<Integer> group  = new HashSet<>();
@@ -103,6 +106,7 @@ public final class ConflictAvoidanceTable implements Serializable {
         for (int i = 1; i < ungrouped_movables.length; i++) {
             next_marked = ungrouped_movables[i];
             int[][] next_path = this.pathsStoreQuerying.getPathCloneFor(next_marked);
+            //is conflicted edge
             if(PathsStoreQuerying.isOverlap(prev_path, next_path)){
                 colided_ids[0] = prev_marked;
                 colided_ids[1] = next_marked;
@@ -151,36 +155,6 @@ public final class ConflictAvoidanceTable implements Serializable {
             pathsStoreQuerying.setCellLocationOf(group_marks, cell_locations);
         }
     }
-
-    /*
-    public int removePathConflictsToDel(int start_time_step, Vector<int[]> path, ArrayList<int[]> next_conflicts){
-        next_conflicts.clear();
-        int[] next_cell_location;
-        int y_loc;
-        int x_loc;
-        int time;
-        int next_id;
-        for (int id = 0; id < table_ids.keySet().size(); id++) {
-            next_id = table_ids.get(id);
-            time = start_time_step;
-            for (int j = 0; j < path.size(); j++) {
-                next_cell_location = path.get(j);
-                y_loc = next_cell_location[0];
-                x_loc = next_cell_location[1];
-                if(table_for_paths[next_id][y_loc][x_loc] == time){
-                    next_conflicts.add(path.get(j));
-                    path.remove(j);
-                }
-                time++;
-            }
-            if (next_conflicts.size() > 0){
-                //movable_conflicted[0] = id;
-                return id;
-            }
-        }
-        return -1;
-    }*/
-
 
     //removes the elements from the input path that are in conflict with the conflict table avoidance
     //next_conflicts is the elemnts that are in conflict conform CAT
@@ -286,10 +260,46 @@ public final class ConflictAvoidanceTable implements Serializable {
     public int[][][] getMarkedPaths(int[] group_marks) {
         return  this.pathsStoreQuerying.getPathsForGroup(group_marks);
     }
+    public int[][][] getMarkedPaths(Set<Integer> group_marks) {
+        return  this.pathsStoreQuerying.getPathsForGroup(group_marks);
+    }
 
     //return matrixes indexed by mark id from group_marks ,each matrix stores the time step for a coordinate for a movable
     //return paths are clones
     public int[][][] getMarkedPathsCloned(int[] group_marks) {
         return  this.pathsStoreQuerying.getPathsCloneForGroup(group_marks);
+    }
+    public ArrayList[] getAllPathsFromtable(){
+        int[] groups = this.getAllUnGroupedIDs();
+        Set<Integer> all_groups = new HashSet<>();
+        for (int i = 0; i < groups.length; i++) {
+            all_groups.add(i);
+        }
+
+        ArrayList<Set<Integer>> grouped_movables = new ArrayList<>();
+        ArrayList<int[][][]> grouped_paths = new ArrayList<>();
+
+        Set<Integer> all__groups = this.getAllUnGroupedIDsAsSet();
+
+        for (int movable : groups) {
+            if (all_groups.contains(movable)) {
+                if (this.isUnGrouped(movable)) {
+                    Set<Integer> group_movables = this.getGroupOf(movable);
+                    all_groups.removeAll(group_movables);
+                    int[][][] paths = this.getMarkedPaths(group_movables);
+                    grouped_movables.add(group_movables);
+                    grouped_paths.add(paths);
+                } else {
+                    Set<Integer> ___movable = Collections.singleton(movable);
+                    int[][][] paths = this.getMarkedPaths(___movable);
+                    grouped_movables.add(___movable);
+                    grouped_paths.add(paths);
+                    all_groups.removeAll(___movable);
+                }
+            }
+
+        }
+
+        return new ArrayList[]{grouped_movables, grouped_paths};
     }
 }

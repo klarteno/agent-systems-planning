@@ -248,6 +248,18 @@ final class PathsStoreQuerying implements Serializable {
         return group_paths;
     }
 
+    public int[][][] getPathsForGroup(Set<Integer> group_marks) {
+        int rows = getPathsRowsNo();
+        int[][][] group_paths = new int[group_marks.size()][rows][];
+        int[][] next_path;
+
+        for (Integer i : group_marks) {
+            next_path = getPathFor(i);
+            group_paths[i] = next_path;
+        }
+
+        return group_paths;
+    }
 
 
     public  int getPathLenght(int mark_id) {

@@ -9,14 +9,12 @@ import org.agents.planning.schedulling.TrackedGroups;
 import java.util.*;
 
 public final class ConflictAvoidanceCheckingRules {
-    private final LinkedList<TaskScheduled> task_scheduled_list;
+    private final ArrayList<TaskScheduled> task_scheduled_list;
     private final Synchronization synchronised_time;
 
     private final IllegalPathsStore illegal_paths_store;
     //TO DO : extend to multiple ConflictAvoidanceTable
     private final ConflictAvoidanceTable conflict_avoidance_table;
-
-
 
     public enum SearchState {
         NO_CHECK_CONFLICTS,
@@ -28,7 +26,7 @@ public final class ConflictAvoidanceCheckingRules {
     public ConflictAvoidanceCheckingRules(TrackedGroups trackedGroups, Synchronization synchronised_time) {
         this.conflict_avoidance_table = new ConflictAvoidanceTable(trackedGroups);
         this.illegal_paths_store = new IllegalPathsStore(this.conflict_avoidance_table );
-        this.task_scheduled_list = new LinkedList<>();
+        this.task_scheduled_list = new ArrayList<>();
         this.synchronised_time = synchronised_time;
     }
 
@@ -41,9 +39,48 @@ public final class ConflictAvoidanceCheckingRules {
         return false;
     }
 
+    public boolean clearTaskScheduledList(){
+        if(this.task_scheduled_list.size()>0){
+            this.task_scheduled_list.clear();
+            return true;
+        }
+        return false;
+    }
 
-    public ConflictAvoidanceTable getConflictsTable(){
-        return this.conflict_avoidance_table;
+    public boolean replaceTaskScheduledFor(int[] group, ArrayDeque<int[]> new_path){
+        boolean found = false;
+        for (TaskScheduled taskScheduled : this.task_scheduled_list){
+            if (taskScheduled.isTheSameGroupAs(group)){
+                found = true;
+                taskScheduled.replacePathsFor(group, new_path);
+            }else {
+
+            }
+        }
+        return found;
+    }
+
+    public boolean addPathsToTaskScheduledPahs(int[] group1, int[] group2, int[] group_marks_total, ArrayDeque<int[]> new_path_group){
+        boolean found = false;
+        boolean found1 = removeTaskScheduledFor(group1);
+        boolean found2 = removeTaskScheduledFor(group2);
+        found = found1 || found2;
+
+        TaskScheduled taskScheduled = new TaskScheduled(group_marks_total, new_path_group);
+        this.task_scheduled_list.add(taskScheduled);
+
+        return found;
+    }
+
+    public boolean removeTaskScheduledFor(int[] group){
+        boolean found = false;
+        for (TaskScheduled taskScheduled : this.task_scheduled_list){
+            if (taskScheduled.isTheSameGroupAs(group)){
+                found = true;
+                this.task_scheduled_list.remove(taskScheduled);
+            }
+        }
+        return found;
     }
 
     //gets the paths from TaskScheduled for each movable and marks these in the path store
@@ -73,18 +110,21 @@ public final class ConflictAvoidanceCheckingRules {
     }
 
     //returns valid final paths
-    public LinkedList<TaskScheduled> getValidTasks() {
-        //getAllPathsFromtable();
-
-        return this.task_scheduled_list;
+    public ArrayList<TaskScheduled> getValidTasks() {
+        //TO CHOOSE FROM BELLOW
+        /* getAllPathsFromtableDubFromconflict_avoidance_table()*/
+        /*
+        ArrayList[] result = this.conflict_avoidance_table.getAllPathsFromtable();
+        ArrayList<Set<Integer>> grouped_movables = result[0];
+        ArrayList<int[][][]> grouped_paths = result[1];
+        */
+         return this.task_scheduled_list;
     }
 
-     public void getSSSSS(){
-         int[] groups = this.conflict_avoidance_table.getAllUnGroupedIDs();
-         //conflict_avoidance_table.g
 
-     }
-
+    public ConflictAvoidanceTable getConflictsTable(){
+        return this.conflict_avoidance_table;
+    }
 
     public IllegalPathsStore getIllegalPathsStore() { return this.illegal_paths_store; }
 
@@ -259,8 +299,6 @@ public final class ConflictAvoidanceCheckingRules {
             case NO_CHECK_CONFLICTS: return -1;
             case AVOID_PATH: return -1;
         }
-
-
 
         int[] deadline_coordinate = this.illegal_paths_store.getIllegalPath(mark_id).getDeadlineConstraint();
         int time_deadline_constraint = Coordinates.getTime(deadline_coordinate);

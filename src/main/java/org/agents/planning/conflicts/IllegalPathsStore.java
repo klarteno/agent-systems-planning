@@ -69,6 +69,7 @@ public final class IllegalPathsStore {
         return illegal_path;
     }
 
+    //to use
     //mark_ids gets stored in SimulationConflict
     public final ArrayList<SimulationConflict> getConflicts(int[] mark_ids, int[] groups){
         ArrayList<SimulationConflict> conflicts_set = new ArrayList<>();

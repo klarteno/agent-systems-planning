@@ -56,16 +56,19 @@ public final class GroupIndependenceDetection {
             int [] group_two = grouptwo.stream().mapToInt(Integer::intValue).toArray();
 
             int[][][] conflicting_path;
+            boolean is_removed;
             if (this.conflict_avoidance_table.isNewConflict(group_one, group_two)){
                 conflicting_path = this.conflict_avoidance_table.getMarkedPaths(group_two);
                 ArrayDeque<int[]> new_path_one = this.group_search_strategy.runGroupSearch(group_one, group_two, conflicting_path);
                 assert new_path_one != null;
                 int path_lenght_one = this.conflict_avoidance_table.getPathLenght(group_one);
 
+                boolean is_replaced;
                 if (path_lenght_one == new_path_one.size()){
                     //replace with new path optimal
                     pathProcessing.resetTimeSteps(new_path_one);
-
+                    //this.conflict_avoidance_checking_rules.clearTaskScheduledList();
+                    is_replaced = this.conflict_avoidance_checking_rules.replaceTaskScheduledFor(group_one, new_path_one);
                     this.conflict_avoidance_table.replaceMarkedPathFor(group_one, new_path_one);
                     //keep the  other path
                     isColided = this.conflict_avoidance_table.setNextConflictedMovables(colided_ids);//colided_ids registes conflicts
@@ -81,14 +84,19 @@ public final class GroupIndependenceDetection {
                     if (path_lenght_two == new_path_two.size()){
                         //replace with new path optimal
                         pathProcessing.resetTimeSteps(new_path_two);
+                        is_replaced = this.conflict_avoidance_checking_rules.replaceTaskScheduledFor(group_two, new_path_two);
                         this.conflict_avoidance_table.replaceMarkedPathFor(group_two, new_path_two);
                         //keep the  other path
                         isColided = this.conflict_avoidance_table.setNextConflictedMovables(colided_ids);
                     }else {
                         //the paths groups are removed when grouped
                         int[] group_marks_total = this.conflict_avoidance_table.groupIDs(group_one, group_two);
+                        is_removed = this.conflict_avoidance_checking_rules.removeTaskScheduledFor(group_marks_total);
                         ArrayDeque<int[]> paths = this.group_search_strategy.runGroupSearchMA(group_marks_total);
                         pathProcessing.resetTimeSteps(paths);
+                        //remove later when conflicted
+                        //this.conflict_avoidance_checking_rules.clearTaskScheduledList();
+                        boolean is_added = this.conflict_avoidance_checking_rules.addPathsToTaskScheduledPahs(group_one, group_two, group_marks_total, paths);
                         this.conflict_avoidance_table.addMarkedPathsFor(group_marks_total, paths);
                         isColided = this.conflict_avoidance_table.setNextConflictedMovables(colided_ids);
                     }
@@ -96,8 +104,11 @@ public final class GroupIndependenceDetection {
             }
             else{
                 int[] group_marks_total = this.conflict_avoidance_table.groupIDs(group_one, group_two);
+                is_removed = this.conflict_avoidance_checking_rules.removeTaskScheduledFor(group_marks_total);
                 ArrayDeque<int[]> paths = this.group_search_strategy.runGroupSearchMA(group_marks_total);
                 pathProcessing.resetTimeSteps(paths);
+                //remove later when conflicted
+                this.conflict_avoidance_checking_rules.addPathsToTaskScheduledPahs(group_one, group_two, group_marks_total, paths);
                 this.conflict_avoidance_table.addMarkedPathsFor(group_marks_total, paths);
                 isColided = this.conflict_avoidance_table.setNextConflictedMovables(colided_ids);
             }
@@ -105,56 +116,6 @@ public final class GroupIndependenceDetection {
 
         return isColided;
     }
-/*
-    //it runs independece detection only for single agents and merges them if conflicted
-    //to keep if used later
-    private boolean startIDForSingleAgents(int movable_id_one, int movable_id_two) {
-        boolean isColided;
-        if ( this.conflict_avoidance_table.isUnGrouped(movable_id_one)&&this.conflict_avoidance_table.isUnGrouped(movable_id_two)){
-            int path_lenght_one = this.conflict_avoidance_table.getPathLenght(movable_id_one);
-
-            ArrayDeque<int[]> path_one = this.search_strategy.runSearchConstrained(movable_id_one, this.conflict_avoidance_table);
-            assert path_one != null;
-
-            if (path_lenght_one == path_one.size()){
-                //replace with new path optimal
-                 this.conflict_avoidance_table.replaceMarkedPathFor(movable_id_one, path_one);
-                //keep the  other path
-                isColided = this.conflict_avoidance_table.getNextConflictedMovables(colided_ids);
-                return isColided;
-
-            }else {
-                int path_lenght_two = this.conflict_avoidance_table.getPathLenght(movable_id_two);
-                ArrayDeque<int[]> path_two = this.search_strategy.runSearchConstrained(movable_id_two, this.conflict_avoidance_table);
-                if (path_lenght_two == path_two.size()){
-                    //replace with new path optimal
-                    this.conflict_avoidance_table.replaceMarkedPathFor(movable_id_two, path_two);
-                    //keep the  other path
-                    isColided = this.conflict_avoidance_table.getNextConflictedMovables(colided_ids);
-                    return isColided;
-                }else {
-                    this.conflict_avoidance_table.removeMarkedPath(movable_id_one);
-                    this.conflict_avoidance_table.removeMarkedPath(movable_id_two);
-
-                    this.search_strategy.runGroupSearchMA(movable_id_one, movable_id_two);
-                    this.conflict_avoidance_table.groupIDs(movable_id_one, movable_id_two);
-                    isColided = this.conflict_avoidance_table.getNextConflictedMovables(colided_ids);
-                    return isColided;
-                }
-            }
-
-
-        }else{
-            this.conflict_avoidance_table.groupIDs(movable_id_one,movable_id_two);
-            this.search_strategy.runGroupSearchMA(movable_id_one, movable_id_two);
-
-            isColided = this.conflict_avoidance_table.getNextConflictedMovables(colided_ids);
-
-
-        }
-        return isColided;
-    }
-    */
 }
 
 

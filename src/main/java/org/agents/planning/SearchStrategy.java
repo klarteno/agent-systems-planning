@@ -109,13 +109,14 @@ public final class SearchStrategy {
 
     //this SearchStrategy will set the SynchronizedTime  in the ConflictAvoidanceCheckingRules , ConflictAvoidanceCheckingRules maintains the overall time clock
     //and gives a final TaskScheduled with paths from the centralized search
-    public LinkedList<TaskScheduled> runCentralizedSearch(ArrayDeque<TaskScheduled> paths_found) throws IOException {
+    public ArrayList<TaskScheduled> runCentralizedSearch(ArrayDeque<TaskScheduled> paths_found) throws IOException {
         while (!paths_found.isEmpty())
             this.avoidanceCheckingRules.addTaskScheduledPaths(paths_found.pop());
 
         GroupIndependenceDetection searchGroupStrategy = new GroupIndependenceDetection(this.avoidanceCheckingRules);
         boolean are_paths_found = searchGroupStrategy.runIndependenceDetection();
-        LinkedList<TaskScheduled> task_result = new LinkedList<>();
+
+        ArrayList<TaskScheduled> task_result = new ArrayList<>();
         if (are_paths_found)
             task_result = this.avoidanceCheckingRules.getValidTasks();
 
