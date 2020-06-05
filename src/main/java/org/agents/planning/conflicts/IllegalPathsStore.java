@@ -74,6 +74,10 @@ public final class IllegalPathsStore {
         ArrayList<SimulationConflict> conflicts_set = new ArrayList<>();
         ArrayList<SimulationConflict> id_conflicts;
 
+        if (groups.length == 0){
+            return conflicts_set;
+        }
+
         for (int mark_id : mark_ids) {
             id_conflicts = getAllConflicts(mark_id, groups);
             conflicts_set.addAll(id_conflicts);
@@ -88,9 +92,6 @@ public final class IllegalPathsStore {
         EdgeConflict edgeConflicts = new EdgeConflict(mark_id);
         VertexConflict vertexConflicts = new VertexConflict(mark_id);
 
-        if (groups.length == 0){
-            return conflicts_set;
-        }
 
         int[][][] groups_paths = this.conflict_avoidance_table.getMarkedPaths(groups);
         int[][][] paths_to_check_temp = this.conflict_avoidance_table.getMarkedPaths(new int[]{mark_id});

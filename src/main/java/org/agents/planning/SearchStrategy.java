@@ -11,6 +11,7 @@ import org.agents.searchengine.PathProcessing;
 import org.agents.searchengine.SearchEngineSA;
 import org.agents.searchengine.normal.SearchEngineSANormal;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ public final class SearchStrategy {
     public SearchStrategy(MovablesScheduling movablesScheduling, Synchronization synchronised_time) {
         this.movablesScheduling = movablesScheduling;
         //TrackedGroups trackedGroups = movablesScheduling.getTrackedGroups();
+        synchronised_time.resetCentralTime();
         this.avoidanceCheckingRules = new ConflictAvoidanceCheckingRules(movablesScheduling.getTrackedGroups(), synchronised_time);
     }
 
@@ -64,9 +66,9 @@ public final class SearchStrategy {
     //the agents has to have goals for the boxes set up
     //TO DO decouple to agregation or commands together with conflict_avoidance_table
     public TaskScheduled runDescenteralizedSearch() {
-        SearchEngineSANormal searchEngineSANormal = new SearchEngineSANormal(avoidanceCheckingRules);
+        SearchEngineSANormal searchEngineSANormal = new SearchEngineSANormal(this.avoidanceCheckingRules);
 
-        ArrayList<Agent> agents = movablesScheduling.getAgentsScheduled();
+        ArrayList<Agent> agents = this.movablesScheduling.getAgentsScheduled();
         TaskScheduled taskScheduled = new TaskScheduled();
 
         for (Agent agent : agents){
@@ -84,7 +86,7 @@ public final class SearchStrategy {
        // get the agent path and status , get the boxes solved therir path add them
            //     to taskScheduled in the movables scduling , add to conflict checking rules
 
-        LinkedList<Box> boxes = movablesScheduling.getBoxesScheduled();//by agent with goal satisfied???
+        LinkedList<Box> boxes = this.movablesScheduling.getBoxesScheduled();//by agent with goal satisfied???
         for (Box box : boxes){
             searchEngineSANormal.runAstar(box);
             if(searchEngineSANormal.isPathFound()){
@@ -99,22 +101,25 @@ public final class SearchStrategy {
 
         //scheduled tasks are pushed to be stored in ConflictAvoidanceCheckingRules
         //only ConflictAvoidanceCheckingRules can invalidate all or some TaskScheduled , create new out of mmore TaskScheduled
-        TaskScheduled task_scheduled2 = movablesScheduling.getSearchResults();
+        TaskScheduled task_scheduled2 = this.movablesScheduling.getSearchResults();
         //this.conflict_avoidance_checking_rules.addTaskScheduled(task_scheduled2);
 
         return taskScheduled;
     }
 
-    public TaskScheduled runCentralizedSearch(ArrayDeque<TaskScheduled> paths_found){
+    //this SearchStrategy will set the SynchronizedTime  in the ConflictAvoidanceCheckingRules , ConflictAvoidanceCheckingRules maintains the overall time clock
+    //and gives a final TaskScheduled with paths from the centralized search
+    public LinkedList<TaskScheduled> runCentralizedSearch(ArrayDeque<TaskScheduled> paths_found) throws IOException {
         while (!paths_found.isEmpty())
             this.avoidanceCheckingRules.addTaskScheduledPaths(paths_found.pop());
 
         GroupIndependenceDetection searchGroupStrategy = new GroupIndependenceDetection(this.avoidanceCheckingRules);
-        searchGroupStrategy.runIndependenceDetection();
+        boolean are_paths_found = searchGroupStrategy.runIndependenceDetection();
+        LinkedList<TaskScheduled> task_result = new LinkedList<>();
+        if (are_paths_found)
+            task_result = this.avoidanceCheckingRules.getValidTasks();
 
-        LinkedList<TaskScheduled> task_result = this.avoidanceCheckingRules.getValidTasks();
-
-        return task_result.getFirst();
+        return task_result;
     }
 
     public ArrayDeque<int[]> runSearch(SearchEngineSA searchEngine, int movable_id) {

@@ -67,12 +67,24 @@ public final class ConflictAvoidanceCheckingRules {
 
         this.synchronised_time.processTaskScheduled(taskScheduled);
         int clock_time2 = this.synchronised_time.getCentralTime();
+        this.synchronised_time.resetCentralTime();
 
         this.task_scheduled_list.add(taskScheduled);
     }
 
     //returns valid final paths
-    public LinkedList<TaskScheduled> getValidTasks() { return this.task_scheduled_list; }
+    public LinkedList<TaskScheduled> getValidTasks() {
+        //getAllPathsFromtable();
+
+        return this.task_scheduled_list;
+    }
+
+     public void getSSSSS(){
+         int[] groups = this.conflict_avoidance_table.getAllUnGroupedIDs();
+         //conflict_avoidance_table.g
+
+     }
+
 
     public IllegalPathsStore getIllegalPathsStore() { return this.illegal_paths_store; }
 

@@ -2,7 +2,6 @@ package org.agents.planning.conflicts.dto;
 
 import org.agents.markings.Coordinates;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -69,8 +68,8 @@ public final class EdgeConflict extends SimulationConflict {
     }
 
     @Override
-   public ArrayDeque<int[]> getCoordinatesToAvoid(){
-        ArrayDeque<int[]> list_to_avoid = new ArrayDeque<>();
+   public ArrayList<int[]> getCoordinatesToAvoid(){
+        ArrayList<int[]> list_to_avoid = new ArrayList<>();
         for(Integer key : this.conflicted_ids_to_edges.keySet()){
            ArrayList<int[][]> list_edges = conflicted_ids_to_edges.get(key);
            for (int[][] edge : list_edges){

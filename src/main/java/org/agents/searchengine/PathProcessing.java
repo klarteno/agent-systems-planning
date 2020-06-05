@@ -3,6 +3,7 @@ package org.agents.searchengine;
 import org.agents.Agent;
 import org.agents.Box;
 import org.agents.MapFixedObjects;
+import org.agents.action.CellLocation;
 import org.agents.action.Direction;
 import org.agents.markings.Coordinates;
 import org.agents.searchengine.normal.SearchEngineSANormal;
@@ -15,8 +16,6 @@ public final class PathProcessing {
     public static final String PushAction = "Push";
     public static final String PullAction = "Pull";
 
-    public  PathProcessing() {
-    }
 
     private ArrayList<String> getMoves(ArrayDeque<int[]> path){
         assert path != null;
@@ -168,4 +167,16 @@ public final class PathProcessing {
         return agent_moves;
     }
 
+    public void resetTimeSteps(ArrayDeque<int[]> new_path_one) {
+            int time_steps = new_path_one.size();
+            int number_of_movable = (new_path_one.peek()).length/Coordinates.getLenght();
+
+            for (int[] cell_pos: new_path_one){
+                --time_steps;
+                for (int coordinate = 0; coordinate < number_of_movable; coordinate++) {
+                    Coordinates.setTime(coordinate, cell_pos, time_steps);
+                }
+
+            }
+    }
 }

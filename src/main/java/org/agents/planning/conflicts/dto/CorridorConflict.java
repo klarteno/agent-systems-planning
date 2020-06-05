@@ -1,6 +1,6 @@
 package org.agents.planning.conflicts.dto;
 
-import java.util.ArrayDeque;
+import java.util.ArrayList;
 
 public class CorridorConflict  extends SimulationConflict {
     //make bfs from the conflict backwards
@@ -15,7 +15,7 @@ public class CorridorConflict  extends SimulationConflict {
     }
 
     @Override
-    public ArrayDeque<int[]> getCoordinatesToAvoid() {
+    public ArrayList<int[]> getCoordinatesToAvoid() {
         return null;
     }
 

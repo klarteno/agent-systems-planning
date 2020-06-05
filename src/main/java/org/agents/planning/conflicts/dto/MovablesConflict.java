@@ -1,6 +1,6 @@
 package org.agents.planning.conflicts.dto;
 
-import java.util.ArrayDeque;
+import java.util.ArrayList;
 
 public class MovablesConflict extends SimulationConflict {
     private int agent_id;
@@ -17,7 +17,7 @@ public class MovablesConflict extends SimulationConflict {
     }
 
     @Override
-    public ArrayDeque<int[]> getCoordinatesToAvoid() {
+    public ArrayList<int[]> getCoordinatesToAvoid() {
         return null;
     }
 }

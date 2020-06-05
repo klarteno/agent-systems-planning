@@ -71,7 +71,7 @@ public final class ConflictAvoidanceTable implements Serializable {
 
     //merge two groups of mark_ids by their indexes retrieved from paths store
     //and removes their paths stored because the åaths can not be valid after merging
-    public int[][] groupIDs(int[] group_one, int[] group_two){
+    public int[] groupIDs(int[] group_one, int[] group_two){
         pathsStoreQuerying.removePath(group_one);
         pathsStoreQuerying.removePath(group_two);
 
@@ -85,7 +85,11 @@ public final class ConflictAvoidanceTable implements Serializable {
         grouped_marks[0] = group_one;
         grouped_marks[1] = group_two;
 
-        return grouped_marks;
+        int[] groups = Arrays.copyOf(grouped_marks[0], grouped_marks[0].length + grouped_marks[1].length);
+        System.arraycopy(grouped_marks[1], 0, groups, grouped_marks[0].length, grouped_marks[1].length);
+
+
+        return groups;
     }
 
 //returns the first two conflicted found that are not in a group
@@ -127,11 +131,12 @@ public final class ConflictAvoidanceTable implements Serializable {
         }
     }
 
-    public void addMarkedPathsFor(int[][] group_marks_total, ArrayDeque<int[]> paths) {
+    public void addMarkedPathsFor(int[] group_marks_total, ArrayDeque<int[]> paths) {
         this.pathsStoreQuerying.setCellLocationOf(group_marks_total, paths);
     }
 
     public void replaceMarkedPathFor(int mark_id, ArrayDeque<int[]> path, int clock_time_offset){
+        //increase by clock_time_offset the whole path
         this.pathsStoreQuerying.setCellLocationOf(mark_id, path);
     }
 

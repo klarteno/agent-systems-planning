@@ -9,7 +9,9 @@ import org.agents.planning.conflicts.IllegalPathsStore;
 import org.agents.planning.conflicts.dto.SimulationConflict;
 import org.agents.searchengine.SearchEngineOD;
 import org.agents.searchengine.SearchEngineSA;
+import org.agents.searchengine.StateSearchMAFactory;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -23,14 +25,11 @@ public final class GroupSearch {
     }
 
     //concatanates group 1 with group 2 , works only for two groups
-    public ArrayDeque<int[]> runGroupSearchMA(int[][] start_group) {
-        int[] groups = Arrays.copyOf(start_group[0], start_group[0].length + start_group[1].length);
-        System.arraycopy(start_group[1], 0, groups, start_group[0].length, start_group[1].length);
-
-        return runGroupSearchMA(groups, new int[0], new int[0][][]);
+    public ArrayDeque<int[]> runGroupSearchMA(int[] start_group) throws IOException {
+        return runGroupSearchMA(start_group, new int[0], new int[0][][]);
     }
 
-    public ArrayDeque<int[]> runGroupSearch(int[] start_group, int[] conflicting_group, int[][][] conflicting_paths) {
+    public ArrayDeque<int[]> runGroupSearch(int[] start_group, int[] conflicting_group, int[][][] conflicting_paths) throws IOException {
         //boolean isChanged = conflict_avoidance_checking_rules.setSearchState(ConflictAvoidanceCheckingRules.SearchState.CHECK_TIME_DEADLINE);
         boolean isChanged = conflict_avoidance_checking_rules.setSearchState(ConflictAvoidanceCheckingRules.SearchState.AVOID_PATH);
 
@@ -51,7 +50,7 @@ public final class GroupSearch {
                 searchEngineSA.runAstar( (Box)next_movable );
             }
             new_path_one = searchEngineSA.getPath();
-
+            illegalPathsStore.removeAllIlegalPaths();
         }else{
             new_path_one = this.runGroupSearchMA(start_group, conflicting_group, conflicting_paths);
             //group_one and new_path_one have the same ordering of indexes
@@ -73,18 +72,19 @@ public final class GroupSearch {
 
     //gets the path for start_group and avoids colisions in group path; conflict_path
     //the path retturned is indexed in the same order as start_group
-    public ArrayDeque<int[]> runGroupSearchMA(int[] start_group, int[] conflicting_group, int[][][] conflicting_paths) {
+    public ArrayDeque<int[]> runGroupSearchMA(int[] start_group, int[] conflicting_group, int[][][] conflicting_paths) throws IOException {
         boolean isChanged = conflict_avoidance_checking_rules.setSearchState(ConflictAvoidanceCheckingRules.SearchState.AVOID_PATH);
 
         IllegalPathsStore illegalPathsStore = conflict_avoidance_checking_rules.getIllegalPathsStore();
         illegalPathsStore.removeAllIlegalPaths();
         setIllegalPathsOfGroup(start_group, conflicting_group, conflicting_paths, illegalPathsStore);
 
-        SearchEngineOD searchEngineOD = new SearchEngineOD(start_group, this.conflict_avoidance_checking_rules);
+        SearchEngineOD searchEngineOD = new SearchEngineOD(start_group, this.conflict_avoidance_checking_rules, StateSearchMAFactory.SearchState.AGENTS_AND_BOXES);//StateSearchMAFactory.SearchState.AGENTS_ONLY
 
         int[] start_coordinates = searchEngineOD.getStartCoordinatesOfGroup();
         int[] goal_coordinates = searchEngineOD.getGoalsCoordinatesOfGroup();
-        searchEngineOD.runOperatorDecomposition(start_coordinates, goal_coordinates, conflicting_paths);
+        searchEngineOD.runOperatorDecomposition(start_coordinates, goal_coordinates);
+
 
         return searchEngineOD.getPath();
     }

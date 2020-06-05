@@ -31,5 +31,5 @@ public abstract class SimulationConflict {
 
     public abstract int[] getMaxTimeDeadline();
 
-    public abstract ArrayDeque<int[]> getCoordinatesToAvoid();
+    public abstract ArrayList<int[]> getCoordinatesToAvoid();
 }

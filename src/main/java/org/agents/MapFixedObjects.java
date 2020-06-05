@@ -73,7 +73,6 @@ public final class MapFixedObjects implements Serializable {
         }
 
 
-
         private Serializable getMovableObject(int movable_id) {
                 return this.markings_ids.get(movable_id);
         }
@@ -279,7 +278,6 @@ public final class MapFixedObjects implements Serializable {
                 assert cell.length == 3;
                 if(!isEmptyCell(cell))
                         return false;
-
 
                 int movable_color = -1;
 

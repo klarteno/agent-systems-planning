@@ -104,6 +104,7 @@ public enum Coordinates {
         return (pos_coordinates.length % Coordinates.getLenght() == 0) ;
     }
 
+    //it compares by coordinates and does not consider time steps
     public static boolean areNeighbours(int[] prev__, int[] next__) {
         int prev__row = Coordinates.getRow(prev__);
         int prev__col = Coordinates.getCol(prev__);
@@ -116,6 +117,18 @@ public enum Coordinates {
 
         return prev__col == next__col && Math.abs(prev__row - next__row) == 1;
     }
+
+    //it compares by coordinates and does not consider time steps
+    public static boolean areNeighbours(int[] prev__, int next__row,  int next__col) {
+        int prev__row = Coordinates.getRow(prev__);
+        int prev__col = Coordinates.getCol(prev__);
+
+        if(prev__row == next__row  && Math.abs(prev__col - next__col) == 1   )
+            return true;
+
+        return prev__col == next__col && Math.abs(prev__row - next__row) == 1;
+    }
+
 }
 //https://docs.oracle.com/javase/1.5.0/docs/guide/language/enums.html
 //https://stackoverflow.com/questions/9254637/java-enum-vs-int
