@@ -95,8 +95,8 @@ public final class ConflictAvoidanceTable implements Serializable {
         return groups;
     }
 
-//returns the first two conflicted found that are not in a group
-    public boolean setNextConflictedMovables(int[] colided_ids){
+//returns the first two overlaped found that are not in a group excluding EdgeConflicts
+    public boolean setNextOverlapedMovables(int[] colided_ids){
         int[] ungrouped_movables = this.getAllUnGroupedIDs();
         int time_step = -1;
         int prev_marked = ungrouped_movables[0];
@@ -106,7 +106,6 @@ public final class ConflictAvoidanceTable implements Serializable {
         for (int i = 1; i < ungrouped_movables.length; i++) {
             next_marked = ungrouped_movables[i];
             int[][] next_path = this.pathsStoreQuerying.getPathCloneFor(next_marked);
-            //is conflicted edge
             if(PathsStoreQuerying.isOverlap(prev_path, next_path)){
                 colided_ids[0] = prev_marked;
                 colided_ids[1] = next_marked;

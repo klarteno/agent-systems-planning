@@ -39,6 +39,10 @@ public final class IllegalPath {
         return this.start_group;
     }
 
+    public int[] getConflictingGroup(){
+        return this.conflicting_group;
+    }
+
     public void setChecked(boolean isChecked){
         this.is_checked = isChecked;
     }

@@ -2,6 +2,7 @@ package org.agents.planning;
 
 import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
 import org.agents.planning.conflicts.ConflictAvoidanceTable;
+import org.agents.planning.conflicts.IllegalPath;
 import org.agents.searchengine.PathProcessing;
 
 
@@ -40,7 +41,19 @@ public final class GroupIndependenceDetection {
     }
 
     public boolean runIndependenceDetection() throws IOException {
-        boolean isColided = this.conflict_avoidance_table.setNextConflictedMovables(colided_ids);
+        /*IllegalPath illegalPath = conflict_avoidance_checking_rules.getIllegalPathsStore().pollNextIllegalPath();
+
+        //het the illegal paths for single search movables
+        assert illegalPath != null;
+        int[] group_1 = illegalPath.getStartGroup();
+        assert group_1.length == 1;
+        int[] group_2 = illegalPath.getConflictingGroup();
+        assert group_2.length == 1;
+        colided_ids[0] = group_1[0];
+        colided_ids[1] = group_2[0];*/
+        //to remove :
+        boolean isColided = false;
+        isColided = this.conflict_avoidance_checking_rules.setNextConflictedMovables(colided_ids);
 
         while(isColide()){
             int movable_id_one = this.getFirstColide();
@@ -71,7 +84,7 @@ public final class GroupIndependenceDetection {
                     is_replaced = this.conflict_avoidance_checking_rules.replaceTaskScheduledFor(group_one, new_path_one);
                     this.conflict_avoidance_table.replaceMarkedPathFor(group_one, new_path_one);
                     //keep the  other path
-                    isColided = this.conflict_avoidance_table.setNextConflictedMovables(colided_ids);//colided_ids registes conflicts
+                    isColided = this.conflict_avoidance_checking_rules.setNextConflictedMovables(colided_ids);//colided_ids registes conflicts
                     //continue;
 
                 }else {
@@ -87,7 +100,7 @@ public final class GroupIndependenceDetection {
                         is_replaced = this.conflict_avoidance_checking_rules.replaceTaskScheduledFor(group_two, new_path_two);
                         this.conflict_avoidance_table.replaceMarkedPathFor(group_two, new_path_two);
                         //keep the  other path
-                        isColided = this.conflict_avoidance_table.setNextConflictedMovables(colided_ids);
+                        isColided = this.conflict_avoidance_checking_rules.setNextConflictedMovables(colided_ids);
                     }else {
                         //the paths groups are removed when grouped
                         int[] group_marks_total = this.conflict_avoidance_table.groupIDs(group_one, group_two);
@@ -98,7 +111,7 @@ public final class GroupIndependenceDetection {
                         //this.conflict_avoidance_checking_rules.clearTaskScheduledList();
                         boolean is_added = this.conflict_avoidance_checking_rules.addPathsToTaskScheduledPahs(group_one, group_two, group_marks_total, paths);
                         this.conflict_avoidance_table.addMarkedPathsFor(group_marks_total, paths);
-                        isColided = this.conflict_avoidance_table.setNextConflictedMovables(colided_ids);
+                        isColided = this.conflict_avoidance_checking_rules.setNextConflictedMovables(colided_ids);
                     }
                 }
             }
@@ -110,7 +123,7 @@ public final class GroupIndependenceDetection {
                 //remove later when conflicted
                 this.conflict_avoidance_checking_rules.addPathsToTaskScheduledPahs(group_one, group_two, group_marks_total, paths);
                 this.conflict_avoidance_table.addMarkedPathsFor(group_marks_total, paths);
-                isColided = this.conflict_avoidance_table.setNextConflictedMovables(colided_ids);
+                isColided = this.conflict_avoidance_checking_rules.setNextConflictedMovables(colided_ids);
             }
          }
 

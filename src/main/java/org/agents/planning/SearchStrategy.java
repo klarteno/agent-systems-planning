@@ -113,6 +113,7 @@ public final class SearchStrategy {
         while (!paths_found.isEmpty())
             this.avoidanceCheckingRules.addTaskScheduledPaths(paths_found.pop());
 
+
         GroupIndependenceDetection searchGroupStrategy = new GroupIndependenceDetection(this.avoidanceCheckingRules);
         boolean are_paths_found = searchGroupStrategy.runIndependenceDetection();
 

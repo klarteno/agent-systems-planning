@@ -21,16 +21,13 @@ public final class IllegalPathsStore {
         ilegalPaths.add(illegalPath);
     }
 
-
     public boolean removeAllIlegalPaths(){
         if(ilegalPaths.size() > 0){
             ilegalPaths.clear();
             return true;
         }
-
         return false;
     }
-
 
     ArrayList<int[][][]> checkIllegalPath(int mark_id){
         IllegalPath group_paths;
@@ -69,7 +66,18 @@ public final class IllegalPathsStore {
         return illegal_path;
     }
 
-    //to use
+    //find next in line valid IllegalPath and remove it
+    public IllegalPath pollNextIllegalPath() {
+        IllegalPath illegal_path = null;
+        for (int index = 0; index < ilegalPaths.size(); index++) {
+            IllegalPath ilegalPath = ilegalPaths.get(index);
+                if (ilegalPath.getStartGroup().length > 0 && ilegalPath.getConflictingGroup().length > 0)  {
+                    return ilegalPaths.remove(index);
+                }
+        }
+        return illegal_path;
+    }
+
     //mark_ids gets stored in SimulationConflict
     public final ArrayList<SimulationConflict> getConflicts(int[] mark_ids, int[] groups){
         ArrayList<SimulationConflict> conflicts_set = new ArrayList<>();
@@ -176,15 +184,16 @@ public final class IllegalPathsStore {
             }
         }
 
-        if(edgeConflicts.getConflictedIds().size()>0){
+        if(edgeConflicts.getConflictedIds().size() > 0){
             conflicts_set.add(edgeConflicts);
         }
-        if(vertexConflicts.getConflictedIds().size()>0){
+        if(vertexConflicts.getConflictedIds().size() > 0){
             conflicts_set.add(vertexConflicts);
         }
 
         return conflicts_set;
     }
+
 
 }
 

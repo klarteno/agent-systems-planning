@@ -35,9 +35,8 @@ public final class GroupSearch {
 
         ArrayDeque<int[]> new_path_one;
         if(start_group.length == 1){
-
             IllegalPathsStore illegalPathsStore = conflict_avoidance_checking_rules.getIllegalPathsStore();
-            setIllegalPathsOfGroup(start_group, conflicting_group, conflicting_paths, illegalPathsStore);
+            conflict_avoidance_checking_rules.setIllegalPathsOfGroup(start_group, conflicting_group, conflicting_paths);
 
             SearchEngineSA searchEngineSA = new SearchEngineSA(conflict_avoidance_checking_rules);
 
@@ -59,17 +58,6 @@ public final class GroupSearch {
         return new_path_one;
     }
 
-    private void setIllegalPathsOfGroup(int[] start_group, int[] conflicting_group, int[][][] conflicting_paths, IllegalPathsStore illegalPathsStore) {
-        ArrayList<SimulationConflict> paths_conflicts = illegalPathsStore.getConflicts(start_group, conflicting_group);
-        int[][][] start_group_paths = conflict_avoidance_checking_rules.getConflictsTable().getMarkedPaths(start_group);
-
-        if (paths_conflicts.size()>0){
-            IllegalPath illegalPath = new IllegalPath(start_group, conflicting_group, paths_conflicts);
-            illegalPath.addPaths(start_group_paths, conflicting_paths);
-            illegalPathsStore.addIlegalPath(illegalPath);
-        }
-    }
-
     //gets the path for start_group and avoids colisions in group path; conflict_path
     //the path retturned is indexed in the same order as start_group
     public ArrayDeque<int[]> runGroupSearchMA(int[] start_group, int[] conflicting_group, int[][][] conflicting_paths) throws IOException {
@@ -77,14 +65,13 @@ public final class GroupSearch {
 
         IllegalPathsStore illegalPathsStore = conflict_avoidance_checking_rules.getIllegalPathsStore();
         illegalPathsStore.removeAllIlegalPaths();
-        setIllegalPathsOfGroup(start_group, conflicting_group, conflicting_paths, illegalPathsStore);
+        conflict_avoidance_checking_rules.setIllegalPathsOfGroup(start_group, conflicting_group, conflicting_paths);
 
         SearchEngineOD searchEngineOD = new SearchEngineOD(start_group, this.conflict_avoidance_checking_rules, StateSearchMAFactory.SearchState.AGENTS_AND_BOXES);//StateSearchMAFactory.SearchState.AGENTS_ONLY
 
         int[] start_coordinates = searchEngineOD.getStartCoordinatesOfGroup();
         int[] goal_coordinates = searchEngineOD.getGoalsCoordinatesOfGroup();
         searchEngineOD.runOperatorDecomposition(start_coordinates, goal_coordinates);
-
 
         return searchEngineOD.getPath();
     }

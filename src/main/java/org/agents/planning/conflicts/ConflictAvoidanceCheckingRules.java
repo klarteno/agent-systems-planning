@@ -2,6 +2,7 @@ package org.agents.planning.conflicts;
 
 import org.agents.MapFixedObjects;
 import org.agents.markings.Coordinates;
+import org.agents.planning.conflicts.dto.SimulationConflict;
 import org.agents.planning.schedulling.Synchronization;
 import org.agents.planning.schedulling.TaskScheduled;
 import org.agents.planning.schedulling.TrackedGroups;
@@ -121,12 +122,48 @@ public final class ConflictAvoidanceCheckingRules {
          return this.task_scheduled_list;
     }
 
-
     public ConflictAvoidanceTable getConflictsTable(){
         return this.conflict_avoidance_table;
     }
 
     public IllegalPathsStore getIllegalPathsStore() { return this.illegal_paths_store; }
+
+    public boolean setNextConflictedMovables(int[] colided_ids){
+        int[] ungrouped_movables = this.conflict_avoidance_table.getAllUnGroupedIDs();
+        int index = 0;
+        int prev_marked;
+        int next_marked;
+
+        while (index != ungrouped_movables.length - 1){
+            prev_marked = ungrouped_movables[index];
+            int j = index;
+            j++;
+            for (int i = j; i < ungrouped_movables.length; i++) {
+                if (i == index) continue;
+                next_marked = ungrouped_movables[i];
+                ArrayList<SimulationConflict> conflicts = this.illegal_paths_store.getConflicts(new int[prev_marked], new int[next_marked]);
+                if (conflicts.size() > 0){
+                    colided_ids[0] = prev_marked;
+                    colided_ids[1] = next_marked;
+                    return true;
+                }
+            }
+            index++;
+        }
+        return false;
+    }
+
+    public void setIllegalPathsOfGroup(int[] start_group, int[] conflicting_group, int[][][] conflicting_paths) {
+        ArrayList<SimulationConflict> paths_conflicts = this.getIllegalPathsStore().getConflicts(start_group, conflicting_group);
+        int[][][] start_group_paths = this.getConflictsTable().getMarkedPaths(start_group);
+
+        if (paths_conflicts.size()>0){
+            IllegalPath illegalPath = new IllegalPath(start_group, conflicting_group, paths_conflicts);
+            illegalPath.addPaths(start_group_paths, conflicting_paths);
+            this.getIllegalPathsStore().addIlegalPath(illegalPath);
+        }
+    }
+
 
      /*
     //gets the neighbours of the cell  and removes those that conflicts
