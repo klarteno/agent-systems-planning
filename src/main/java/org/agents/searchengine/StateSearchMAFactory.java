@@ -1313,17 +1313,6 @@ public final class StateSearchMAFactory {
                         __indexed[2] = neighbour;//the neighbour position where the box will move
                         neighbours_ops.add(__indexed);
                     }
-/*
-                if(!(box_row + 1 == __row && box_column == __column  ))
-                    neighbours_ops.add(new int[]{__time_pos + 1, box_row + 1, box_column});
-                if(!(box_row - 1 == __row && box_column == __column  ))
-                    neighbours_ops.add(new int[]{__time_pos + 1, box_row - 1 , box_column});
-                if(!(box_row == __row && box_column + 1 == __column  ))
-                    neighbours_ops.add( new int[]{__time_pos + 1, box_row, box_column + 1}  );
-                if(!(box_row == __row && box_column - 1 == __column  ))
-                    neighbours_ops.add(  new int[]{__time_pos + 1, box_row, box_column - 1 }  );
-*/
-
                     //make PULL
                     //get the free cells the agent finds and make PULL actions expansions
                     int[] pull_move_cell = new int[]{__time_pos + 1, Coordinates.getRow(position_to_expand), Coordinates.getCol(position_to_expand) };
@@ -1340,31 +1329,6 @@ public final class StateSearchMAFactory {
             }
         }
 
-/*
-        neighbour for agent
-                neighbour for box moves
-        expand ??
-                1.neighbour for agent same g_cost as a new state
-                 2.
-and then from one standard node we get two standard nodes
-
-      when expanding agent avoid all boxes cells and add push for boxes of the same colour
-
-      constraints:
-          if agent moves from a neighbour cell to a box of the same colour :impose constraints on that box :push and pulls
-
-            one intetmediate node : moves without boxes
-        one intetmediate node : moves with box and both advance to same time step
-
-final solution : choose random what to move : agent or box : if agent moves first it moves without box and imposes a push constraint on the boxes of same color
-                                                            if box is chose to move it can only move if an agent of the same color is in the next cell
-                      because in this way : we get one standard node and not two like above
-
-
-final solution expand only agents , do not allow agents to overstep boxes , and then make PUSHES for neigbour boxes of the same colour
-                                                                                         make PUULS   for neigbour boxes of the same colour
-
-*/
 
         for(int[] cell_pos_neighbour : neighbours_agent){
             setConflictsStandardStateExpansion(index_to_expand, pos_coordinates, cell_pos_neighbour, standard_to_conflicts);

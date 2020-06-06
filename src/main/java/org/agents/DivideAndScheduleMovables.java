@@ -189,21 +189,6 @@ public class DivideAndScheduleMovables {
 
         }
 
-        /*
-        Set<Integer> agt = agents_to_boxes.keySet();
-        agents_solved_mark_ids
-
-        int[] __group = new int[agents_solved_mark_ids.size() + agt.size()];
-
-
-        int index = 0;
-        for (Integer id : agents_solved_mark_ids)
-            __group[index++] = id;
-        for (Integer id : agents_solved_mark_ids)
-            __group[index++] = id;
-*/
-
-
 
         TaskScheduled taskScheduled = new TaskScheduled();
         taskScheduled.addAggentsBoxes(agents_to_boxes);

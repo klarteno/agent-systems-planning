@@ -4,9 +4,7 @@ import org.agents.Agent;
 import org.agents.Box;
 import org.agents.MapFixedObjects;
 import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
-import org.agents.planning.conflicts.IllegalPath;
 import org.agents.planning.conflicts.IllegalPathsStore;
-import org.agents.planning.conflicts.dto.SimulationConflict;
 import org.agents.searchengine.SearchEngineOD;
 import org.agents.searchengine.SearchEngineSA;
 import org.agents.searchengine.StateSearchMAFactory;
@@ -14,8 +12,6 @@ import org.agents.searchengine.StateSearchMAFactory;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
 
 public final class GroupSearch {
     private final ConflictAvoidanceCheckingRules conflict_avoidance_checking_rules;
@@ -23,6 +19,7 @@ public final class GroupSearch {
     public GroupSearch(ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules) {
         this.conflict_avoidance_checking_rules = conflictAvoidanceCheckingRules;
     }
+
 
     //concatanates group 1 with group 2 , works only for two groups
     public ArrayDeque<int[]> runGroupSearchMA(int[] start_group) throws IOException {

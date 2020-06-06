@@ -58,13 +58,10 @@ public final class GroupIndependenceDetection {
         while(isColide()){
             int movable_id_one = this.getFirstColide();
             int movable_id_two = this.getSecondColide();
-/*
-            if(this.conflict_avoidance_table.isUnGrouped(movable_id_one)&&this.conflict_avoidance_table.isUnGrouped(movable_id_two))
-                startIDForSingleAgents(movable_id_one, movable_id_two);
-*/
+
             Set<Integer> groupone = this.conflict_avoidance_table.getGroupOf(movable_id_one);
             Set<Integer> grouptwo = this.conflict_avoidance_table.getGroupOf(movable_id_two);
-            //Integer[] group__one = group_one.toArray(new Integer[0]);
+
             int [] group_one = groupone.stream().mapToInt(Integer::intValue).toArray();
             int [] group_two = grouptwo.stream().mapToInt(Integer::intValue).toArray();
 

@@ -45,22 +45,6 @@ public final class SearchStrategy {
         }
         return paths_iterations;
 
-/*
-        Agent agent1 = mapFixedObjects.agents[0];
-
-        //Stack<int[]> path = searchEngine.runAstar(mapFixedObjects, agent1.getColor(), agent1.getCoordinates(), box1.get().getGoalPosition());
-        PathProcessing pathProcessing = new PathProcessing();
-        ArrayList<String> path1 = pathProcessing.get_moves_agent_goal(agent1, searchEngine, mapFixedObjects);
-        Agent agent2 = mapFixedObjects.agents[1];
-        ArrayList<String> path2 = pathProcessing.get_moves_agent_goal(agent2, searchEngine, mapFixedObjects);
-
-        ListIterator<String> path_iter1 = path1.listIterator(path1.size());
-        ListIterator<String> path_iter2 = path2.listIterator(path1.size());
-
-        Stack<ListIterator<String>> paths_iterations = new Stack<>();
-        paths_iterations.add(path_iter2);
-        paths_iterations.add(path_iter1);
-*/
     }
 
     //the agents has to have goals for the boxes set up
@@ -102,7 +86,6 @@ public final class SearchStrategy {
         //scheduled tasks are pushed to be stored in ConflictAvoidanceCheckingRules
         //only ConflictAvoidanceCheckingRules can invalidate all or some TaskScheduled , create new out of mmore TaskScheduled
         TaskScheduled task_scheduled2 = this.movablesScheduling.getSearchResults();
-        //this.conflict_avoidance_checking_rules.addTaskScheduled(task_scheduled2);
 
         return taskScheduled;
     }

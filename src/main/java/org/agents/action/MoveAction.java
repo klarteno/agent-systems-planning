@@ -24,7 +24,7 @@ public class MoveAction extends Action {
 	
 	@Override
 	public boolean isOpposite(Action action) {
-		return action instanceof MoveAction ? Direction.isOpposite(((MoveAction) action).direction, this.direction) : false;
+		return action instanceof MoveAction && Direction.isOpposite(((MoveAction) action).direction, this.direction);
 	}
 
 }

@@ -73,23 +73,7 @@ public final class SearchClient {
             if (pattern_end_headers.matcher(line).matches()){
                 parsingState = ParsingState.END;
             }
-/*maybe will not be used
-            if(parsingState==ParsingState.COLORS){
-                    Vector<String> colors_parsed = new Vector<String>();
 
-                HashMap<String, Vector<String>> colors 	= new HashMap<>();
-                String[] strings_parsed = line.split("[:,]");
-
-                Vector<String> same_color = new Vector<String>(strings_parsed.length - 1);
-                for (int i = 1; i < strings_parsed.length; i++) {
-                    same_color.add(strings_parsed[i]);
-                    //System.out.println("#strs:  "+ i + strs[i]);
-                }
-                colors.put(strings_parsed[0],same_color);
-
-                continue;
-            }
- */
             if(parsingState == ParsingState.COLORS){
 
                 String[] strings_parsed = line.split("[:,]");

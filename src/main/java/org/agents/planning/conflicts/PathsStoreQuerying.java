@@ -172,15 +172,6 @@ final class PathsStoreQuerying implements Serializable {
         return Coordinates.createCoordinates();
     }
 
-
-
-
-
-
-
-
-
-
     public static ArrayDeque<int[]> getAllOverlapsFor(int[][] first_path, int[][] second_path){
         int row_index = 0;
         ArrayDeque<int[]> overlaps = new ArrayDeque<>();

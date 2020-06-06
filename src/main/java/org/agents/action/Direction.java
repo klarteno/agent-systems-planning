@@ -16,7 +16,9 @@ public enum Direction {
 	public static final Direction[] EVERY = {
 			NORTH, SOUTH, WEST, EAST
 	};
-	
+
+
+
 	public String toString()
 	{
 		switch (this)
@@ -49,14 +51,16 @@ public enum Direction {
 		
 	}
 
-	public static Direction getDirectionsFrom(int[] from_cell,int[] destination_cell){
+	public static Direction getDirectionsFrom(int[] from_cell, int[] destination_cell){
+		return getDirectionsFrom(Coordinates.getRow(from_cell), Coordinates.getCol(from_cell),
+				Coordinates.getRow(destination_cell), Coordinates.getCol(destination_cell));
+	}
+
+	public static Direction getDirectionsFrom(int from_row, int from_col, int to_row, int to_col) {
 		int[] offset= new int[2];
 
-		Coordinates.getRow(destination_cell);
-		Coordinates.getRow(from_cell);
-
-		offset[0] = Coordinates.getRow(destination_cell) - Coordinates.getRow(from_cell);
-		offset[1] = Coordinates.getCol(destination_cell) - Coordinates.getCol(from_cell);
+		offset[0] = to_row - from_row;
+		offset[1] = to_col - from_col;
 
 		//to optimize with switch statement and bits shifting for negative numbers
 		if (offset[0] == -1 && offset[1] == 0 ){
@@ -76,13 +80,18 @@ public enum Direction {
 	}
 
 
-	public static Direction[] getDirectionsFrom(int[] from_cell_locations, int[] destination_cell_locations, boolean is_multiple_agents ){
+
+	public static Direction[] getDirectionsFromOf(int[] from_cell_locations, int[] destination_cell_locations, boolean all_coordinates ){
 		assert from_cell_locations.length > 3;
 		assert destination_cell_locations.length > 3;
 		assert from_cell_locations.length % 3 == 0;
 		assert destination_cell_locations.length % 3 == 0;
 
-		Direction[] directions = new Direction[from_cell_locations.length / 3];
+		assert all_coordinates;
+
+		int number_of_movables = from_cell_locations.length /Coordinates.getLenght();
+		Direction[] directions = new Direction[number_of_movables];
+
 		int[] from_cell = new int[Coordinates.getLenght()];
 		int[] destination_cell = new int[Coordinates.getLenght()];
 
@@ -90,22 +99,54 @@ public enum Direction {
 		int time_step;
 		int row;
 		int column;
-		for (int index = 0; index < from_cell_locations.length; index += Coordinates.getLenght()) {
+		for (int index = 0; index < number_of_movables; index += 1) {
 			time_step = index;
 			row = time_step +1;
 			column = time_step +1;
-			Coordinates.setTime(from_cell, from_cell_locations[time_step]);
-			Coordinates.setTime(destination_cell, destination_cell_locations[time_step]);
 
-			Coordinates.setRow(from_cell, from_cell_locations[row]);
-			Coordinates.setRow(destination_cell, destination_cell_locations[row]);
+			Coordinates.setTime(from_cell, Coordinates.getTime(index, from_cell_locations));
+			Coordinates.setTime(destination_cell, Coordinates.getTime(index, destination_cell_locations));
 
-			Coordinates.setCol(from_cell, from_cell_locations[column]);
-			Coordinates.setCol(destination_cell, destination_cell_locations[column]);
+			Coordinates.setRow(from_cell, Coordinates.getRow(index, from_cell_locations));
+			Coordinates.setRow(destination_cell, Coordinates.getRow(index, destination_cell_locations));
+
+			Coordinates.setCol(from_cell, Coordinates.getCol(index, from_cell_locations));
+			Coordinates.setCol(destination_cell, Coordinates.getCol(index, destination_cell_locations));
 
 			directions[index] = getDirectionsFrom(from_cell, destination_cell);
 		}
 
+		return directions;
+	}
+
+	//get the array of directions with normal indexing and indexes from the coordiantes stored in the index_agents
+	public static Direction[] getDirectionsFrom(int[] from_cell_locations, int[] destination_cell_locations, int[] index_agents ){
+		assert from_cell_locations.length > 3;
+		assert destination_cell_locations.length > 3;
+		assert from_cell_locations.length % 3 == 0;
+		assert destination_cell_locations.length % 3 == 0;
+
+ 		Direction[] directions = new Direction[index_agents.length];
+
+		int[] from_cell = new int[Coordinates.getLenght()];
+		int[] destination_cell = new int[Coordinates.getLenght()];
+
+		int coord_index;
+		for (int id_index = 0; id_index < index_agents.length; id_index += 1) {
+			coord_index = index_agents[id_index];
+
+			Coordinates.setTime(from_cell, Coordinates.getTime(coord_index, from_cell_locations));
+			Coordinates.setTime(destination_cell, Coordinates.getTime(coord_index, destination_cell_locations));
+
+			Coordinates.setRow(from_cell, Coordinates.getRow(coord_index, from_cell_locations));
+			Coordinates.setRow(destination_cell, Coordinates.getRow(coord_index, destination_cell_locations));
+
+			Coordinates.setCol(from_cell, Coordinates.getCol(coord_index, from_cell_locations));
+			Coordinates.setCol(destination_cell, Coordinates.getCol(coord_index, destination_cell_locations));
+
+			Direction __direction = getDirectionsFrom(from_cell, destination_cell);
+			directions[id_index] =__direction;
+		}
 		return directions;
 	}
 
@@ -131,20 +172,5 @@ public enum Direction {
 		}
 	}
 
-	
-	public boolean hasDirection(Direction other)
-	{
-		switch (this)
-		{
-		case EAST: 			return other == EAST || other == NORTH_EAST || other == SOUTH_EAST;
-		case NORTH:			return other == NORTH || other == NORTH_EAST || other == NORTH_WEST;
-		case NORTH_EAST:	return other == NORTH_EAST || other == NORTH || other == EAST;
-		case NORTH_WEST:	return other == NORTH_WEST || other == NORTH || other == WEST;
-		case SOUTH:			return other == SOUTH || other == SOUTH_EAST || other == SOUTH_WEST;
-		case SOUTH_EAST:	return other == SOUTH_EAST || other == SOUTH || other == EAST;
-		case SOUTH_WEST:	return other == SOUTH_WEST || other == SOUTH || other == WEST;
-		case WEST:			return other == WEST || other == NORTH_WEST || other == SOUTH_WEST;
-		default: 			throw new IllegalArgumentException("Invalid direction");
-		}
-	}
+
 }

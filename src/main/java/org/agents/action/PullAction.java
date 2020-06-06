@@ -28,17 +28,7 @@ public class PullAction extends Action {
 	{
 		return boxDir;
 	}
-	
-	public int[] getBoxLocation()
-	{
-		return boxLocation;
-	}
-	
-	public int[] getNewBoxLocation()
-	{
-		return newBoxLocation;
-	}
-	
+
 	@Override
 	public String toString()
 	{

@@ -164,39 +164,6 @@ public final class ConflictAvoidanceCheckingRules {
         }
     }
 
-
-     /*
-    //gets the neighbours of the cell  and removes those that conflicts
-    to delete it is replaced by getFreeNeighboursS
-    public ArrayDeque<int[]> getFreeNeighboursMA(int[] coordinates, int color_movable, int start_time_step){
-        ArrayDeque<int[]> next_cells = new ArrayDeque<>();
-        if(search_state == SearchState.NO_CHECK_CONFLICTS){
-            return MapFixedObjects.getNeighbours(coordinates, color_movable);
-        }
-        else if(search_state == SearchState.CHECK_CONFLICTS){
-            next_cells = MapFixedObjects.getNeighbours(coordinates, color_movable);
-
-            int[] dir_wait = new int[]{Coordinates.getTime(0,coordinates)+1, coordinates[0], coordinates[1]};
-            if (MapFixedObjects.isFreeCell(dir_wait, color_movable))
-                next_cells.add(dir_wait);
-
-            this.getCheckConflictAvoidanceTable(coordinates, start_time_step, next_cells);
-
-
-            checkIllegalPath
-
-            add to closed set : if deadline constraint is
-            oversteped for a cell then is also closed for that cell
-
-            checkIllegalPath for vertexes and edges
-
-
-            return next_cells;
-        }
-        return next_cells;
-    }
-*/
-
     //gets the neighbours of the cell  and removes those that conflicts at the start_time_step it uses time delay to prune wait states
     public ArrayDeque<int[]> getFreeNeighboursSA(int[] coordinate, int mark_id){
         ArrayDeque<int[]> next_cells = new ArrayDeque<>();

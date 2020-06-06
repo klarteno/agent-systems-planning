@@ -3,7 +3,6 @@ package org.agents.searchengine;
 import org.agents.Agent;
 import org.agents.Box;
 import org.agents.MapFixedObjects;
-import org.agents.action.CellLocation;
 import org.agents.action.Direction;
 import org.agents.markings.Coordinates;
 import org.agents.searchengine.normal.SearchEngineSANormal;
@@ -17,7 +16,7 @@ public final class PathProcessing {
     public static final String PullAction = "Pull";
 
 
-    private ArrayList<String> getMoves(ArrayDeque<int[]> path){
+    private ArrayList<String> getMAAgentMoves(ArrayDeque<int[]> path){
         assert path != null;
         ArrayList<String> agent_moves = new ArrayList<>();
         int[] next_cell = path.pop();
@@ -30,24 +29,132 @@ public final class PathProcessing {
         return agent_moves;
     }
 
-    private ArrayList<String> getMoves(ArrayDeque<int[]> path, boolean is_multiple_agents ){
+    public ArrayList<String[]> getMAAgentMoves(ArrayDeque<int[]> path, int[] index_agents){
         assert path != null;
-        ArrayList<String> agent_moves = new ArrayList<>();
+
+        ArrayList<String[]> agent_moves = new ArrayList<>();
+
         int[] next_cell = path.pop();
-        String time_step_moves = "";
+        String[] time_step_moves = new String[index_agents.length];
         while (!path.isEmpty()){
             int[] prev_cell = path.pop();
-            Direction[] next_direction = Direction.getDirectionsFrom(prev_cell, next_cell, is_multiple_agents);
+
+            Direction[] next_direction = Direction.getDirectionsFrom(prev_cell, next_cell, index_agents);
             for (int i = 0; i < next_direction.length; i++) {
-                time_step_moves += MoveAction + "(" + next_direction[i].toString() + ")";
+                time_step_moves[i] = MoveAction + "(" + next_direction[i].toString() + ")";
             }
             agent_moves.add(time_step_moves);
-            time_step_moves = "";
+            time_step_moves = new String[index_agents.length];
             next_cell = prev_cell;
         }
         return agent_moves;
     }
 
+    public synchronized ArrayList<String[]> getMAAgentBoxesMoves(ArrayDeque<int[]> path, int[] index_agents, HashMap<Integer,int[]> agents_idx_to_boxes_idx){
+        assert path != null;
+
+        ArrayList<String[]> agent_moves = new ArrayList<>();
+
+        int[] next_cell = path.pop();
+        String[] time_step_moves;
+        ArrayList<int[]> output_pairs = new ArrayList<>();
+        HashMap<Integer,Set<Integer>> boxes_idx_moved = new HashMap<>();
+        Set<Integer> agts_not_moved = new HashSet<>();
+        while (!path.isEmpty()){
+            int[] prev_cell = path.pop();
+            //if prev_cell not goal next_cell agents_idx_to_boxes_idx[index_agents[i]]
+
+            //  keep tracked if the box moved
+            boolean box_moved = false;
+            output_pairs.clear();
+            boxes_idx_moved.clear();
+            agts_not_moved.clear();
+            for(Integer agents_idx : agents_idx_to_boxes_idx.keySet()){
+                for (int bx_i = 0; bx_i < agents_idx_to_boxes_idx.get(agents_idx).length ; bx_i++) {
+                    int bx_idx = agents_idx_to_boxes_idx.get(agents_idx)[bx_i];
+                    if(Coordinates.areNeighbours( Coordinates.getRow(bx_idx, prev_cell), Coordinates.getCol(bx_idx, prev_cell), Coordinates.getRow(bx_idx, next_cell), Coordinates.getCol(bx_idx, next_cell) )){
+                        box_moved = true;
+                        if(Coordinates.areNeighbours( Coordinates.getRow(agents_idx, prev_cell), Coordinates.getCol(agents_idx, prev_cell), Coordinates.getRow(bx_idx, prev_cell), Coordinates.getCol(bx_idx, prev_cell) )){
+                            if(Coordinates.areNeighbours( Coordinates.getRow(agents_idx, next_cell), Coordinates.getCol(agents_idx, next_cell), Coordinates.getRow(bx_idx, next_cell), Coordinates.getCol(bx_idx, next_cell) )){
+                                //agents_idx moved from prev_cell along with the box
+                                if(boxes_idx_moved.containsKey(bx_idx)){
+                                    ( boxes_idx_moved.get(bx_idx)).add(agents_idx);
+                                    //int[] pair = new int[]{agents_idx, bx_idx};
+                                    //output_pairs.add(pair);//add the pair agent_idx box_idx to candidates  push and pulls
+                                }else {
+                                    Set<Integer> idxs = new HashSet<>();
+                                    idxs.add(agents_idx);
+                                    boxes_idx_moved.put(bx_idx, idxs);
+                                }
+                            }
+                        }
+                    }else{
+                        agts_not_moved.add(agents_idx);
+                    }
+                }
+            }
+//       boolean neighbours_found = Coordinates.getNeighboursByIndexRanges(next_cell, index_agents, agents_idx_to_boxes_idx, output_pairs);
+          //  boolean neighbours_found = Coordinates.getNeighboursByIndexRanges(prev_cell, index_agents, agents_idx_to_boxes_idx, output_pairs);
+
+            time_step_moves = new String[index_agents.length];
+            if(!box_moved){
+                //prev_cell_neighbours = false;
+                Direction[] next_direction = Direction.getDirectionsFrom(prev_cell, next_cell, index_agents);
+                for (int indx = 0; indx < next_direction.length; indx++) {
+                    time_step_moves[indx] = MoveAction + "(" + next_direction[indx].toString() + ")";
+                }
+
+            }else{
+                Direction[] next_direction = Direction.getDirectionsFrom(prev_cell, next_cell, index_agents);
+                for (int indx = 0; indx < next_direction.length; indx++) {
+                    if( agts_not_moved.contains(index_agents[indx]) ){
+                        time_step_moves[indx] = MoveAction + "(" + next_direction[indx].toString() + ")";
+                    }
+                }
+
+                //make pulls  or pushes
+                for (Integer bx_indx : boxes_idx_moved.keySet()){
+                    Set<Integer> agt_indexes = boxes_idx_moved.get(bx_indx);
+                    for (Integer agt_idx : agt_indexes){
+                        String agent_dir = next_direction[agt_idx].toString();
+
+                        if(Coordinates.getRow(agt_idx, prev_cell) == Coordinates.getRow(bx_indx, next_cell) &&
+                                Coordinates.getCol(agt_idx, prev_cell) == Coordinates.getCol(bx_indx, next_cell)){
+                            //make a pull action
+                            Direction next_box_dir1 = Direction.getDirectionsFrom(Coordinates.getRow(bx_indx, next_cell), Coordinates.getCol(bx_indx, next_cell),
+                                                                            Coordinates.getRow(bx_indx, prev_cell), Coordinates.getCol(bx_indx, prev_cell));
+
+                            String str_move_pull = PullAction + "(" + agent_dir.toString() + "," + next_box_dir1.toString() + ")";
+                            //boxes_idx_moved.remove(bx_indx); concurent modification
+
+                            for (int i = 0; i < index_agents.length; i++) {
+                                if (index_agents[i] == agt_idx)
+                                    time_step_moves[i] = str_move_pull;
+                            }
+                        }else{
+                            if(Coordinates.getRow(agt_idx, next_cell) == Coordinates.getRow(bx_indx, prev_cell) &&
+                                    Coordinates.getCol(agt_idx, next_cell) == Coordinates.getCol(bx_indx, prev_cell)){
+                            //make a push action
+                                Direction next_box_dir2 = Direction.getDirectionsFrom(Coordinates.getRow(bx_indx, prev_cell), Coordinates.getCol(bx_indx, prev_cell),
+                                                                                Coordinates.getRow(bx_indx, next_cell), Coordinates.getCol(bx_indx, next_cell));
+
+                                String str_move_push = PushAction + "(" + agent_dir.toString() + "," + next_box_dir2.toString() + ")";
+                                //boxes_idx_moved.remove(bx_indx);  concurent modification
+                                for (int i = 0; i < index_agents.length; i++) {
+                                    if (index_agents[i] == agt_idx)
+                                        time_step_moves[i] = str_move_push;
+                                }
+                            }
+                        }
+                    }
+                }
+                    }
+            agent_moves.add(time_step_moves);
+            next_cell = prev_cell;
+                }
+
+        return agent_moves;
+    }
 
 
     private ArrayList<String> getBoxMoves(Agent agent, int[] agent_cell, ArrayDeque<int[]> box_path){
@@ -113,7 +220,7 @@ public final class PathProcessing {
         int[] agent_goal = agent_path.pop();
         assert (Coordinates.getRow(agent_goal) == box_to_search.getRowPosition()) && (Coordinates.getCol(agent_goal) == box_to_search.getColumnPosition());
         int[] agent_end_path = agent_path.peek();
-        ArrayList<String> agent_moves = this.getMoves(agent_path);
+        ArrayList<String> agent_moves = this.getMAAgentMoves(agent_path);
 
 
         searchEngine.runAstar(box_to_search);
@@ -130,7 +237,7 @@ public final class PathProcessing {
         Optional<Box> next_box = MapFixedObjects.getNextBoxBy(agent.getColor());
         Box box_to_search;
         if (next_box.isPresent()){
-            box_to_search=next_box.get();
+            box_to_search = next_box.get();
         }else {
             box_to_search = null;
             System.out.println("#tried to get null box");
@@ -143,7 +250,7 @@ public final class PathProcessing {
         int[] agent_goal = agent_path.pop();
         assert (Coordinates.getRow(agent_goal) == box_to_search.getRowPosition()) && (Coordinates.getCol(agent_goal) == box_to_search.getColumnPosition());
         int[] agent_end_path = agent_path.peek();
-        ArrayList<String> agent_moves = this.getMoves(agent_path);
+        ArrayList<String> agent_moves = this.getMAAgentMoves(agent_path);
 
 
         searchEngineSANormal.runAstar(box_to_search);
@@ -157,15 +264,21 @@ public final class PathProcessing {
 
 
 
-    public ArrayList<String> outputPathsMA(ArrayDeque<int[]> agents_paths){
+    public ArrayList<String[]> outputPathsMA(ArrayDeque<int[]> agents_paths){
         int[] goal_cell = agents_paths.pop();
         int[] agent_end_path = agents_paths.peek();
-        boolean multiple_agents = true;
-        ArrayList<String> agent_moves = this.getMoves(agents_paths, multiple_agents);
+
+        int[] multiple_agents = new int[goal_cell.length];
+        for (int i = 0; i < goal_cell.length ; i++) {
+            multiple_agents[i] = i;
+        }
+
+        ArrayList<String[]> agent_moves = this.getMAAgentMoves(agents_paths, multiple_agents);
 
         //boxes path to be added
         return agent_moves;
     }
+
 
     public void resetTimeSteps(ArrayDeque<int[]> new_path_one) {
             int time_steps = new_path_one.size();
