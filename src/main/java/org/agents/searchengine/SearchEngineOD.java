@@ -94,7 +94,7 @@ public class SearchEngineOD {
 
         while(!frontier.isEmpty()){
             current_state = frontier.poll();
-            //Utils.logAppendToFile(logFileName, current_state, frontier.size());//
+            Utils.logAppendToFile(logFileName, current_state, frontier.size());//
 
             if (StateSearchMAFactory.isStandardNode(SearchMAState.getStateCoordinates(current_state))){
                 int prev_time = SearchMAState.getTime(0, SearchMAState.getStateCoordinates(prev_state));

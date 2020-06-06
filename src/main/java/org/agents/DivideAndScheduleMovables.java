@@ -4,7 +4,6 @@ import datastructures.HungarianAlgorithmResizable;
 import org.agents.markings.SolvedStatus;
 import org.agents.planning.MovablesScheduling;
 import org.agents.planning.schedulling.TaskScheduled;
-import org.agents.searchengine.SearchEngineSA;
 
 import java.io.Serializable;
 import java.util.*;
@@ -61,8 +60,6 @@ public class DivideAndScheduleMovables {
                 groups_agents.put(agent.getColor(),arrayList);
             }
         }
-
-
 
         for (Integer key_color : groups_agents.keySet()){
             ArrayList<Agent> _agents = groups_agents.get(key_color);
@@ -159,7 +156,6 @@ public class DivideAndScheduleMovables {
                 }
             }
         }
-
         return boxes_to_schedule;
     }
 
@@ -186,9 +182,7 @@ public class DivideAndScheduleMovables {
                 case IN_USE:break;
                 case NOT_SOLVED:break;
             }
-
         }
-
 
         TaskScheduled taskScheduled = new TaskScheduled();
         taskScheduled.addAggentsBoxes(agents_to_boxes);

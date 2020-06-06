@@ -34,7 +34,7 @@ public final class MapFixedObjects implements Serializable {
         private static HashMap<Integer, ArrayDeque<Box>> colors_of_boxes;
 
         public static Set<Integer> getAllBoxesIds() {
-                return boxes_ids.keySet();
+                return new HashSet<>(boxes_ids.keySet());
         }
 
         public static Box getBoxByID(Integer box_id) {
@@ -259,17 +259,18 @@ public final class MapFixedObjects implements Serializable {
         }
 
         public static Set<Integer> getAllIdsMarks(){
-                Set<Integer> keys = agents_ids.keySet();
+                Set<Integer> keys = new HashSet<>(agents_ids.keySet());
                 keys.addAll(boxes_ids.keySet());
+
                 return keys;
         }
 
         public static Set<Integer> getAgentsMarks(){
-                return agents_ids.keySet();
+                return new HashSet<>(agents_ids.keySet());
         }
 
         public static Set<Integer> getBoxesMarks(){
-                return boxes_ids.keySet();
+                return new HashSet<>(boxes_ids.keySet());
         }
 
         //this opearation is used the most in searching :TO DO replace with matrix look up

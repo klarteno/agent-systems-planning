@@ -64,6 +64,7 @@ public final class GroupSearch {
         illegalPathsStore.removeAllIlegalPaths();
         conflict_avoidance_checking_rules.setIllegalPathsOfGroup(start_group, conflicting_group, conflicting_paths);
 
+
         SearchEngineOD searchEngineOD = new SearchEngineOD(start_group, this.conflict_avoidance_checking_rules, StateSearchMAFactory.SearchState.AGENTS_AND_BOXES);//StateSearchMAFactory.SearchState.AGENTS_ONLY
 
         int[] start_coordinates = searchEngineOD.getStartCoordinatesOfGroup();

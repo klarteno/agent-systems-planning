@@ -182,8 +182,6 @@ public final class SearchClient {
         return mapFixedObjects;
     }
 
-
-
     private int parse_map_data(int maxCol_map_no, Vector<char[]> rows_map_marks, String line) {
         int columns = line.length();
         rows_map_marks.add(new char[columns]);
