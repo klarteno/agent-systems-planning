@@ -1,10 +1,11 @@
-package org.agents.searchengine;
+package org.agents;
 
 import org.agents.markings.Coordinates;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public final class Utils {
@@ -127,7 +128,15 @@ public final class Utils {
         return index;
     }
 
+    public static int[] getOrderedColectionOf(ArrayList<Integer> array){
+        int[] array_ordered = new int[array.size()];
 
+        int index = 0;
+        for (Integer ag_id:array)
+            array_ordered[index++] = ag_id;
+
+        return array_ordered;
+    }
 
 
 

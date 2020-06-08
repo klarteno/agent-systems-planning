@@ -15,6 +15,7 @@ public final class PathProcessing {
     public static final String PushAction = "Push";
     public static final String PullAction = "Pull";
 
+    private int clock_time = 0;
 
     private ArrayList<String> getMAAgentMoves(ArrayDeque<int[]> path){
         assert path != null;
@@ -30,7 +31,7 @@ public final class PathProcessing {
     }
 
     public ArrayList<String[]> getMAAgentMoves(ArrayDeque<int[]> path, int[] index_agents){
-        assert path != null;
+        if(path.size()==0) return new ArrayList<>();
 
         ArrayList<String[]> agent_moves = new ArrayList<>();
 
@@ -41,7 +42,15 @@ public final class PathProcessing {
 
             Direction[] next_direction = Direction.getDirectionsFrom(prev_cell, next_cell, index_agents);
             for (int i = 0; i < next_direction.length; i++) {
-                time_step_moves[i] = MoveAction + "(" + next_direction[i].toString() + ")";
+                String dir_str = next_direction[i].toString();
+                if (dir_str.equals("NoOp")){
+                    time_step_moves[i] = dir_str;
+                }else{
+                    //time_step_moves[i] = MoveAction + "(" + next_direction[i].toString() + ")";
+                    time_step_moves[i] = MoveAction + "(" + dir_str + ")";
+                }
+
+
             }
             agent_moves.add(time_step_moves);
             time_step_moves = new String[index_agents.length];
@@ -232,7 +241,6 @@ public final class PathProcessing {
         return box_moves;
     }
 
-
     public ArrayList<String> get_moves_agent_goal(Agent agent, SearchEngineSANormal searchEngineSANormal){
         Optional<Box> next_box = MapFixedObjects.getNextBoxBy(agent.getColor());
         Box box_to_search;
@@ -262,8 +270,6 @@ public final class PathProcessing {
         return box_moves;
     }
 
-
-
     public ArrayList<String[]> outputPathsMA(ArrayDeque<int[]> agents_paths){
         int[] goal_cell = agents_paths.pop();
         int[] agent_end_path = agents_paths.peek();
@@ -274,22 +280,68 @@ public final class PathProcessing {
         }
 
         ArrayList<String[]> agent_moves = this.getMAAgentMoves(agents_paths, multiple_agents);
-
         //boxes path to be added
         return agent_moves;
     }
 
-
+//changes the time steps based on the previouse time steps of other paths changed
     public void resetTimeSteps(ArrayDeque<int[]> new_path_one) {
-            int time_steps = new_path_one.size();
-            int number_of_movable = (new_path_one.peek()).length/Coordinates.getLenght();
+        if (new_path_one.size()==0) return;
 
-            for (int[] cell_pos: new_path_one){
-                --time_steps;
-                for (int coordinate = 0; coordinate < number_of_movable; coordinate++) {
-                    Coordinates.setTime(coordinate, cell_pos, time_steps);
-                }
+        //int time_steps = new_path_one.size();
+        this.clock_time += new_path_one.size();
+        int time_steps = this.clock_time;
+        int number_of_movable = (new_path_one.peek()).length/Coordinates.getLenght();
 
+        for (int[] cell_pos: new_path_one){
+            --time_steps;
+            for (int coordinate = 0; coordinate < number_of_movable; coordinate++) {
+                Coordinates.setTime(coordinate, cell_pos, time_steps);
             }
+        }
+    }
+
+    //removes the goals coordinates of the agents becuase goals cell are box position cells
+    //and box position cells are included in the path , this can be generalized for other goals
+    public int[] getValidAgentsGoalCoordinates(ArrayDeque<int[]> path_found) {
+        if(path_found.size()==0) return new int[0];
+
+        int[] goal_coordinates = path_found.pop();
+
+        int number_of_movables = Coordinates.getNumberOfCoordinates(goal_coordinates);
+        ArrayDeque<int[]> coordinates_removed = new ArrayDeque<>();
+
+        int[] __coordinates;
+
+        int removedsize = 1;//size bigger than coordinates_removed.size()
+        while (removedsize > coordinates_removed.size()) { //if coordinates chnged continue to scan for more
+            removedsize = coordinates_removed.size();
+
+            for (int index = 0; index < number_of_movables; index++) {
+                __coordinates = path_found.pop();
+
+                int row_pos = Coordinates.getRow(index, __coordinates);
+                int col_pos = Coordinates.getCol(index, __coordinates);
+
+                int row_goal = Coordinates.getRow(index, goal_coordinates);
+                int col_goal = Coordinates.getCol(index, goal_coordinates);
+
+                if (row_goal == row_pos || col_goal == col_pos) {
+                    int[] __next_coordinates = path_found.peek();
+                    assert __next_coordinates != null;
+                    int next_row = Coordinates.getRow(index, __next_coordinates);
+                    int next_col = Coordinates.getCol(index, __next_coordinates);
+
+                    Coordinates.setRow(index, __coordinates, next_row);
+                    Coordinates.setCol(index, __coordinates, next_col);
+
+                    coordinates_removed.push(__coordinates);
+                }
+            }
+        }
+
+        while (!coordinates_removed.isEmpty()) path_found.add(coordinates_removed.pop());
+
+        return  path_found.peek();
     }
 }

@@ -65,7 +65,6 @@ public enum SearchMAState {
 
         //an array concatanation of 2 arrays ,each one for: costs and one for all the movables coordiantes
         int [][] state = new int[SearchMAState.getPropsLenth()][];
-        //state[getLocationIndex()] = new int[Coordinates.values().length];
         state[getLocationIndex()] = cell_coordinates; //will represent a tuple of the form :(time,y_coord,x_coord)
 
          state[getCostsIndex()] = new int[SearchMAState.Costs.values().length];
@@ -79,7 +78,6 @@ public enum SearchMAState {
         assert (cell_coordinates.length == Coordinates.getLenght());
 
         int[] copy_coordinates = Arrays.copyOf(prev_state[ARRAYPOS.ordinal()], prev_state[ARRAYPOS.ordinal()].length);
-
         for (int i = 0; i < prev_state[ARRAYPOS.ordinal()].length; i = i + Coordinates.getLenght()) {
             Coordinates.setTime(coordinates_index, copy_coordinates, Coordinates.getTime(i, cell_coordinates));
         }

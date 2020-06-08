@@ -15,6 +15,7 @@ import java.util.ArrayDeque;
 
 public final class GroupSearch {
     private final ConflictAvoidanceCheckingRules conflict_avoidance_checking_rules;
+    private StateSearchMAFactory.SearchState search_state = StateSearchMAFactory.SearchState.AGENTS_AND_BOXES;
 
     public GroupSearch(ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules) {
         this.conflict_avoidance_checking_rules = conflictAvoidanceCheckingRules;
@@ -64,8 +65,7 @@ public final class GroupSearch {
         illegalPathsStore.removeAllIlegalPaths();
         conflict_avoidance_checking_rules.setIllegalPathsOfGroup(start_group, conflicting_group, conflicting_paths);
 
-
-        SearchEngineOD searchEngineOD = new SearchEngineOD(start_group, this.conflict_avoidance_checking_rules, StateSearchMAFactory.SearchState.AGENTS_AND_BOXES);//StateSearchMAFactory.SearchState.AGENTS_ONLY
+        SearchEngineOD searchEngineOD = new SearchEngineOD(start_group, this.conflict_avoidance_checking_rules, this.search_state);
 
         int[] start_coordinates = searchEngineOD.getStartCoordinatesOfGroup();
         int[] goal_coordinates = searchEngineOD.getGoalsCoordinatesOfGroup();
@@ -76,5 +76,9 @@ public final class GroupSearch {
 
     public void runGroupSearchMA2(int movable1_id, int movable2_id) {
         throw new UnsupportedOperationException("group sarch not implemented");
+    }
+
+    public void setSearchState(StateSearchMAFactory.SearchState searchState) {
+        this.search_state = searchState;
     }
 }

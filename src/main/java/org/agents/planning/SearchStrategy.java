@@ -5,6 +5,7 @@ import org.agents.Box;
 import org.agents.MapFixedObjects;
 import org.agents.markings.SolvedStatus;
 import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
+import org.agents.planning.schedulling.MovablesScheduling;
 import org.agents.planning.schedulling.Synchronization;
 import org.agents.planning.schedulling.TaskScheduled;
 import org.agents.searchengine.PathProcessing;
@@ -18,7 +19,6 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
-//TO DO send  TaskScheduled to SearchEngineSA instead of depeding on it on some publih subscribe
 public final class SearchStrategy {
     private final MovablesScheduling movablesScheduling;
     ConflictAvoidanceCheckingRules avoidanceCheckingRules;
@@ -68,9 +68,9 @@ public final class SearchStrategy {
         }
 
        // get the agent path and status , get the boxes solved therir path add them
-           //     to taskScheduled in the movables scduling , add to conflict checking rules
+           //     to taskScheduled in the movables scheduling , add to conflict checking rules
 
-        LinkedList<Box> boxes = this.movablesScheduling.getBoxesScheduled();//by agent with goal satisfied???
+        LinkedList<Box> boxes = this.movablesScheduling.getBoxesScheduled();
         for (Box box : boxes){
             searchEngineSANormal.runAstar(box);
             if(searchEngineSANormal.isPathFound()){

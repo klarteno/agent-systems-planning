@@ -1,6 +1,7 @@
 package org.agents.markings;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 public enum Coordinates {
@@ -8,8 +9,6 @@ public enum Coordinates {
     ROW,// coordinate Y
     COLUMN;//corrdinate X
 
-    //TO DO decapsulation of a new data strucure like a primitive array
-    //TO DO bits for every field
     public static int[] createCoordinates() {
         return new int[Coordinates.getLenght()];
     }
@@ -159,32 +158,13 @@ public enum Coordinates {
         }
         return neighbours_found;
     }
-}
 
-//https://docs.oracle.com/javase/1.5.0/docs/guide/language/enums.html
-//https://stackoverflow.com/questions/9254637/java-enum-vs-int
-//https://docs.oracle.com/javase/10/docs/api/java/util/EnumSet.html
-//https://jaxenter.com/top-10-easy-performance-optimisations-java-114952.html
-/*
-public enum ExampleEnum {
-    value1(1),
-    value2(2),
-    valueUndefined(Integer.MAX_VALUE);
+    public static boolean areEqual(int[] coordinates_one, int[] coordinates_two) {
+        return Arrays.equals(coordinates_one,coordinates_two);
+    }
 
-    private final int enumValue;
-    private static Map enumMap;
-    ExampleEnum(int value){
-       enumValue = value;
-    }
-    static {
-       enumMap = new HashMap<Integer, ExampleEnum>();
-       for (ExampleEnum exampleEnum: ExampleEnum.values()) {
-           enumMap.put(exampleEnum.value, exampleEnum);
-        }
-    }
-    public static ExampleEnum getExampleEnum(int value) {
-        return enumMap.contains(value) ? enumMap.get(value) : valueUndefined;
+    public static int getNumberOfCoordinates(int[] goal_coordinates) {
+        return goal_coordinates.length/Coordinates.getLenght();
     }
 }
 
-* */

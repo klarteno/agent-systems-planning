@@ -842,6 +842,30 @@ public final class StateSearchMAFactory {
         int mark_id = group_marks_ids[index_to_expand];
         LinkedList<int[]> neighbours = conflict_avoidance_checking_rules.getFreeNeighboursMA(mark_id, position_to_expand, new ArrayDeque<int[]>());
 
+        //avoid box goal when is just a goal
+        switch (searchMultiAgentState) {
+            case AGENTS_ONLY:
+                int index = 0;
+                ArrayList<Integer> to_remove = new ArrayList<>();
+                for (int[] neighbour : neighbours) {
+                    for (int j = 0; j < number_of_movables; j++) {
+                        int row_goal = Coordinates.getRow(j, goals_coordinates);
+                        int col_goal = Coordinates.getCol(j, goals_coordinates);
+                        if (Coordinates.getRow(neighbour) == row_goal
+                                && Coordinates.getCol(neighbour) == col_goal){
+                            to_remove.add(index);
+                        }
+                    }
+                    index++;
+                }
+                for (int __index : to_remove) {
+                    neighbours.remove(__index);
+                }
+
+                break;
+            case AGENTS_AND_BOXES: break;
+        }
+
         for(int [] cell_pos_neighbour : neighbours){
             setConflictsStandardStateExpansion(index_to_expand, pos_coordinates, cell_pos_neighbour, standard_to_conflicts);
 
@@ -902,6 +926,31 @@ public final class StateSearchMAFactory {
             }
 
         LinkedList<int[]> neighbours = conflict_avoidance_checking_rules.getFreeNeighboursMA(mark_id, to_expand, conflicts_avoidance);
+
+        //avoid box goal when is just a goal
+        switch (searchMultiAgentState) {
+            case AGENTS_ONLY:
+                int index = 0;
+                ArrayList<Integer> to_remove = new ArrayList<>();
+                for (int[] neighbour : neighbours) {
+                    for (int j = 0; j < number_of_movables; j++) {
+                        int row_goal = Coordinates.getRow(j, goals_coordinates);
+                        int col_goal = Coordinates.getCol(j, goals_coordinates);
+                        if (Coordinates.getRow(neighbour) == row_goal
+                                && Coordinates.getCol(neighbour) == col_goal){
+                            to_remove.add(index);
+                        }
+                    }
+                    index++;
+                }
+                for (int __index : to_remove) {
+                    neighbours.remove(__index);
+                }
+
+                break;
+            case AGENTS_AND_BOXES: break;
+        }
+
 
         for(int[] cell_pos_neighbour : neighbours){
             //it imposes the same constraints but not on the already expanded positions
@@ -1214,7 +1263,6 @@ public final class StateSearchMAFactory {
         Random random = new Random();
         int number_of_coordinates = pos_coordinates.length / Coordinates.getLenght();
 
-        ///to cache
         HashMap<Integer,Integer> all_agents_indexes = new HashMap<>();//first is for position index , second is for color
         HashMap<Integer,Integer> all_boxes_indexes = new HashMap<>();//first is for position index , second is for color
 
@@ -1251,7 +1299,6 @@ public final class StateSearchMAFactory {
             }
         }
 
-        ////end cache
 
         //start with  expanding only agents
         int index_to_expand = random.nextInt(all_agents_indexes.size());//or other heuristic to use instead of random
@@ -1283,8 +1330,6 @@ public final class StateSearchMAFactory {
         LinkedList<int[]> neighbours_agent = conflict_avoidance_checking_rules.getFreeNeighboursMA(mark_id, position_to_expand, boxes_to_avoid);
 
         int __time_pos = Coordinates.getTime(position_to_expand);
-        int __row = Coordinates.getRow(position_to_expand);
-        int __column = Coordinates.getCol(position_to_expand);
         ArrayList<int[][]> neighbours_ops = new ArrayList<>();//neighbours for when the agent moves a box of his colour
 
         //this will hold the neighbours for states expanded for both movables

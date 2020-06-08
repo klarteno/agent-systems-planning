@@ -1,6 +1,5 @@
 package org.agents;
 
-import ProjectUtilsDraftsToDel.Serialization;
 import org.agents.markings.Color;
 
 import java.io.BufferedReader;
@@ -105,7 +104,6 @@ public final class SearchClient {
 
             if(parsingState == ParsingState.END){
                 System.out.println("# end map parsing"+line.toString());
-
                 break;
             }
         }
@@ -149,8 +147,7 @@ public final class SearchClient {
                     Integer color_mark = Color.getColorCoded(colors.get(Character.toString(cs[j])));
                     Integer number_mark = Character.getNumericValue(cs[j]);
                     Agent agent = new Agent(number_mark, color_mark);
-                    agent.setRowPosition(row);
-                    agent.setColumnPosition(j);
+                    agent.setCoordinatesPosition(row, j);
                     agent_marks.add(agent);
                 }
             }

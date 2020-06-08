@@ -16,8 +16,6 @@ public class SearchEngineSANormal {
 
     public SearchEngineSANormal(ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules){
          conflict_avoidance_checking_rules = conflictAvoidanceCheckingRules;
-        //move to parent class and subclass??
-        //make second option for comparator
         frontier = new PriorityQueue<int[][]>(5, Comparator.comparingInt(SearchSAStateNormal::getFCost));
     }
 
@@ -53,10 +51,6 @@ public class SearchEngineSANormal {
     }
 
     public void runAstar(Box box){
-        int y_pos = box.getRowPosition();
-        int x_pos = box.getColumnPosition();
-        int time_pos = box.getTimeStep();
-
         searched_mark_id = box.getLetterMark();
         this.runAstar(box.getLetterMark(),  box.getCoordinates(), box.getGoalPosition());
     }
@@ -66,15 +60,9 @@ public class SearchEngineSANormal {
         StateSearchSAFactoryNormal.createCostSoFar();
         StateSearchSAFactoryNormal.createClosedSet();
 
-        int total_gcost = getHeuristic(start_coordinates, goal_coordinates);
-        int heur2 = getHeuristic(start_coordinates, goal_coordinates);
-        int total_gcost3 = 0;
-        int heur4 = 0;
-        // StateSearchSAFactory.setDeadlineConstraint(start_coordinates, total_gcost3, heur4); it looks no good to be earlier tnan goal
+         // StateSearchSAFactory.setDeadlineConstraint(start_coordinates, total_gcost3, heur4); it looks no good to be earlier tnan goal
         ArrayDeque<int[]> path = new ArrayDeque<int[]>();
-        int path_index = 0;
-        int time_step = 0;
-        //unused for output from algorithm, delete it when make bench mark
+         //unused for output from algorithm, delete it when make bench mark
         HashMap<int[],int[]> came_from = new HashMap<>();
         HashMap<Integer, Stack<int[]>> paths = new HashMap<>();
 
@@ -109,8 +97,7 @@ public class SearchEngineSANormal {
             }
             StateSearchSAFactoryNormal.addToClosedSet(current_state);
 
-            time_step = SearchSAStateNormal.getTimeStep(current_state);
-            ArrayDeque<int[]> neighbours = conflict_avoidance_checking_rules.getFreeNeighboursSA(SearchSAStateNormal.getStateCoordinates(current_state), mark_id);
+                ArrayDeque<int[]> neighbours = conflict_avoidance_checking_rules.getFreeNeighboursSA(SearchSAStateNormal.getStateCoordinates(current_state), mark_id);
             prev_cell_neighbours.clear();//needed to clear it because this how this data structure works
 
             int neighbour_gcost = SearchSAStateNormal.getGCost(current_state) + COST_NEXT_CELL;;

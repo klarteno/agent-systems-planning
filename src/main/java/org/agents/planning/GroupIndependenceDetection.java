@@ -2,12 +2,11 @@ package org.agents.planning;
 
 import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
 import org.agents.planning.conflicts.ConflictAvoidanceTable;
-import org.agents.planning.conflicts.IllegalPath;
 import org.agents.searchengine.PathProcessing;
 
-
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Set;
 
 public final class GroupIndependenceDetection {
     private final ConflictAvoidanceCheckingRules conflict_avoidance_checking_rules;

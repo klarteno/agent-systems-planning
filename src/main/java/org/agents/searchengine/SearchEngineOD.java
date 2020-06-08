@@ -2,6 +2,7 @@ package org.agents.searchengine;
 
 import org.agents.Agent;
 import org.agents.Box;
+import org.agents.Utils;
 import org.agents.markings.Coordinates;
 import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
 import org.agents.planning.conflicts.dto.SimulationConflict;
@@ -66,7 +67,7 @@ public class SearchEngineOD {
         assert start_coordinates.length/Coordinates.getLenght() > 1;
 
         String logFileName = "runOperatorDecomposition_file";
-        //Utils.logStartForFile(logFileName);
+        Utils.logStartForFile(logFileName);
 
         HashMap<Integer, ArrayList<SimulationConflict>> standard_to_conflicts = new HashMap<>();
         HashMap<Integer, int[]> intermediate_came_from_standard = new HashMap<>();
@@ -115,15 +116,6 @@ public class SearchEngineOD {
                     int[] next_key2;
                     boolean removed;
                     while (came_from.get(next_key) != start_coordinates){
-                        /*        to remove
-                        if(Coordinates.getRow(0,next_key) == 3 && Coordinates.getCol(0,next_key) == 5  ){
-                            start_to_add_to_del = true;
-                            standard_states_expanded_to_del.add(next_key);
-                        }
-
-                        if(start_to_add_to_del)
-                            standard_states_expanded_to_del.add(next_key);
-                         */
                         next_key2 = next_key;
                         next_key = came_from.get(next_key);
                         path_normal.add(next_key);

@@ -17,12 +17,8 @@ final class StateSearchSAFactoryNormal {
 
     SearchSAStateNormal searchState;
 
-    //this methos is once when the prority queue is created
-    //avoid recomputing the formula for heuristic
     public static void createCostSoFar() {
-        //check later if should be encapsulated in a staic class like SearchState.java
         //third index : one for g_cost   and second one for f_cost
-        //replace third index dimension with bits shifted
         cost_so_far = new int[MapFixedObjects.MAX_ROW][MapFixedObjects.MAX_COL][3];
         //cost_so_far[coord_y][coord_x]=new int[]{g_cost,f_cost,is_in_heap};
     }
@@ -34,11 +30,8 @@ final class StateSearchSAFactoryNormal {
     */
     public static void putCostSoFar(int[] next_pos, int g_cost, int f_cost, boolean is_in_heap) {
         assert g_cost > 0;
-        //int[] pos_state = SearchState.getCellCoordinates(state);
         int y = Coordinates.getRow(0, next_pos);
-        //int y = SearchState.getYCoordinate(state);
         int x = Coordinates.getCol(0, next_pos);
-        //int x = SearchState.getXCoordinate(state);
 
         cost_so_far[y][x][G_COST] = g_cost ;
         cost_so_far[y][x][F_COST] = f_cost ;
@@ -77,13 +70,9 @@ final class StateSearchSAFactoryNormal {
     }
 
     public static boolean isInCostSoFar(int[] next_pos) {
-        //int[] pos_state = SearchState.getCellCoordinates(state);
         int time_state = Coordinates.getTime(0, next_pos);
-        //int time_state = SearchState.getTimeStep(state);
         int y = Coordinates.getRow(0, next_pos);
-        //int y = SearchState.getYCoordinate(state);
         int x = Coordinates.getCol(0, next_pos);
-        //int x = SearchState.getXCoordinate(state);
 
         return cost_so_far[y][x][G_COST] > 0 ;
     }
@@ -100,12 +89,7 @@ final class StateSearchSAFactoryNormal {
     }
 
     public static boolean isInHeap(int[][] next_) {
-        //int[] pos_state = SearchState.getCellCoordinates(state);
-        //int time_state = Coordinates.getTime(next_);
-        //int time_state = SearchState.getTimeStep(state);
-        //int y = Coordinates.getRow(next_);
         int y = SearchSAStateNormal.getYCoordinate(next_);
-        //int x = Coordinates.getCol(next_);
         int x = SearchSAStateNormal.getXCoordinate(next_);
 
         return cost_so_far[y][x][IN_HEAP] > 0 ;
@@ -184,11 +168,8 @@ final class StateSearchSAFactoryNormal {
     public static void addToClosedSet(int[][] state) {
         int[] pos_state = SearchSAStateNormal.getStateCoordinates(state);
         int g_cost = SearchSAStateNormal.getGCost(state);
-        //int time_state = Coordinates.getTime(pos_state);
         int time_state = SearchSAStateNormal.getTimeStep(state);
-        //int y = Coordinates.getRow(pos_state);
         int y = SearchSAStateNormal.getYCoordinate(state);
-        //int x = Coordinates.getCol(pos_state);
         int x = SearchSAStateNormal.getXCoordinate(state);
 
         int prev_g_cost = closed_states[y][x][0];

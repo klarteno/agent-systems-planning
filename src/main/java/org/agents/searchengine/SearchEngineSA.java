@@ -17,8 +17,6 @@ public class SearchEngineSA {
 
     public SearchEngineSA(ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules){
          conflict_avoidance_checking_rules = conflictAvoidanceCheckingRules;
-        //move to parent class and subclass??
-        //make second option for comparator
         frontier = new PriorityQueue<int[][]>(5, Comparator.comparingInt(SearchSAState::getFCost));
     }
 
@@ -105,15 +103,9 @@ public class SearchEngineSA {
         StateSearchSAFactory.createCostSoFar();
         StateSearchSAFactory.createClosedSet();
 
-        int total_gcost = getHeuristic(start_coordinates, goal_coordinates);
-        int heur2 = getHeuristic(start_coordinates, goal_coordinates);
-        int total_gcost3 = 0;
-        int heur4 = 0;
-        // StateSearchSAFactory.setDeadlineConstraint(start_coordinates, total_gcost3, heur4); it looks no good to be earlier tnan goal
+      // StateSearchSAFactory.setDeadlineConstraint(start_coordinates, total_gcost3, heur4); it looks no good to be earlier tnan goal
         ArrayDeque<int[]> path = new ArrayDeque<int[]>();
-        int path_index = 0;
-        int time_step = 0;
-        //unused for output from algorithm, delete it when make bench mark
+         //unused for output from algorithm, delete it when make bench mark
         HashMap<int[],int[]> came_from = new HashMap<>();
         HashMap<Integer, Stack<int[]>> paths = new HashMap<>();
 
@@ -121,7 +113,6 @@ public class SearchEngineSA {
         frontier.add(next_state);
         StateSearchSAFactory.putCostSoFar(next_state);
         StateSearchSAFactory.mark_state_inqueue(next_state,true);
-
 
         //init state with dummy variables
         int[][] current_state = StateSearchSAFactory.createDummyState();
@@ -154,14 +145,12 @@ public class SearchEngineSA {
             }
             StateSearchSAFactory.addToClosedSet(current_state);
 
-            time_step = SearchSAState.getTimeStep(current_state);
-            ArrayDeque<int[]> neighbours = conflict_avoidance_checking_rules.getFreeNeighboursSA(SearchSAState.getStateCoordinates(current_state), mark_id);
+                ArrayDeque<int[]> neighbours = conflict_avoidance_checking_rules.getFreeNeighboursSA(SearchSAState.getStateCoordinates(current_state), mark_id);
             prev_cell_neighbours.clear();//needed to clear it because this how this data structure works
 
             int neighbour_gcost;
 
-            boolean isFound = false;
-            for(int[] cell_neighbour: neighbours){
+                for(int[] cell_neighbour: neighbours){
                 //assert cell_neighbour.length;
                 if (!Arrays.equals(SearchSAState.getStateCoordinates(previouse_state), cell_neighbour)){
                     prev_cell_neighbours.add(cell_neighbour);
