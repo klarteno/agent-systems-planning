@@ -1,13 +1,15 @@
 package sysmain;
 
-import org.agents.*;
+import org.agents.Agent;
+import org.agents.Box;
+import org.agents.MapFixedObjects;
+import org.agents.SearchClient;
 import org.agents.markings.SolvedStatus;
 import org.agents.planning.GroupSearch;
-import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
 import org.agents.planning.conflicts.ConflictAvoidanceTable;
 import org.agents.planning.schedulling.*;
 import org.agents.searchengine.PathProcessing;
-import org.agents.searchengine.StateSearchMAFactory;
+import org.agents.searchengine.SearchTaskResult;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -118,74 +120,50 @@ public final class Main{
     }
 
     public synchronized static ArrayList<String[]> getPathOperatorDecompositionScheduling() throws Exception {
-        // mapFixedObjects.setUpTrackedMovables(MapFixedObjects.getAgents(), MapFixedObjects.getBoxes())
         LinkedList<Agent> agents_unsolved = MapFixedObjects.getAgents();
 
         DivideAndScheduleMovables divideAndScheduleMovables = new DivideAndScheduleMovables(MapFixedObjects.getAllBoxesIds());
         MovablesScheduling movables_scheduling = divideAndScheduleMovables.getAgentsScheduled(agents_unsolved);
 
-        Set<Integer> agents_ids = movables_scheduling.getAgentsIds();
-        Set<Integer> boxes_ids = movables_scheduling.getBoxesIds();
         SearchScheduled sched_group = movables_scheduling.getStartGroupAgentsBoxes_ToSearch();
         int[][] total_group = sched_group.getTotalGroup();
-
-        int[] start_group_agents = total_group[SearchScheduled.START_GROUP_AGENTS];
-        int[] index_agents = total_group[SearchScheduled.INDEX_OF_AGENTS];
-        int[] start_group = total_group[SearchScheduled.INDEX_OF_GROUP];
-        HashMap<Integer, int[]> agents_idx_to_boxes_idx = sched_group.getAgentstIdxsToBoxesIdxs();
-
-        TrackedGroups trackedGroups = new TrackedGroups(agents_ids, boxes_ids);
-        Synchronization synchronised_time = new Synchronization();
-        ConflictAvoidanceCheckingRules avoidanceCheckingRules = new ConflictAvoidanceCheckingRules(trackedGroups, synchronised_time);
-        GroupSearch groupSearch = new GroupSearch(avoidanceCheckingRules);
-
-        int[] conflicting_group = new int[0];
-        int[][][] conflicting_paths = new int[0][][];
-
         total_group_copy = Arrays.copyOf(total_group, total_group.length);
         for (int row = 0; row < total_group.length; row++) {
             total_group_copy[row] = Arrays.copyOf(total_group[row], total_group[row].length);
         }
 
+        int[] start_group_agents = sched_group.getTotalGroup()[SearchScheduled.START_GROUP_AGENTS];
         for (int i = 0; i < start_group_agents.length; i++) {
             System.out.println("#start_group_agents: " + i +" "+ start_group_agents[i] + " ");
         }
 
-        StateSearchMAFactory.SearchState searchState_1 = StateSearchMAFactory.SearchState.AGENTS_ONLY;
-        groupSearch.setSearchState(searchState_1);
-        ArrayDeque<int[]> path_found_1 = groupSearch.runGroupSearchMA(start_group_agents, conflicting_group, conflicting_paths);
+        TrackedGroups trackedGroups = movables_scheduling.getTrackedGroups();
+        GroupSearch groupSearch = new GroupSearch(trackedGroups);
+
+        int[] conflicting_group = new int[0];
+        int[][][] conflicting_paths = new int[0][][];
+
+
+        SearchTaskResult searchTaskResult = groupSearch.runAgentsSearchMA(sched_group, conflicting_group, conflicting_paths);
+        ArrayDeque<int[]> path_found_1 = searchTaskResult.getPath();
+
         PathProcessing pathProcessing = new PathProcessing();
         pathProcessing.resetTimeSteps(path_found_1);
-        divideAndScheduleMovables.setAgentsGoalsFound(start_group_agents , path_found_1);
+        divideAndScheduleMovables.setAgentsGoalsFound(searchTaskResult);
 
-
-        int[] final_agents_position = pathProcessing.getValidAgentsGoalCoordinates(path_found_1);
-        int[] box_pos = path_found_1.peek();
         if(path_found_1.size() > 0){
-            //set start_group_agents solved status to finding boxes
-            // // here the coordinates of agents became goal coordinates
-            boolean is_solved_changed = movables_scheduling.setAgentsScheduledSolvedResults(start_group_agents, final_agents_position, SolvedStatus.GOAL_STEP_SOLVED);
-            //test that the coordinates of agents became goal coordinates;
-            Agent agent2 = MapFixedObjects.getByAgentMarkId(start_group_agents[1]);
-            int[] g_pos2 = agent2.getGoalPosition();
-            int[] pos2 = agent2.getCoordinates();
-             Agent agent1 = MapFixedObjects.getByAgentMarkId(start_group_agents[0]);
-            int[] g_pos1 = agent1.getGoalPosition();
-            int[] pos1 = agent1.getCoordinates();
+            int[] final_agents_position = pathProcessing.getValidAgentsGoalCoordinates(searchTaskResult);
+            boolean is_solved_changed = movables_scheduling.setAgentsScheduledSolvedResults(searchTaskResult, final_agents_position, SolvedStatus.GOAL_STEP_SOLVED);
         }
 
-        //ArrayDeque<int[]> path_found = groupSearch.runGroupSearchMA(start_group, conflicting_group, conflicting_paths);
-         String[] path_not_found = new String[index_agents.length];
+         String[] path_not_found = new String[sched_group.getTotalGroup()[SearchScheduled.INDEX_OF_AGENTS].length];
         for (int i = 0; i < path_not_found.length; i++) {
             path_not_found[i] = "PATH NOT FOUND";
         }
 
         ArrayList<String[]> path_output_found_1 = new ArrayList<>();
         if (path_found_1.size() > 0){
-            //pathProcessing = new PathProcessing();
-            //pathProcessing.resetTimeSteps(path_found);
-            /////////path processing
-            path_output_found_1 = pathProcessing.getMAAgentMoves(path_found_1, index_agents);
+            path_output_found_1 = pathProcessing.getMAAgentMoves(searchTaskResult.getPath(), sched_group.getTotalGroup()[SearchScheduled.INDEX_OF_AGENTS]);
             System.out.println("#path_output_found_1 : ");
 
             for (String[] __msg : path_output_found_1){
@@ -195,16 +173,12 @@ public final class Main{
             String[] msg111 = path_output_found_1.get(path_output_found_1.size() - 1);
             System.out.println("#msg111  msg111 msg111:  " + Arrays.toString(msg111));
 
-
             for (int i = path_output_found_1.size() - 1; i > path_output_found_1.size() - 4 ; i--) {
                 String msg_i = Arrays.toString(path_output_found_1.get(i));
                 if (msg_i.equals("NoOp;NoOp;")){
                     System.out.println("#msg111 true true:  " + msg_i);
-
                 }
             }
-
-
 
             //path_output_found = pathProcessing.getMAAgentBoxesMoves(path_found, index_agents, agents_idx_to_boxes_idx);
         }else {
@@ -217,37 +191,19 @@ public final class Main{
         System.out.println("######################## NEXT SEARCH ######################");
 
         TaskScheduled task_scheduled = divideAndScheduleMovables.getSearchResults();
+        SearchScheduled search_sched = movables_scheduling.getMatchedAgentsBoxesIndexes(task_scheduled);
 
-        ArrayList<Integer> agents_solved = task_scheduled.getAgentsSolved(SolvedStatus.GOAL_STEP_SOLVED);
-        Set<Map.Entry<Integer, ArrayDeque<Integer>>> agents_to_boxes_ = task_scheduled.getAgentsToBoxes();
-        Set<Integer> res1 = task_scheduled.getGroupMarksSolved();
-        int[] __agts = task_scheduled.getValidAgents();
-        int[] __bxs = task_scheduled.getValidBoxes();
-        int[] ___group_total = task_scheduled.getGroupsMarks();
-
-        SearchScheduled search_sched = movables_scheduling.getMatchedAgentsBoxesIndexes(__agts, __bxs);
-        total_group = search_sched.getTotalGroup();
-
-        index_agents = total_group[SearchScheduled.INDEX_OF_AGENTS];
-        start_group = total_group[SearchScheduled.INDEX_OF_GROUP];
-        agents_idx_to_boxes_idx = search_sched.getAgentstIdxsToBoxesIdxs();
-
-        for (int i = 0; i < start_group.length; i++) {
-            System.out.println("#start_group agents with boxes: " + i +" "+ start_group[i] + " ");
+        for (int i = 0; i < search_sched.getTotalGroup()[SearchScheduled.INDEX_OF_GROUP].length; i++) {
+            System.out.println("#start_group agents with boxes: " + i +" "+ search_sched.getTotalGroup()[SearchScheduled.INDEX_OF_GROUP][i] + " ");
         }
 
-        //change the start goal coordinates in runGroupSearchMA :
-        ///movables_scheduling.setTupStartCoordinatesAgents(agents_solved)
-        StateSearchMAFactory.SearchState searchState_2 = StateSearchMAFactory.SearchState.AGENTS_AND_BOXES;
-        groupSearch.setSearchState(searchState_2);
-        ArrayDeque<int[]> path_found_2 = groupSearch.runGroupSearchMA(start_group, conflicting_group, conflicting_paths);
+        SearchTaskResult searchTaskResult2 = groupSearch.runAgentsBoxesSearchMA(search_sched, conflicting_group, conflicting_paths);
+        ArrayDeque<int[]> path_found_2 = searchTaskResult2.getPath();
 
         ArrayList<String[]> path_output_found_2 = new ArrayList<>();
         if (path_found_2.size() > 0){
             pathProcessing.resetTimeSteps(path_found_2);
-            /////////path processing
-            //path_output_found = pathProcessing.getMAAgentMoves(path_found, index_agents);
-            path_output_found_2 = pathProcessing.getMAAgentBoxesMoves(path_found_2, index_agents, agents_idx_to_boxes_idx);
+            path_output_found_2 = pathProcessing.getMAAgentBoxesMoves(searchTaskResult2);
         }else {
             System.out.println("########################PATH NOT FOUND######################");
         }

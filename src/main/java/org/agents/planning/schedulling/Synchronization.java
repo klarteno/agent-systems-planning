@@ -21,12 +21,14 @@ public class Synchronization {
         this.clock_central_time = new AtomicInteger(0);
     }
 
-    public void processTaskScheduled(TaskScheduled pathDescentralized){
-        HashMap<Integer, ArrayDeque<int[]>> agents_paths = pathDescentralized.getAgentsToPaths();
+    public void processTaskScheduled(TaskScheduled task){
+        task.addClockTime(this.clock_central_time.get());
+
+        HashMap<Integer, ArrayDeque<int[]>> agents_paths = task.getAgentsToPaths();
         int[] clocks_agents = getMinMaxTime(agents_paths);
         int max_path_time1 = clocks_agents[MAXIMUM_CLOCK_TIME];
 
-        HashMap<Integer, ArrayDeque<int[]>> boxes_paths = pathDescentralized.getBoxesToPaths();
+        HashMap<Integer, ArrayDeque<int[]>> boxes_paths = task.getBoxesToPaths();
         int[] clocks_boxes = getMinMaxTime(boxes_paths);
         int max_path_time2 = clocks_boxes[MAXIMUM_CLOCK_TIME];
 

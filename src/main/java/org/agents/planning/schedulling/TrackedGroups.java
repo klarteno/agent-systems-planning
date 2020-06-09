@@ -20,11 +20,9 @@ public class TrackedGroups {
 
         this.ungrouped_movables = new HashSet<>(this.movables_ids.size());
         ungrouped_movables.addAll(this.movables_ids);
-        
-        initIdsIndexes();//indexes the mark_ids and stores a index
     }
 
-    private void initIdsIndexes(){
+    private void initIdsIndexesRandom(){
         this.ids_indexes = new HashMap<>(this.movables_ids.size());
         int index = 0;
         for (Integer next : movables_ids){
@@ -32,11 +30,28 @@ public class TrackedGroups {
         }
     }
 
+    //indexes the mark_ids and stores a index
+    public void initIdsIndexes(int[] start_group_agents, int[] boxes){
+        this.ids_indexes = new HashMap<>(this.movables_ids.size());
+        int index = 0;
+        for (Integer next : movables_ids){
+            for (int i = 0; i < start_group_agents.length; i++) {
+                if (next == start_group_agents[i])  ids_indexes.put(next, i);
+            }
+
+            for (int i = 0; i < boxes.length; i++) {
+                if (next == boxes[i])  ids_indexes.put(next, i);
+            }
+         }
+
+        assert this.ids_indexes.size() == (start_group_agents.length + boxes.length);
+    }
+
     public Set<Integer> getAgentsScheduledIds() {
         return this.agents_scheduled_ids;
     }
 
-    public Set<Integer> getBoxesScheduled_Ids() {
+    public Set<Integer> getBoxesScheduledIds() {
         return this.boxes_scheduled_ids;
     }
 
@@ -44,9 +59,7 @@ public class TrackedGroups {
         return  this.movables_ids;
     }
 
-    public int getIndexFor(int mark_id) {
-        return this.ids_indexes.get(mark_id);
-    }
+    public int getIndexFor(int mark_id) { return this.ids_indexes.get(mark_id); }
 
     public int getGroupSize(){
             return this.movables_ids.size();

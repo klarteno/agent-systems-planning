@@ -10,7 +10,7 @@ import java.util.*;
 public final class ConflictAvoidanceTable implements Serializable {
     private final PathsStoreQuerying pathsStoreQuerying;
     private final DisjointSet group_set;//groups the movables objects
-    private final TrackedGroups tracked_groups;
+    private TrackedGroups tracked_groups;
 
     public final static int CELL_MARK1_TO_AVOID = -1;
     public final static int CELL_MARK2_TO_AVOID = 0;
@@ -24,6 +24,11 @@ public final class ConflictAvoidanceTable implements Serializable {
         this.pathsStoreQuerying = new PathsStoreQuerying(this.tracked_groups);
         this.group_set = new DisjointSet(movablesGroup.getGroupSize());
     }
+
+    public void setTrackedGroups(TrackedGroups trackedGroups) {
+        this.tracked_groups = trackedGroups;
+    }
+
 
     public int[] getAllUnGroupedIDs(){
         Set<Integer> tracked = this.tracked_groups.getAllUnGroupedIDs();
@@ -138,7 +143,7 @@ public final class ConflictAvoidanceTable implements Serializable {
         this.pathsStoreQuerying.setCellLocationOf(group_marks_total, paths);
     }
 
-    public void replaceMarkedPathFor(int mark_id, ArrayDeque<int[]> path, int clock_time_offset){
+    public void replaceMarkedPathFor(int mark_id, ArrayDeque<int[]> path){
         //increase by clock_time_offset the whole path
         this.pathsStoreQuerying.setCellLocationOf(mark_id, path);
     }
@@ -301,4 +306,7 @@ public final class ConflictAvoidanceTable implements Serializable {
 
         return new ArrayList[]{grouped_movables, grouped_paths};
     }
+
+
+
 }

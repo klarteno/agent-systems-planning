@@ -5,6 +5,7 @@ import org.agents.Box;
 import org.agents.MapFixedObjects;
 import org.agents.action.Direction;
 import org.agents.markings.Coordinates;
+import org.agents.planning.schedulling.SearchScheduled;
 import org.agents.searchengine.normal.SearchEngineSANormal;
 
 import java.util.*;
@@ -49,8 +50,6 @@ public final class PathProcessing {
                     //time_step_moves[i] = MoveAction + "(" + next_direction[i].toString() + ")";
                     time_step_moves[i] = MoveAction + "(" + dir_str + ")";
                 }
-
-
             }
             agent_moves.add(time_step_moves);
             time_step_moves = new String[index_agents.length];
@@ -59,7 +58,11 @@ public final class PathProcessing {
         return agent_moves;
     }
 
-    public synchronized ArrayList<String[]> getMAAgentBoxesMoves(ArrayDeque<int[]> path, int[] index_agents, HashMap<Integer,int[]> agents_idx_to_boxes_idx){
+    public synchronized ArrayList<String[]> getMAAgentBoxesMoves(SearchTaskResult searchTaskResult){
+        ArrayDeque<int[]> path =  searchTaskResult.getPath();
+        int[] index_agents =  searchTaskResult.getTotalGroup()[SearchScheduled.INDEX_OF_AGENTS];          ;
+        HashMap<Integer,int[]> agents_idx_to_boxes_idx = searchTaskResult.getAgentstIdxsToBoxesIdxs();
+
         assert path != null;
 
         ArrayList<String[]> agent_moves = new ArrayList<>();
@@ -225,7 +228,8 @@ public final class PathProcessing {
 
         agent.setGoalPosition(box_to_search.getRowPosition(), box_to_search.getColumnPosition());
         searchEngine.runAstar(agent);
-        ArrayDeque<int[]> agent_path = searchEngine.getPath();
+        SearchTaskResult searchTaskResult = searchEngine.getPath();
+        ArrayDeque<int[]> agent_path = searchTaskResult.getPath();
         int[] agent_goal = agent_path.pop();
         assert (Coordinates.getRow(agent_goal) == box_to_search.getRowPosition()) && (Coordinates.getCol(agent_goal) == box_to_search.getColumnPosition());
         int[] agent_end_path = agent_path.peek();
@@ -233,7 +237,9 @@ public final class PathProcessing {
 
 
         searchEngine.runAstar(box_to_search);
-        ArrayDeque<int[]> box_path = searchEngine.getPath();
+        SearchTaskResult searchTaskResult1 = searchEngine.getPath();
+        ArrayDeque<int[]> box_path = searchTaskResult1.getPath();
+
         ArrayList<String> box_moves = this.getBoxMoves(agent, agent_end_path, box_path);
 
         box_moves.addAll(agent_moves);
@@ -303,7 +309,9 @@ public final class PathProcessing {
 
     //removes the goals coordinates of the agents becuase goals cell are box position cells
     //and box position cells are included in the path , this can be generalized for other goals
-    public int[] getValidAgentsGoalCoordinates(ArrayDeque<int[]> path_found) {
+    public int[] getValidAgentsGoalCoordinates(SearchTaskResult searchTaskResult) {
+        ArrayDeque<int[]> path_found = searchTaskResult.getPath();
+
         if(path_found.size()==0) return new int[0];
 
         int[] goal_coordinates = path_found.pop();

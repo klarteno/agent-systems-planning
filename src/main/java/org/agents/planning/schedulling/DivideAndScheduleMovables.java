@@ -1,10 +1,14 @@
-package org.agents;
+package org.agents.planning.schedulling;
 
 import datastructures.HungarianAlgorithmResizable;
+import org.agents.Agent;
+import org.agents.Box;
+import org.agents.MapFixedObjects;
 import org.agents.markings.Coordinates;
 import org.agents.markings.SolvedStatus;
 import org.agents.planning.schedulling.MovablesScheduling;
 import org.agents.planning.schedulling.TaskScheduled;
+import org.agents.searchengine.SearchTaskResult;
 
 import java.io.Serializable;
 import java.util.*;
@@ -226,7 +230,7 @@ public class DivideAndScheduleMovables {
         return taskScheduled;
     }
 
-    public void setAgentsGoalsFound(int[] start_group_agents, ArrayDeque<int[]> path_found) {
+    private void setAgentsGoalsFound(int[] start_group_agents, ArrayDeque<int[]> path_found) {
         if(path_found.size()==0) return;
 
         int[] goal_found = path_found.peek();
@@ -242,6 +246,12 @@ public class DivideAndScheduleMovables {
                 agents_to_solved_goals.put(agt_id, goals_solved);
             }
         }
+    }
+
+    public void setAgentsGoalsFound(SearchTaskResult searchTaskResult) {
+        this.setAgentsGoalsFound(searchTaskResult.getStartGroupAgents(), searchTaskResult.getPath());
+
+
     }
 }
 

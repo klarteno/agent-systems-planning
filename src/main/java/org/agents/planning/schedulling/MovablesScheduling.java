@@ -5,6 +5,7 @@ import org.agents.Box;
 import org.agents.MapFixedObjects;
 import org.agents.markings.Coordinates;
 import org.agents.markings.SolvedStatus;
+import org.agents.searchengine.SearchTaskResult;
 
 import java.util.*;
 
@@ -26,7 +27,9 @@ public final class MovablesScheduling {
         agents_ids_to_boxes_ids = new HashMap<>();
      }
 
-    public boolean setAgentsScheduledSolvedResults(int[] group_agents, int[] final_agents_position, SolvedStatus solvedStatus) {
+    public boolean setAgentsScheduledSolvedResults(SearchTaskResult searchTaskResult, int[] final_agents_position, SolvedStatus solvedStatus) {
+        int[] group_agents = searchTaskResult.getStartGroupAgents();
+
         boolean status_changed = false;
         for (Agent agent: this.agents_scheduled){
             for (int group_index = 0; group_index < group_agents.length; group_index++) {
@@ -144,10 +147,14 @@ public final class MovablesScheduling {
             agents_group_ids[index] = ag_id;
         }
 
-        return this.getMatchedAgentsBoxesIndexes( agents_group_ids, box_group_ids);
+        return getMatchedAgentsBoxesIndexes2( agents_group_ids, box_group_ids, this.agents_ids_to_boxes_ids);
     }
 
-    public SearchScheduled getMatchedAgentsBoxesIndexes(int[] agents_group_ids, int[] box_group_ids){
+    public SearchScheduled getMatchedAgentsBoxesIndexes(TaskScheduled task_scheduled){
+        int[] agents_group_ids = task_scheduled.getValidAgents();
+        int[] box_group_ids =  task_scheduled.getValidBoxes();
+
+
         for (int ag_i = 0; ag_i < agents_group_ids.length; ag_i++) {
             int ag_id = agents_group_ids[ag_i];
             Set<Integer> boxes_ids = this.agents_ids_to_boxes_ids.get(ag_id);

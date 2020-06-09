@@ -15,7 +15,7 @@ final class PathsStoreQuerying implements Serializable {
     private int paths_rows;
     private int paths_columns;
 
-    public PathsStoreQuerying(TrackedGroups trackedGroups) {
+    PathsStoreQuerying(TrackedGroups trackedGroups) {
         this.tracked_groups = trackedGroups;
         this.setUpTracked(trackedGroups);
     }

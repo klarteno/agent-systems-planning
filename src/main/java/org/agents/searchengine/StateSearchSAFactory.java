@@ -15,6 +15,8 @@ final class StateSearchSAFactory {
     private static int [][][] cost_so_far;
     private static int [][][] closed_states;
 
+    private static int[] start_coordinates;
+    private static int[] goals_coordinates;
 
     public static void createCostSoFar() {
           cost_so_far = new int[MapFixedObjects.MAX_ROW][MapFixedObjects.MAX_COL][3];
@@ -236,4 +238,19 @@ final class StateSearchSAFactory {
         return false;
     }
 
+    public static void setStartCoordinatesGroup(int[] startCoordinates) {
+        start_coordinates = startCoordinates;
+    }
+
+    public static void setGoalsCoordinatesOfGroup(int[] goalCoordinates) {
+        goals_coordinates = goalCoordinates;
+    }
+
+    public static int[] getStartCoordinatesOfGroup() {
+        return start_coordinates;
+    }
+
+    public static int[] getGoalsCoordinatesOfGroup() {
+        return goals_coordinates;
+    }
 }

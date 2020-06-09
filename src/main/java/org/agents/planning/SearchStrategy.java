@@ -10,9 +10,9 @@ import org.agents.planning.schedulling.Synchronization;
 import org.agents.planning.schedulling.TaskScheduled;
 import org.agents.searchengine.PathProcessing;
 import org.agents.searchengine.SearchEngineSA;
+import org.agents.searchengine.SearchTaskResult;
 import org.agents.searchengine.normal.SearchEngineSANormal;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -27,7 +27,7 @@ public final class SearchStrategy {
         this.movablesScheduling = movablesScheduling;
         //TrackedGroups trackedGroups = movablesScheduling.getTrackedGroups();
         synchronised_time.resetCentralTime();
-        this.avoidanceCheckingRules = new ConflictAvoidanceCheckingRules(movablesScheduling.getTrackedGroups(), synchronised_time);
+        this.avoidanceCheckingRules = new ConflictAvoidanceCheckingRules(movablesScheduling.getTrackedGroups());
     }
 
     public ArrayDeque<ListIterator<String>> getPathsSequencial() {
@@ -90,24 +90,7 @@ public final class SearchStrategy {
         return taskScheduled;
     }
 
-    //this SearchStrategy will set the SynchronizedTime  in the ConflictAvoidanceCheckingRules , ConflictAvoidanceCheckingRules maintains the overall time clock
-    //and gives a final TaskScheduled with paths from the centralized search
-    public ArrayList<TaskScheduled> runCentralizedSearch(ArrayDeque<TaskScheduled> paths_found) throws IOException {
-        while (!paths_found.isEmpty())
-            this.avoidanceCheckingRules.addTaskScheduledPaths(paths_found.pop());
-
-
-        GroupIndependenceDetection searchGroupStrategy = new GroupIndependenceDetection(this.avoidanceCheckingRules);
-        boolean are_paths_found = searchGroupStrategy.runIndependenceDetection();
-
-        ArrayList<TaskScheduled> task_result = new ArrayList<>();
-        if (are_paths_found)
-            task_result = this.avoidanceCheckingRules.getValidTasks();
-
-        return task_result;
-    }
-
-    public ArrayDeque<int[]> runSearch(SearchEngineSA searchEngine, int movable_id) {
+    public SearchTaskResult runSearch(SearchEngineSA searchEngine, int movable_id) {
         Serializable obj = MapFixedObjects.getByMarkNo(movable_id);
 
         if (obj instanceof Box){

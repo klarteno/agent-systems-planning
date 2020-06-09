@@ -11,10 +11,9 @@ import java.util.*;
 
 public final class ConflictAvoidanceCheckingRules {
     private final ArrayList<TaskScheduled> task_scheduled_list;
-    private final Synchronization synchronised_time;
 
     private final IllegalPathsStore illegal_paths_store;
-    //TO DO : extend to multiple ConflictAvoidanceTable
+
     private final ConflictAvoidanceTable conflict_avoidance_table;
 
     public enum SearchState {
@@ -24,11 +23,16 @@ public final class ConflictAvoidanceCheckingRules {
     }
     private SearchState search_state = SearchState.NO_CHECK_CONFLICTS;
 
-    public ConflictAvoidanceCheckingRules(TrackedGroups trackedGroups, Synchronization synchronised_time) {
+    public ConflictAvoidanceCheckingRules(TrackedGroups trackedGroups) {
         this.conflict_avoidance_table = new ConflictAvoidanceTable(trackedGroups);
+
         this.illegal_paths_store = new IllegalPathsStore(this.conflict_avoidance_table );
         this.task_scheduled_list = new ArrayList<>();
-        this.synchronised_time = synchronised_time;
+    }
+
+    //it is also resetting the TrackedGroups stored
+    public void setTrackedGroups(TrackedGroups trackedGroups){
+        this.conflict_avoidance_table.setTrackedGroups(trackedGroups);
     }
 
     //change this when the searching algorithm requires to check for conflicts
@@ -89,23 +93,15 @@ public final class ConflictAvoidanceCheckingRules {
         HashMap<Integer, ArrayDeque<int[]> > agents_path = taskScheduled.getAgentsToPaths();
         HashMap<Integer, ArrayDeque<int[]> > boxes_path = taskScheduled.getBoxesToPaths();
 
-
-        int clock_time = this.synchronised_time.getCentralTime();
-        //assert clock_time is zero first time
-
         for (Integer key : agents_path.keySet()){
             ArrayDeque<int[]> path = agents_path.get(key);
-            this.conflict_avoidance_table.replaceMarkedPathFor(key, path, clock_time);
+            this.conflict_avoidance_table.replaceMarkedPathFor(key, path);
         }
 
         for (Integer key : boxes_path.keySet()){
             ArrayDeque<int[]> path = boxes_path.get(key);
-            this.conflict_avoidance_table.replaceMarkedPathFor(key, path, clock_time);
+            this.conflict_avoidance_table.replaceMarkedPathFor(key, path);
         }
-
-        this.synchronised_time.processTaskScheduled(taskScheduled);
-        int clock_time2 = this.synchronised_time.getCentralTime();
-        this.synchronised_time.resetCentralTime();
 
         this.task_scheduled_list.add(taskScheduled);
     }
@@ -155,6 +151,7 @@ public final class ConflictAvoidanceCheckingRules {
 
     public void setIllegalPathsOfGroup(int[] start_group, int[] conflicting_group, int[][][] conflicting_paths) {
         ArrayList<SimulationConflict> paths_conflicts = this.getIllegalPathsStore().getConflicts(start_group, conflicting_group);
+
         int[][][] start_group_paths = this.getConflictsTable().getMarkedPaths(start_group);
 
         if (paths_conflicts.size()>0){

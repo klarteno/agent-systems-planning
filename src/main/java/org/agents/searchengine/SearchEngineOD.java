@@ -1,7 +1,5 @@
 package org.agents.searchengine;
 
-import org.agents.Agent;
-import org.agents.Box;
 import org.agents.Utils;
 import org.agents.markings.Coordinates;
 import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
@@ -35,9 +33,16 @@ public class SearchEngineOD {
         return StateSearchMAFactory.getGoalsCoordinatesGroup();
     }
 
-    public ArrayDeque<int[]> getPath(){
-        //assert this.path.size() > 0;
-        return path;
+    public SearchTaskResult getPath(){
+        SearchTaskResult searchTaskResult = new SearchTaskResult(this.path);
+        searchTaskResult.setGroup(StateSearchMAFactory.getStartGroup());
+        searchTaskResult.addStartCoordinates(this.getStartCoordinatesOfGroup());
+        searchTaskResult.addGoalCoordinates(this.getGoalsCoordinatesOfGroup());
+        ArrayList<int[]> last_conflicts = new ArrayList<>();
+        last_conflicts.add(new int[0]);
+        searchTaskResult.addLastConflict(last_conflicts);
+
+        return searchTaskResult;
     }
 
     public int getPathCost(){
@@ -53,18 +58,11 @@ public class SearchEngineOD {
         return Math.abs(Coordinates.getRow(cell_coordinates) - Coordinates.getRow(goal_coordinates)) + Math.abs(Coordinates.getCol(cell_coordinates) - Coordinates.getCol(goal_coordinates))  ;
     }
 
-    public void runOperatorDecomposition(Agent agent) throws IOException {
-        this.runOperatorDecomposition(agent.getCoordinates(), agent.getGoalPosition());
-    }
-
-    public void runOperatorDecomposition(Box box) throws IOException {
-        this.runOperatorDecomposition(box.getCoordinates(), box.getGoalPosition());
-    }
-
-    public void runOperatorDecomposition(int[] start_coordinates, int[] goal_coordinates) throws IOException {
-        assert start_coordinates.length == goal_coordinates.length;
-        assert ( start_coordinates.length % Coordinates.getLenght() )== 0;
-        assert start_coordinates.length/Coordinates.getLenght() > 1;
+    public void runOperatorDecomposition() throws IOException {
+        assert this.getStartCoordinatesOfGroup().length == this.getGoalsCoordinatesOfGroup().length;
+        assert this.getStartCoordinatesOfGroup().length == this.getGoalsCoordinatesOfGroup().length;
+        assert ( this.getStartCoordinatesOfGroup().length % Coordinates.getLenght() )== 0;
+        assert this.getStartCoordinatesOfGroup().length/Coordinates.getLenght() > 1;
 
         String logFileName = "runOperatorDecomposition_file";
         Utils.logStartForFile(logFileName);
@@ -81,7 +79,7 @@ public class SearchEngineOD {
         //StateSearchMAFactory.createCostSoFar();
         StateSearchMAFactory.createClosedSet();
 
-        int[][] next_state = StateSearchMAFactory.createStandardState(start_coordinates, 0);
+        int[][] next_state = StateSearchMAFactory.createStandardState(this.getStartCoordinatesOfGroup(), 0);
         int[] prev_standard_state;
         frontier.add(next_state);
         //StateSearchMAFactory.putCostSoFar(next_state);
@@ -115,7 +113,7 @@ public class SearchEngineOD {
                     path_normal.add(next_key);
                     int[] next_key2;
                     boolean removed;
-                    while (came_from.get(next_key) != start_coordinates){
+                    while (came_from.get(next_key) != this.getStartCoordinatesOfGroup()){
                         next_key2 = next_key;
                         next_key = came_from.get(next_key);
                         path_normal.add(next_key);
@@ -126,7 +124,7 @@ public class SearchEngineOD {
                             standard_states_expanded_to_del.add(next_key);
                         }*/
                     }
-                    path_normal.add(start_coordinates);
+                    path_normal.add(this.getStartCoordinatesOfGroup());
 
                     this.path = path_normal;
 

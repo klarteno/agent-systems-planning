@@ -1,20 +1,18 @@
-package org.agents.planning;
+package org.agents.planning.schedulling;
 
+import org.agents.planning.GroupSearch;
 import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
 import org.agents.planning.conflicts.ConflictAvoidanceTable;
-import org.agents.planning.schedulling.SearchScheduled;
-import org.agents.planning.schedulling.TrackedGroups;
 import org.agents.searchengine.PathProcessing;
-import org.agents.searchengine.SearchTaskResult;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Set;
 
-public final class GroupIndependenceDetection {
+public final class GroupIndependenceDetectionBackUp {
     private final ConflictAvoidanceCheckingRules conflict_avoidance_checking_rules;
     private final SearchScheduled scheduling_group;
-    private final ConflictAvoidanceTable conflict_avoidance_table;
+    public ConflictAvoidanceTable conflict_avoidance_table;
     private final GroupSearch group_search_strategy;
     private final PathProcessing pathProcessing;
 
@@ -35,7 +33,7 @@ public final class GroupIndependenceDetection {
     }
 
      //asssumed the agents,boxes have set up their goals corectly
-    public GroupIndependenceDetection(TrackedGroups trackedGroups) {
+    public GroupIndependenceDetectionBackUp(TrackedGroups trackedGroups) {
         this.group_search_strategy = new GroupSearch(trackedGroups);
         this.conflict_avoidance_checking_rules = this.group_search_strategy.getConflictAvoidanceCheckingRules();
         this.conflict_avoidance_table = this.conflict_avoidance_checking_rules.getConflictsTable();
@@ -74,10 +72,7 @@ public final class GroupIndependenceDetection {
             boolean is_removed;
             if (this.conflict_avoidance_table.isNewConflict(group_one, group_two)){
                 conflicting_path = this.conflict_avoidance_table.getMarkedPaths(group_two);
-                this.scheduling_group.setGroup(group_one);
-
-                SearchTaskResult searchTaskResult = this.group_search_strategy.runGroupSearch(this.scheduling_group, group_two, conflicting_path);
-                ArrayDeque<int[]> new_path_one = searchTaskResult.getPath();
+                ArrayDeque<int[]> new_path_one = this.group_search_strategy.runGroupSearch(group_one, group_two, conflicting_path);
                 assert new_path_one != null;
                 int path_lenght_one = this.conflict_avoidance_table.getPathLenght(group_one);
 
@@ -94,9 +89,7 @@ public final class GroupIndependenceDetection {
 
                 }else {
                     conflicting_path = this.conflict_avoidance_table.getMarkedPaths(group_one);
-                    this.scheduling_group.setGroup(group_two);
-                    SearchTaskResult searchTaskResult2 =  this.group_search_strategy.runGroupSearch(this.scheduling_group, group_one, conflicting_path );
-                    ArrayDeque<int[]> new_path_two = searchTaskResult2.getPath();
+                    ArrayDeque<int[]> new_path_two = this.group_search_strategy.runGroupSearch(group_two, group_one, conflicting_path );
                     //group_two and new_path_two have the same ordering of indexes
                     assert new_path_two != null;
                     int path_lenght_two = this.conflict_avoidance_table.getPathLenght(group_two);
@@ -112,12 +105,8 @@ public final class GroupIndependenceDetection {
                         //the paths groups are removed when grouped
                         int[] group_marks_total = this.conflict_avoidance_table.groupIDs(group_one, group_two);
                         is_removed = this.conflict_avoidance_checking_rules.removeTaskScheduledFor(group_marks_total);
-
-                        this.scheduling_group.setGroup(group_marks_total);
-                        SearchTaskResult searchTaskResult3 = this.group_search_strategy.runGroupIndependenceDetection(this.scheduling_group);
-                        ArrayDeque<int[]> paths = searchTaskResult3.getPath();
+                        ArrayDeque<int[]> paths = this.group_search_strategy.runGroupSearchMA(group_marks_total);
                         pathProcessing.resetTimeSteps(paths);
-
                         //remove later when conflicted
                         //this.conflict_avoidance_checking_rules.clearTaskScheduledList();
                         boolean is_added = this.conflict_avoidance_checking_rules.addPathsToTaskScheduledPahs(group_one, group_two, group_marks_total, paths);
@@ -129,12 +118,8 @@ public final class GroupIndependenceDetection {
             else{
                 int[] group_marks_total = this.conflict_avoidance_table.groupIDs(group_one, group_two);
                 is_removed = this.conflict_avoidance_checking_rules.removeTaskScheduledFor(group_marks_total);
-
-                this.scheduling_group.setGroup(group_marks_total);
-                SearchTaskResult searchTaskResult = this.group_search_strategy.runGroupIndependenceDetection(this.scheduling_group);
-                ArrayDeque<int[]> paths = searchTaskResult.getPath();
+                ArrayDeque<int[]> paths = this.group_search_strategy.runGroupSearchMA(group_marks_total);
                 pathProcessing.resetTimeSteps(paths);
-
                 //remove later when conflicted
                 this.conflict_avoidance_checking_rules.addPathsToTaskScheduledPahs(group_one, group_two, group_marks_total, paths);
                 this.conflict_avoidance_table.addMarkedPathsFor(group_marks_total, paths);

@@ -57,6 +57,8 @@ public final class StateSearchMAFactory {
     private static int[][]  intermediate_node_costs;
 
 
+
+
     public enum SearchState {
         AGENTS_ONLY,
         AGENTS_AND_BOXES;
@@ -108,6 +110,11 @@ public final class StateSearchMAFactory {
         initIntermediateNodeCosts();
 
     }
+
+    public static int[] getStartGroup() {
+        return group_marks_ids;
+    }
+
 
     //groups the agents and boxes by color
     private static void setUpAgentsWithBoxesFromGroup(){

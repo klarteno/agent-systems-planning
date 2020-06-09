@@ -19,6 +19,7 @@ public class TaskScheduled {
     private ArrayList<Integer> agents_solved_mark_ids;
     private ArrayList<Integer> agents;
     private ArrayList<Integer> boxes;
+    private int clock_time = 0;
 
     public TaskScheduled() {
         agents_to_paths = new HashMap<>();
@@ -169,5 +170,13 @@ public class TaskScheduled {
     public void replacePathsFor(int[] group_marks, ArrayDeque<int[]> new_path) {
         this.group_marks_total = group_marks;
         this.group_marks_total_path = new_path;
+    }
+
+    public void addClockTime(int clockTime) {
+        this.clock_time = clockTime;
+    }
+
+    public int getClock_time(){
+        return  this.clock_time;
     }
 }

@@ -10,7 +10,7 @@ import java.util.*;
 public class SearchEngineSA {
     private static final int COST_NEXT_CELL = 1;
 
-    private ArrayDeque<int[]> path;
+    private ArrayDeque<int[]> path_found;
     private static PriorityQueue<int[][]> frontier;
     private static ConflictAvoidanceCheckingRules conflict_avoidance_checking_rules;
     static int searched_mark_id = 0;
@@ -20,7 +20,19 @@ public class SearchEngineSA {
         frontier = new PriorityQueue<int[][]>(5, Comparator.comparingInt(SearchSAState::getFCost));
     }
 
-    public ArrayDeque<int[]> getPath(){
+    public SearchTaskResult getPath(){
+        SearchTaskResult searchTaskResult = new SearchTaskResult(this.getProcessedPath());
+        searchTaskResult.setGroup(new int[]{searched_mark_id});             //StateSearchSAFactory.getStartGroup()
+        searchTaskResult.addStartCoordinates(StateSearchSAFactory.getStartCoordinatesOfGroup());
+        searchTaskResult.addGoalCoordinates(StateSearchSAFactory.getGoalsCoordinatesOfGroup());
+        ArrayList<int[]> last_conflicts = new ArrayList<>();
+        last_conflicts.add(new int[0]);
+        searchTaskResult.addLastConflict(last_conflicts);
+
+        return searchTaskResult;
+    }
+
+    private ArrayDeque<int[]> getProcessedPath(){
         /*  remove the cells positions  that do not lead to goal
 
             by keeping previouse time step for previouse state
@@ -28,18 +40,18 @@ public class SearchEngineSA {
             accumulate the time from poped cells and added to the previouse branching cells
         */
         ArrayDeque<int[]> path_valid = new ArrayDeque<>();
-        int path_explored_size = this.path.size();
+        int path_explored_size = this.path_found.size();
         if (path_explored_size > 0){
 
-            int[] prev__ = this.path.pop();
+            int[] prev__ = this.path_found.pop();
             int time_prev ;
             path_valid.add(prev__);
 
             int[] next__ ;
             int time_next;
             int time_steps_skipped = 0;
-            while (!this.path.isEmpty())  {
-                next__ = this.path.pop();
+            while (!this.path_found.isEmpty())  {
+                next__ = this.path_found.pop();
                 time_prev = Coordinates.getTime(prev__);
                 time_next = Coordinates.getTime(next__);
                 if( time_prev - time_next == 1 && Coordinates.areNeighbours(prev__, next__) ){
@@ -65,12 +77,12 @@ public class SearchEngineSA {
     }
 
     public int getPathCost(){
-        assert this.path.size() > 0;
-        return path.size();
+        assert this.path_found.size() > 0;
+        return path_found.size();
     }
 
     public boolean isPathFound() {
-        return this.path.size() > 0;
+        return this.path_found.size() > 0;
     }
 
     static int getHeuristic(int[] cell_coordinate, int[] goal_coordinate) {
@@ -103,7 +115,10 @@ public class SearchEngineSA {
         StateSearchSAFactory.createCostSoFar();
         StateSearchSAFactory.createClosedSet();
 
-      // StateSearchSAFactory.setDeadlineConstraint(start_coordinates, total_gcost3, heur4); it looks no good to be earlier tnan goal
+        StateSearchSAFactory.setStartCoordinatesGroup(start_coordinates);
+        StateSearchSAFactory.setGoalsCoordinatesOfGroup(goal_coordinates);
+
+         // StateSearchSAFactory.setDeadlineConstraint(start_coordinates, total_gcost3, heur4); it looks no good to be earlier tnan goal
         ArrayDeque<int[]> path = new ArrayDeque<int[]>();
          //unused for output from algorithm, delete it when make bench mark
         HashMap<int[],int[]> came_from = new HashMap<>();
@@ -140,7 +155,7 @@ public class SearchEngineSA {
             path.push(SearchSAState.getStateCoordinates(current_state));
 
             if (StateSearchSAFactory.isGoal(SearchSAState.getStateCoordinates(current_state), goal_coordinates)){
-                this.path = path;
+                this.path_found = path;
                 return;
             }
             StateSearchSAFactory.addToClosedSet(current_state);
@@ -195,7 +210,7 @@ public class SearchEngineSA {
     }
         //if the goal is not found return the empty path
         path.clear();
-        this.path = path;
+        this.path_found = path;
     }
 
 
