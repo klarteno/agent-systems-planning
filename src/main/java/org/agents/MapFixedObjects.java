@@ -72,8 +72,7 @@ public final class MapFixedObjects implements Serializable {
                 walls = walls_marks;
         }
 
-
-        private Serializable getMovableObject(int movable_id) {
+    private Serializable getMovableObject(int movable_id) {
                 return this.markings_ids.get(movable_id);
         }
 

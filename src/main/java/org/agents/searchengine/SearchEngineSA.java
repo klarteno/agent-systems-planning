@@ -98,7 +98,7 @@ public class SearchEngineSA {
         assert agent != null;
 
         searched_mark_id = agent.getNumberMark();
-        this.runAstar(agent.getNumberMark(), agent.getCoordinates(), agent.getGoalPosition());
+        this.runAstar(agent.getNumberMark(), agent.getCoordinates(), agent.getGoalStopPosition());
     }
 
     public void runAstar(Box box){

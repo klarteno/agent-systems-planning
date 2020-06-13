@@ -166,5 +166,9 @@ public enum Coordinates {
     public static int getNumberOfCoordinates(int[] goal_coordinates) {
         return goal_coordinates.length/Coordinates.getLenght();
     }
+
+    public static int[] getEmptyInstance() {
+        return new int[0];
+    }
 }
 

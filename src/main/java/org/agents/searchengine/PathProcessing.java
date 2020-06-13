@@ -226,7 +226,7 @@ public final class PathProcessing {
             System.exit(-1);
         }
 
-        agent.setGoalPosition(box_to_search.getRowPosition(), box_to_search.getColumnPosition());
+        agent.setGoalStopPosition(box_to_search.getRowPosition(), box_to_search.getColumnPosition());
         searchEngine.runAstar(agent);
         SearchTaskResult searchTaskResult = searchEngine.getPath();
         ArrayDeque<int[]> agent_path = searchTaskResult.getPath();
@@ -258,7 +258,7 @@ public final class PathProcessing {
             System.exit(-1);
         }
 
-        agent.setGoalPosition(box_to_search.getRowPosition(), box_to_search.getColumnPosition());
+        agent.setGoalStopPosition(box_to_search.getRowPosition(), box_to_search.getColumnPosition());
         searchEngineSANormal.runAstar(agent);
         ArrayDeque<int[]> agent_path = searchEngineSANormal.getPath();
         int[] agent_goal = agent_path.pop();

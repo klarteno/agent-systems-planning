@@ -6,6 +6,7 @@ import org.agents.planning.conflicts.dto.SimulationConflict;
 import org.agents.planning.schedulling.Synchronization;
 import org.agents.planning.schedulling.TaskScheduled;
 import org.agents.planning.schedulling.TrackedGroups;
+import org.agents.searchengine.StateSearchMAFactory;
 
 import java.util.*;
 
@@ -307,4 +308,5 @@ public final class ConflictAvoidanceCheckingRules {
 
         return time_left;
     }
+
 }

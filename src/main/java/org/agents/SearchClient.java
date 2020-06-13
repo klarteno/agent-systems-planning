@@ -166,7 +166,7 @@ public final class SearchClient {
             else if ('0' <= key && key <= '9'){
                 for (Agent agent : agent_marks) {
                     if (agent.getNumberMark() == Character.getNumericValue(key)) {
-                        agent.setGoalPosition(coordinates[0], coordinates[1]);
+                        agent.setGoalStopPosition(coordinates[0], coordinates[1]);
                     }
                 }
             }

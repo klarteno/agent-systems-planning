@@ -33,8 +33,9 @@ public final class StateSearchMAFactory {
 
     private static int[] start_coordinates;
     private static int[] goals_coordinates;
-    private static  int[] group_marks_ids;
+    private static HashMap<Integer, ArrayList<int[]>> goals_neighbours;
 
+    private static  int[] group_marks_ids;
 
     private static HashMap<Integer,Integer> all_agents_indexes;
     private static HashMap<Integer,Integer> all_boxes_indexes;
@@ -57,8 +58,6 @@ public final class StateSearchMAFactory {
     private static int[][]  intermediate_node_costs;
 
 
-
-
     public enum SearchState {
         AGENTS_ONLY,
         AGENTS_AND_BOXES;
@@ -67,6 +66,7 @@ public final class StateSearchMAFactory {
     public static void setAvoidanceCheckingRules(ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules) {
         conflict_avoidance_checking_rules = conflictAvoidanceCheckingRules;
     }
+
 
     public static void setStartGroup(int[] start_group) {
         group_marks_ids = start_group;
@@ -78,17 +78,39 @@ public final class StateSearchMAFactory {
         Agent agent;
         Box box;
         int[] movable_coordinate;
+        int movable_number = 0;
         int[] goal_cordinate;
         for (int movable_id : start_group) {
+
             Serializable next_movable = MapFixedObjects.getByMarkNo(movable_id);
             if (next_movable instanceof Agent) {
                 agent = (Agent) next_movable;
                 movable_coordinate = agent.getCoordinates();
-                goal_cordinate = agent.getGoalPosition();
+                ArrayList<int[]>  goals_list = new ArrayList<>();
+                goal_cordinate = agent.getGoalStopPosition();
+                switch (searchMultiAgentState){
+                    case AGENTS_ONLY:
+                        if(goals_neighbours == null )goals_neighbours = new HashMap<>();
+                        int[] goal_cordinate_2 = agent.getNextGoal();
 
-                for (int j = 0; j < Coordinates.getLenght(); j++) {
-                    start_coordinates[coordinate_index] = movable_coordinate[j];
-                    goals_coordinates[coordinate_index++] = goal_cordinate[j];
+                        while( !Arrays.equals(goal_cordinate_2, Coordinates.getEmptyInstance())){
+                            goals_list.add(goal_cordinate_2);
+                            goal_cordinate_2 = agent.getNextGoal();
+                        }
+                        goals_neighbours.put(movable_number, goals_list);
+                        movable_number++;
+                        for (int j = 0; j < Coordinates.getLenght(); j++) {
+                            start_coordinates[coordinate_index] = movable_coordinate[j];
+                            goals_coordinates[coordinate_index++] = goal_cordinate[j];
+                        }
+                    break;
+
+                    case AGENTS_AND_BOXES:
+                        for (int j = 0; j < Coordinates.getLenght(); j++) {
+                            start_coordinates[coordinate_index] = movable_coordinate[j];
+                            goals_coordinates[coordinate_index++] = goal_cordinate[j];
+                        }
+                        break;
                 }
 
             } else if (next_movable instanceof Box) {
@@ -108,7 +130,6 @@ public final class StateSearchMAFactory {
         setUpAgentsWithBoxesFromGroup();
         initStandardNodeCosts();
         initIntermediateNodeCosts();
-
     }
 
     public static int[] getStartGroup() {
@@ -225,13 +246,6 @@ public final class StateSearchMAFactory {
         return goals_coordinates;
     }
 
-    //this methos is once when the prority queue is created
-    //avoid recomputing the formula for heuristic
-    public static void createTimeCostSoFarUnused() {
-        //third index : one for g_cost   and second one for f_cost
-        cost_so_far = new int[number_of_movables][MapFixedObjects.MAX_ROW][MapFixedObjects.MAX_COL][3];
-        //cost_so_far[agent_index][coord_y][coord_x] = new int[]{g_cost,f_cost,is_in_heap};
-    }
     /*
         public static void updateCost(HashMap<Integer, Integer> cost_so_far) {
             cost_so_far.put(Arrays.hashCode(state[SearchState.ARRAYPOS]), state[ARRAYCOSTS][Costs.COST_G.ordinal()]);
@@ -258,22 +272,6 @@ public final class StateSearchMAFactory {
         }
     }
 
-    public static void putCostSoFarUnused(int[] next_pos, int g_cost, int f_cost, boolean is_in_heap) {
-        assert g_cost > 0;
-
-        int y;
-        int x;
-        for (int coordinate = 0; coordinate < next_pos.length/Coordinates.getLenght(); coordinate = coordinate + 1) {
-            y = Coordinates.getRow(coordinate, next_pos);
-            x = Coordinates.getCol(coordinate, next_pos);
-
-            cost_so_far[coordinate][y][x][G_COST] = g_cost;
-            cost_so_far[coordinate][y][x][F_COST] = f_cost;
-            if (is_in_heap)
-                cost_so_far[coordinate][y][x][IN_HEAP] = 1;
-         }
-    }
-
     public static void putCostSoFarUnused(int[][] state) {
         //assert SearchMAState.getGCost(state) > 0;
         int y;
@@ -288,25 +286,6 @@ public final class StateSearchMAFactory {
         }
     }
 
-    //can mark state as in heap by writting a value true for is_in_heap
-    public static void mark_state_inqueueUnused(int[][] state, boolean is_in_heap) {
-       // assert SearchMAState.getGCost(state) > 0;
-        int y;
-        int x;
-        int[] coordinates = SearchMAState.getStateCoordinates(state);
-         for (int coordinate = 0; coordinate < coordinates.length/Coordinates.getLenght(); coordinate = coordinate + 1) {
-            y = Coordinates.getRow(coordinate, coordinates);
-            x = Coordinates.getCol(coordinate, coordinates);
-
-            if (is_in_heap){
-                cost_so_far[coordinate][y][x][IN_HEAP] = 1;
-            }
-            else {
-                cost_so_far[coordinate][y][x][IN_HEAP] = 0;
-            }
-        }
-    }
-
     public static boolean isInCostSoFarUnused(int[] next_pos) {
         int y;
         int x;
@@ -317,41 +296,6 @@ public final class StateSearchMAFactory {
 
             if (cost_so_far[coordinate][y][x][G_COST] > 0){
                 is_present = true;
-            }
-            else {
-                return false;
-            }
-        }
-        return is_present;
-    }
-//returns the sum of paths for all agents
-    public static int[] getCostSoFarUnused(int[] next_pos) {
-        int y;
-        int x;
-        int g_cost = 0;
-        int f_cost = 0;
-        int[] cost = cost_so_far[0][Coordinates.getRow(0, next_pos)][Coordinates.getCol(0, next_pos)];
-        for (int coordinate = 1; coordinate < next_pos.length/Coordinates.getLenght(); coordinate = coordinate + 1) {
-            y = Coordinates.getRow(coordinate, next_pos);
-            x = Coordinates.getCol(coordinate, next_pos);
-
-            cost[G_COST] += cost_so_far[coordinate][y][x][G_COST];
-            cost[F_COST] += cost_so_far[coordinate][y][x][F_COST];
-        }
-        return cost;
-    }
-
-    public static boolean isInHeapUnused(int[][] state) {
-        int y;
-        int x;
-        boolean is_present = false;
-        int[] coordinates = SearchMAState.getStateCoordinates(state);
-        for (int coordinate = 0; coordinate < coordinates.length/Coordinates.getLenght(); coordinate = coordinate + 1) {
-            y = Coordinates.getRow(coordinate, coordinates);
-            x = Coordinates.getCol(coordinate, coordinates);
-
-            if (cost_so_far[coordinate][y][x][IN_HEAP] >= 1){
-                 is_present = true;
             }
             else {
                 return false;
@@ -510,31 +454,6 @@ public final class StateSearchMAFactory {
         return state;
     }
 
-    //is used many times to create a state for the a_star
-    public static int[][] createIntermediatePositiom(int[] cell_coordinates, int total_gcost){
-        //assert (cell_coordinates.length/Coordinates.getLenght() == number_of_movables);
-
-        //int heuristc_value = getStateHeuristcManhatten(cell_coordinates);
-        int heuristc_value = getHeuristcOf(cell_coordinates);
-        state  = SearchMAState.createNew(cell_coordinates,total_gcost, heuristc_value + total_gcost);
-
-        return state;
-    }
-
-    public static int[][] createStandardState(int[] cell_neighbour, int neighbour_gcost, int f_value) {
-        //assert (cell_neighbour.length == number_of_movables);
-        state  = SearchMAState.createNew(cell_neighbour, neighbour_gcost, f_value);
-
-        return state;
-    }
-
-    public static int[][] createIntermediatePositiom(int[] cell_neighbour, int neighbour_gcost, int f_value) {
-        //assert (cell_neighbour.length == number_of_movables);
-        state  = SearchMAState.createNew(cell_neighbour, neighbour_gcost, f_value);
-
-        return state;
-    }
-
     public static int getGCost(int[][] state) {
         return SearchMAState.getGCost(state);
     }
@@ -568,23 +487,50 @@ public final class StateSearchMAFactory {
     }
 
     public static boolean isGoal(int[] state_coordinates){
-        int y;
-        int x;
+        boolean isGoal = true;
         int y_goal;
         int x_goal;
+        int y;
+        int x;
 
-        boolean isGoal = false;
-        for (int coordinate = 0; coordinate < number_of_movables; coordinate = coordinate + 1) {
-            y = Coordinates.getRow(coordinate, state_coordinates);
-            x = Coordinates.getCol(coordinate, state_coordinates);
+        switch (searchMultiAgentState){
+            case AGENTS_ONLY:
+                for (int coordinate = 0; coordinate < number_of_movables; coordinate = coordinate + 1) {
+                    y = Coordinates.getRow(coordinate, state_coordinates);
+                    x = Coordinates.getCol(coordinate, state_coordinates);
 
-            y_goal = Coordinates.getRow(coordinate, goals_coordinates);
-            x_goal = Coordinates.getCol(coordinate, goals_coordinates);
+                    ArrayList<int[]> __goals = goals_neighbours.get(coordinate);
 
-            isGoal = (y == y_goal) && (x == x_goal);
-            if (!isGoal)
-                return false;
+                    avoid goals_coordinates because the neighbours are behind
+
+
+                    for(int[] __goal : __goals){
+                        y_goal = Coordinates.getRow(__goal);
+                        x_goal = Coordinates.getCol(__goal);
+
+                        isGoal = isGoal &&  (y == y_goal) && (x == x_goal);
+                        if (isGoal) break;
+                    }
+                    if (!isGoal) break;
+                }
+
+                return isGoal;
+
+            case AGENTS_AND_BOXES:
+                for (int coordinate = 0; coordinate < number_of_movables; coordinate = coordinate + 1) {
+                    y = Coordinates.getRow(coordinate, state_coordinates);
+                    x = Coordinates.getCol(coordinate, state_coordinates);
+
+                    y_goal = Coordinates.getRow(coordinate, goals_coordinates);
+                    x_goal = Coordinates.getCol(coordinate, goals_coordinates);
+
+                    isGoal = isGoal &&  (y == y_goal) && (x == x_goal);
+
+                    if (!isGoal) break;
+                }
+                return isGoal;
         }
+
         return isGoal;
     }
 
@@ -800,10 +746,12 @@ public final class StateSearchMAFactory {
 
         switch (searchMultiAgentState)
         {
-            case AGENTS_ONLY: __result.addAll(expandStandardStateWithAgents(pos_coordinates, standard_node_costs, standard_to_conflicts));
-                                break;
-            case AGENTS_AND_BOXES: ArrayDeque<int[][]> __result__ = expandStandardStateWithAgentsAndBoxes(pos_coordinates, standard_node_costs, standard_to_conflicts);
-                                    __result.addAll(__result__);
+            case AGENTS_ONLY: ArrayDeque<int[][]> __result__1 = expandStandardStateWithAgents(pos_coordinates, standard_node_costs, standard_to_conflicts);
+                                    __result.addAll(__result__1);
+                                    break;
+
+            case AGENTS_AND_BOXES: ArrayDeque<int[][]> __result__2 = expandStandardStateWithAgentsAndBoxes(pos_coordinates, standard_node_costs, standard_to_conflicts);
+                                    __result.addAll(__result__2);
                                     break;
         }
         return __result;
@@ -846,32 +794,15 @@ public final class StateSearchMAFactory {
 
         int[] position_to_expand = Coordinates.getCoordinatesAt(index_to_expand, pos_coordinates);
 
+
+        if position_to_expand == Coordinates.getCoordinatesAt(index_to_expand, goals_coordinates);
+        LinkedList<int[]> neighbours = prev cell from where the goal is reached
+
+
         int mark_id = group_marks_ids[index_to_expand];
         LinkedList<int[]> neighbours = conflict_avoidance_checking_rules.getFreeNeighboursMA(mark_id, position_to_expand, new ArrayDeque<int[]>());
 
-        //avoid box goal when is just a goal
-        switch (searchMultiAgentState) {
-            case AGENTS_ONLY:
-                int index = 0;
-                ArrayList<Integer> to_remove = new ArrayList<>();
-                for (int[] neighbour : neighbours) {
-                    for (int j = 0; j < number_of_movables; j++) {
-                        int row_goal = Coordinates.getRow(j, goals_coordinates);
-                        int col_goal = Coordinates.getCol(j, goals_coordinates);
-                        if (Coordinates.getRow(neighbour) == row_goal
-                                && Coordinates.getCol(neighbour) == col_goal){
-                            to_remove.add(index);
-                        }
-                    }
-                    index++;
-                }
-                for (int __index : to_remove) {
-                    neighbours.remove(__index);
-                }
 
-                break;
-            case AGENTS_AND_BOXES: break;
-        }
 
         for(int [] cell_pos_neighbour : neighbours){
             setConflictsStandardStateExpansion(index_to_expand, pos_coordinates, cell_pos_neighbour, standard_to_conflicts);
@@ -933,31 +864,6 @@ public final class StateSearchMAFactory {
             }
 
         LinkedList<int[]> neighbours = conflict_avoidance_checking_rules.getFreeNeighboursMA(mark_id, to_expand, conflicts_avoidance);
-
-        //avoid box goal when is just a goal
-        switch (searchMultiAgentState) {
-            case AGENTS_ONLY:
-                int index = 0;
-                ArrayList<Integer> to_remove = new ArrayList<>();
-                for (int[] neighbour : neighbours) {
-                    for (int j = 0; j < number_of_movables; j++) {
-                        int row_goal = Coordinates.getRow(j, goals_coordinates);
-                        int col_goal = Coordinates.getCol(j, goals_coordinates);
-                        if (Coordinates.getRow(neighbour) == row_goal
-                                && Coordinates.getCol(neighbour) == col_goal){
-                            to_remove.add(index);
-                        }
-                    }
-                    index++;
-                }
-                for (int __index : to_remove) {
-                    neighbours.remove(__index);
-                }
-
-                break;
-            case AGENTS_AND_BOXES: break;
-        }
-
 
         for(int[] cell_pos_neighbour : neighbours){
             //it imposes the same constraints but not on the already expanded positions
@@ -1254,12 +1160,34 @@ public final class StateSearchMAFactory {
 
 
 
+    public void avoidCoordinate(StateSearchMAFactory.SearchState searchMultiAgentState, LinkedList<int[]> neighbours, int[] coordinates_to_avoid){
+        int number_of_movables = coordinates_to_avoid.length/Coordinates.getLenght();//to do divide goals__coordinates by the length of the coordinates
 
+        //avoid box goal when is just a goal
+        switch (searchMultiAgentState) {
+            case AGENTS_ONLY:
+                int index = 0;
+                ArrayList<Integer> to_remove = new ArrayList<>();
 
+                for (int[] neighbour : neighbours) {
+                    for (int j = 0; j < number_of_movables; j++) {
+                        int row_goal = Coordinates.getRow(j, coordinates_to_avoid);
+                        int col_goal = Coordinates.getCol(j, coordinates_to_avoid);
+                        if (Coordinates.getRow(neighbour) == row_goal
+                                && Coordinates.getCol(neighbour) == col_goal){
+                            to_remove.add(index);
+                        }
+                    }
+                    index++;
+                }
+                for (int __index : to_remove) {
+                    neighbours.remove(__index);
+                }
 
-
-
-
+                break;
+            case AGENTS_AND_BOXES: break;
+        }
+    }
 
     //expands all the pushes , pulls with box and the agent moves at the same time
     //it looks like it does make pull and push at the same time

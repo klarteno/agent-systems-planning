@@ -191,7 +191,7 @@ public final class Main{
         System.out.println("######################## NEXT SEARCH ######################");
 
         TaskScheduled task_scheduled = divideAndScheduleMovables.getSearchResults();
-        SearchScheduled search_sched = movables_scheduling.getMatchedAgentsBoxesIndexes(task_scheduled);
+        SearchScheduled search_sched = movables_scheduling.getMatchedAgentsBoxes(task_scheduled);
 
         for (int i = 0; i < search_sched.getTotalGroup()[SearchScheduled.INDEX_OF_GROUP].length; i++) {
             System.out.println("#start_group agents with boxes: " + i +" "+ search_sched.getTotalGroup()[SearchScheduled.INDEX_OF_GROUP][i] + " ");

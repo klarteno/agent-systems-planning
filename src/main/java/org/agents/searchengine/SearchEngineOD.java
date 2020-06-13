@@ -104,7 +104,18 @@ public class SearchEngineOD {
 
                 prev_state = current_state;
                 //path.push(SearchMAState.getStateCoordinates(current_state));
-                path_to_test.push(current_state);   
+                path_to_test.push(current_state);
+
+               
+                int[] state_to_test = SearchMAState.getStateCoordinates(current_state);
+
+                if(Coordinates.getRow(0, state_to_test) == 3 && Coordinates.getCol(0, state_to_test) == 10  ){
+                    boolean start_to_add_to_del1;
+                    boolean start_to_add_to_del = true;
+                    if(Coordinates.getRow(1, state_to_test) == 5 && Coordinates.getCol(1, state_to_test) == 2  ){
+                        start_to_add_to_del1 = true;
+                    }
+                }
 
                 if (StateSearchMAFactory.isGoal(SearchMAState.getStateCoordinates(current_state))){
                     //this.path = path;

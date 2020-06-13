@@ -36,7 +36,7 @@ public final class MovablesScheduling {
                 if (agent.getNumberMark() == group_agents[group_index]) {
                     SolvedStatus solved_status = agent.getSolvedStatus();
                     if (agent.getSolvedStatus() != solvedStatus) {
-                        agent.setGoalPosition(Coordinates.getCoordinatesAt(group_index, final_agents_position));
+                        agent.setGoalStopPosition(Coordinates.getCoordinatesAt(group_index, final_agents_position));
                         agent.setSolvedStatus(solvedStatus);
                         status_changed = true;
                     }
@@ -56,7 +56,7 @@ public final class MovablesScheduling {
                 case GOAL_STEP_SOLVED:
                     ArrayDeque<Integer> boxes_solved = new ArrayDeque<>() ;
                     for(Box next_box : boxes_scheduled){
-                        if (Arrays.equals(agent.getGoalPosition(), next_box.getCoordinates())){
+                        if (Arrays.equals(agent.getGoalStopPosition(), next_box.getCoordinates())){
                             boxes_solved.add(next_box.getLetterMark());
                         }
                     }
@@ -99,7 +99,7 @@ public final class MovablesScheduling {
         Box box_target = MapFixedObjects.getBoxByID(box_target_id);
         box_target.setSolvedStatus(SolvedStatus.IN_USE);
 
-        agent.setGoalPosition(box_target.getCoordinates());
+        agent.setGoalStopPosition(box_target.getCoordinates());
         agent.setSolvedStatus(SolvedStatus.IN_USE);
 
         this.agents_scheduled.add(agent);
@@ -128,7 +128,7 @@ public final class MovablesScheduling {
         return this.agents_ids_to_boxes_ids;
     }
     
-    //after this call getAgentsIdxsToBoxesIdxs()
+    //it sets the the data structures for the agents ids and boxes ids
     public SearchScheduled getStartGroupAgentsBoxes_ToSearch(){
         //final int INDEX_OF_BOXES = 2;
         final int INDEX_OF_AGENTS = 0;
@@ -150,7 +150,8 @@ public final class MovablesScheduling {
         return getMatchedAgentsBoxesIndexes2( agents_group_ids, box_group_ids, this.agents_ids_to_boxes_ids);
     }
 
-    public SearchScheduled getMatchedAgentsBoxesIndexes(TaskScheduled task_scheduled){
+    //it sets the coordinates of the box for the agent to search with pulls and pushes
+    public SearchScheduled getMatchedAgentsBoxes(TaskScheduled task_scheduled){
         int[] agents_group_ids = task_scheduled.getValidAgents();
         int[] box_group_ids =  task_scheduled.getValidBoxes();
 
@@ -163,7 +164,7 @@ public final class MovablesScheduling {
                 if (boxes_ids.contains(bx_id)) {
                     Agent agt = (Agent) MapFixedObjects.getByMarkNo(ag_id);
                     Box bx = (Box) MapFixedObjects.getByMarkNo(bx_id);
-                    agt.setGoalPosition(bx.getCoordinates());
+                    agt.setGoalStopPosition(bx.getCoordinates());
                 }
             }
         }

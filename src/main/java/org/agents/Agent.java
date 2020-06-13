@@ -5,45 +5,51 @@ import org.agents.markings.Coordinates;
 import org.agents.markings.SolvedStatus;
 
 import java.io.Serializable;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 
 public final class Agent implements Serializable {
-    private final int[] agent_object;
-    private final int[] agent_object_coordinates;
-    private int[] agent_goal_coordinates;
+    private final int[] markings_field;
+    private final int[] coordinates;
+    private int[] goal_stop_coordinates;
+    private ArrayDeque<int[]> goals;
+    private ArrayList<int[]> solved_goals;
 
     public Agent(int number_mark, int color_mark) {
-        this.agent_object = AgentField.createAgentField();
+        this.markings_field = AgentField.createAgentField();
 
-        AgentField.setNumber(this.agent_object, number_mark);
-        AgentField.setColor(this.agent_object, color_mark);
-        AgentField.setSolved(this.agent_object, SolvedStatus.NOT_SOLVED);
+        AgentField.setNumber(this.markings_field, number_mark);
+        AgentField.setColor(this.markings_field, color_mark);
+        AgentField.setSolved(this.markings_field, SolvedStatus.NOT_SOLVED);
 
-        this.agent_object_coordinates = new int[Coordinates.getLenght()];
-        Coordinates.setTime(this.agent_object_coordinates,0);
-        Coordinates.setRow(this.agent_object_coordinates,-1);
-        Coordinates.setCol(this.agent_object_coordinates,-1);
+        this.coordinates = new int[Coordinates.getLenght()];
+        Coordinates.setTime(this.coordinates,0);
+        Coordinates.setRow(this.coordinates,-1);
+        Coordinates.setCol(this.coordinates,-1);
     }
 
-    public void setGoalPosition(int goal_row, int goal_column) {
-        if (this.agent_goal_coordinates == null)
-            this.agent_goal_coordinates = new int[Coordinates.getLenght()];
+    //sets one goal where th agent gets :like a final ending stop position
+    public void setGoalStopPosition(int goal_row, int goal_column) {
+        if (this.goal_stop_coordinates == null)
+            this.goal_stop_coordinates = new int[Coordinates.getLenght()];
 
-        Coordinates.setRow(this.agent_goal_coordinates, goal_row);
-        Coordinates.setCol(this.agent_goal_coordinates, goal_column);
+        Coordinates.setRow(this.goal_stop_coordinates, goal_row);
+        Coordinates.setCol(this.goal_stop_coordinates, goal_column);
     }
 
-    public void setGoalPosition(int[] goal) {
-        this.setGoalPosition(Coordinates.getRow(goal), Coordinates.getCol(goal));
+    //sets one goal where th agent gets :like a final ending stop position
+    public void setGoalStopPosition(int[] goal) {
+        this.setGoalStopPosition(Coordinates.getRow(goal), Coordinates.getCol(goal));
     }
 
     public boolean updatePositionCoordinates(){
         boolean is_changed = false;
 
-        switch (AgentField.getSolved(this.agent_object) )
+        switch (AgentField.getSolved(this.markings_field) )
         {
             case GOAL_STEP_SOLVED:
             case GOAL_FINAL_SOLVED:
-                int[] goal_pos = this.getGoalPosition();
+                int[] goal_pos = this.getGoalStopPosition();
                 this.setCoordinatesPosition(goal_pos);
 
                 is_changed = true;
@@ -58,17 +64,17 @@ public final class Agent implements Serializable {
     }
 
     public void setTimePosition(int step_time){
-        Coordinates.setTime(this.agent_object_coordinates, step_time);
+        Coordinates.setTime(this.coordinates, step_time);
     }
 
     public int getTimePosition(){
-        return Coordinates.getTime(this.agent_object_coordinates);
+        return Coordinates.getTime(this.coordinates);
     }
 
     public void setCoordinatesPosition(int row, int col){
         if(this.valid(row) &&  this.valid(col)){
-            Coordinates.setRow(this.agent_object_coordinates, row);
-            Coordinates.setCol(this.agent_object_coordinates, col);
+            Coordinates.setRow(this.coordinates, row);
+            Coordinates.setCol(this.coordinates, col);
         }
     }
 
@@ -77,25 +83,25 @@ public final class Agent implements Serializable {
     }
 
     public int getRowPosition(){
-        return Coordinates.getRow(this.agent_object_coordinates);
+        return Coordinates.getRow(this.coordinates);
     }
 
     public int getColumnPosition(){
-        return Coordinates.getCol(this.agent_object_coordinates);
+        return Coordinates.getCol(this.coordinates);
     }
 
-    public int[] getGoalPosition() {
-        return  this.agent_goal_coordinates;
+    public int[] getGoalStopPosition() {
+        return  this.goal_stop_coordinates;
     }
 
     public int[] getCoordinates(){
-        return this.agent_object_coordinates;
+        return this.coordinates;
     }
 
     //TO DO can be moved to interface
     //is changing also the pposition coordinates: time,y,x to be equlal to the goal position coordinates
     public synchronized void setSolvedStatus(SolvedStatus stepSolved){
-        AgentField.setSolved(this.agent_object, stepSolved);
+        AgentField.setSolved(this.markings_field, stepSolved);
 
         switch (stepSolved) {
             case GOAL_STEP_SOLVED:
@@ -108,18 +114,38 @@ public final class Agent implements Serializable {
     }
 
     public synchronized SolvedStatus getSolvedStatus() {
-        return AgentField.getSolved(this.agent_object) ;
+        return AgentField.getSolved(this.markings_field) ;
     }
 
     public int getNumberMark(){
-        return AgentField.getNumber(this.agent_object);
+        return AgentField.getNumber(this.markings_field);
     }
 
     public int getColor(){
-        return AgentField.getColor(this.agent_object);
+        return AgentField.getColor(this.markings_field);
     }
 
     private boolean valid(int pos) {
-        return pos>=0;
+        return pos >= 0;
+    }
+
+    public int[] getNextGoal(){
+        int[] goal;
+        if(this.goals.size() > 0){
+            goal = this.goals.pop();
+        }else {
+            goal = Coordinates.getEmptyInstance(); //new int[0];
+        }
+
+
+        if (this.solved_goals == null) this.solved_goals = new ArrayList<>();
+        this.solved_goals.add(goal);
+        
+        return goal;
+    }
+    
+    public void addGoalPosition(int[] next_goal_cell) {
+        if (this.goals == null) this.goals = new ArrayDeque<>();
+        this.goals.add(next_goal_cell);
     }
 }

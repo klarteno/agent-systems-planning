@@ -15,6 +15,7 @@ public final class Box implements Serializable {
     private int[] box_goal_coordinates;
 
     private final int[] box_costs = new int[2];
+    private int[] neighbour_position;
 
 
     public Box(char letter_mark, int color_mark) {
@@ -99,6 +100,13 @@ public final class Box implements Serializable {
 
     private boolean valid(int pos) {
         return pos>=0;
+    }
+
+    public void addNeighbourGoal(int[] next_goal_cell) {
+        this.neighbour_position = next_goal_cell;
+    }
+    public int[] getNeighbourGoal() {
+        return this.neighbour_position;
     }
 
 }

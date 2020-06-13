@@ -1,5 +1,10 @@
 package org.agents.planning.schedulling;
 
+import org.agents.Agent;
+import org.agents.Box;
+import org.agents.MapFixedObjects;
+
+import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -12,6 +17,10 @@ public class SearchScheduled {
     private int[][] total_group;
     private HashMap<Integer,int[]> agents_idxs_to_boxes_idxs;
     private UUID unique_id;
+
+
+    public static final int NEXT_GOAL_TO_BOX = 0;
+
 
     public SearchScheduled() { }
 
@@ -51,11 +60,60 @@ public class SearchScheduled {
         this.total_group[INDEX_OF_GROUP] = group;
     }
 
-
     public HashMap<Integer,int[]> getAgentstIdxsToBoxesIdxs() {
         return this.agents_idxs_to_boxes_idxs;
     }
 
     public void setUUID(UUID uniqueID) { this.unique_id = uniqueID; }
     public UUID getUUID() { return this.unique_id; }
+
+    //usage: sched_group.setState(SearchScheduled.NEXT_GOAL_TO_BOX);
+    //updates goals to be other node cells to be closed to the box
+    public void setState(int nextGoalToBox) {
+        for(Integer key : this.agents_idxs_to_boxes_idxs.keySet()){
+            int _idx = this.total_group[INDEX_OF_AGENTS][key];
+            int agt_id  = this.total_group[INDEX_OF_GROUP][_idx];
+
+            int[] boxes_idxs = agents_idxs_to_boxes_idxs.get(key);
+            for (int __idx : boxes_idxs) {
+                int box_id = this.total_group[INDEX_OF_GROUP][__idx];
+                Box box = (Box) MapFixedObjects.getByMarkNo(box_id);
+
+                setStateGoals(nextGoalToBox, agt_id, box_id);
+            }
+        }
+    }
+
+    private void setStateGoals(int nextGoalToBox, int agt_id, int box_id ) {
+        int BOX_GOAL_STRATEGY = nextGoalToBox;
+
+        switch (BOX_GOAL_STRATEGY){
+            case NEXT_GOAL_TO_BOX:
+                Agent agent   = (Agent)MapFixedObjects.getByMarkNo(agt_id);
+                Box box   = (Box)MapFixedObjects.getByMarkNo(box_id);
+                int[] boxgoal_cordinate = box.getCoordinates();
+
+                //run bfs for next neighbours that are closer to agent scheduled
+                //now it gets neighbours in a naive way :some neighbours are behind the box
+                ArrayDeque<int[]> next_neigh_cells = MapFixedObjects.getNeighbours(boxgoal_cordinate, agt_id);
+                int[] next_goal_cell;
+                /*int min_h_value = Integer.MAX_VALUE ;
+                while (!next_neigh_cells.isEmpty()){
+                    int[] cell = next_neigh_cells.pop();
+                    int heuristic_value = MapFixedObjects.getManhattenHeuristic(cell,  agent.getCoordinates());
+
+                    if (min_h_value > heuristic_value){
+                        min_h_value = heuristic_value;
+                        next_goal_cell = cell;
+                    }
+                }*/
+                while (!next_neigh_cells.isEmpty()){
+                    next_goal_cell = next_neigh_cells.pop();
+                    agent.addGoalPosition(next_goal_cell);
+                    box.addNeighbourGoal( next_goal_cell);
+                }
+
+                break;
+        }
+    }
 }

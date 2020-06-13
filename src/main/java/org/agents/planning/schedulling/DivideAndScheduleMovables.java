@@ -6,8 +6,6 @@ import org.agents.Box;
 import org.agents.MapFixedObjects;
 import org.agents.markings.Coordinates;
 import org.agents.markings.SolvedStatus;
-import org.agents.planning.schedulling.MovablesScheduling;
-import org.agents.planning.schedulling.TaskScheduled;
 import org.agents.searchengine.SearchTaskResult;
 
 import java.io.Serializable;
@@ -18,7 +16,7 @@ public class DivideAndScheduleMovables {
     private HungarianAlgorithmResizable hungarian_algorithm;
 
     private static Set<Integer> boxes_ids;
-    private static Set<Integer> boxes_ids_marked_solved;
+    private static Set<Integer> boxes_ids_scheduled;
 
     //the goals that agents had solved are added here
     private static HashMap<Integer, ArrayList<int[]> > agents_to_solved_goals;
@@ -31,7 +29,7 @@ public class DivideAndScheduleMovables {
     public DivideAndScheduleMovables(Set<Integer> boxesIds) {
         boxes_ids = boxesIds;
 
-        boxes_ids_marked_solved = new HashSet<>();
+        boxes_ids_scheduled = new HashSet<>();
         this.agents_scheduled = new ArrayList<>();
         agents_to_solved_goals = new HashMap<>();
 
@@ -49,8 +47,8 @@ public class DivideAndScheduleMovables {
             for (Agent agent : agents) {
                 if(agent.getColor() == next_box_color){
                     boxes_ids.remove(next_box_id);
-                    boxes_ids_marked_solved.add(next_box_id);
-                    agent.setGoalPosition( next_box.getGoalPosition() );
+                    boxes_ids_scheduled.add(next_box_id);
+                    agent.setGoalStopPosition( next_box.getGoalPosition() );
                     agents_to_schedule.add(agent);
                     this.agents_scheduled.add(agent);
                 }
@@ -136,7 +134,7 @@ public class DivideAndScheduleMovables {
                     movablesScheduling.setUpPair(agent_opt, box_opt);
 
                     boxes_ids.remove(box_opt);
-                    boxes_ids_marked_solved.add(box_opt);
+                    boxes_ids_scheduled.add(box_opt);
 
                     Agent __agent = MapFixedObjects.getByAgentMarkId(agent_opt);
                     agents_scheduled.add(__agent);
@@ -157,7 +155,7 @@ public class DivideAndScheduleMovables {
 
                 movablesScheduling.setUpPair(agent_opt, box_opt);
                 boxes_ids.remove(box_opt);
-                boxes_ids_marked_solved.add(box_opt);
+                boxes_ids_scheduled.add(box_opt);
 
                 Agent __agent = MapFixedObjects.getByAgentMarkId(agent_opt);
                 agents_scheduled.add(__agent);
@@ -175,7 +173,7 @@ public class DivideAndScheduleMovables {
             if(agent.getSolvedStatus() == SolvedStatus.GOAL_STEP_SOLVED ){
                 for(Integer next_box : boxes_ids){
                     box = MapFixedObjects.getBoxByID(next_box);
-                    if (Arrays.equals(agent.getGoalPosition(), box.getCoordinates())){
+                    if (Arrays.equals(agent.getGoalStopPosition(), box.getCoordinates())){
                         boxes_to_schedule.add(box);
                     }
                 }
@@ -196,12 +194,12 @@ public class DivideAndScheduleMovables {
             switch (agent.getSolvedStatus()) {
                 case GOAL_STEP_SOLVED:
                     ArrayDeque<Integer> boxes_solved = new ArrayDeque<>() ;
-                    for(Integer next_box : boxes_ids_marked_solved){
+                    for(Integer next_box : boxes_ids_scheduled){
                         Box box = MapFixedObjects.getBoxByID(next_box);
                         ArrayList<int[]> goals_sloved = agents_to_solved_goals.get(agent.getNumberMark());
                         int[] last_goal = goals_sloved.get(goals_sloved.size() - 1); //check last goal solved if matches the box
-                        if (Coordinates.getRow(last_goal) == Coordinates.getRow(box.getCoordinates())
-                            && Coordinates.getCol(last_goal) == Coordinates.getCol(box.getCoordinates())
+                        if (Coordinates.getRow(last_goal) == Coordinates.getRow(box.getNeighbourGoal())
+                            && Coordinates.getCol(last_goal) == Coordinates.getCol(box.getNeighbourGoal())
                         ){
                             boolean is_changed = agent.updatePositionCoordinates();
 
@@ -210,7 +208,9 @@ public class DivideAndScheduleMovables {
                             bxs_total.add(next_box);
                         }
                     }
-                    agents_to_boxes.put(agent.getNumberMark(), boxes_solved);
+                    if(boxes_solved.size() > 0)
+                        agents_to_boxes.put(agent.getNumberMark(), boxes_solved);
+
                     break;
                 case GOAL_FINAL_SOLVED:
                     agents_solved_mark_ids.add(agent.getNumberMark());
