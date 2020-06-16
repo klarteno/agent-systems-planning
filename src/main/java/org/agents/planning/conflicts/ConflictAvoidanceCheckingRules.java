@@ -3,10 +3,8 @@ package org.agents.planning.conflicts;
 import org.agents.MapFixedObjects;
 import org.agents.markings.Coordinates;
 import org.agents.planning.conflicts.dto.SimulationConflict;
-import org.agents.planning.schedulling.Synchronization;
 import org.agents.planning.schedulling.TaskScheduled;
 import org.agents.planning.schedulling.TrackedGroups;
-import org.agents.searchengine.StateSearchMAFactory;
 
 import java.util.*;
 

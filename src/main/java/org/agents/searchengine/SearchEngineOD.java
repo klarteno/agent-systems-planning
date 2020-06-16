@@ -11,7 +11,6 @@ import java.util.*;
 public class SearchEngineOD {
     private ArrayDeque<int[]> path;
     private static PriorityQueue<int[][]> frontier;
-    public static HashMap<int[],int[]> came_from;
     ArrayDeque<int[]> path_normal;
 
     public SearchEngineOD(int[] start_group, ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules , StateSearchMAFactory.SearchState searchMultiAgentState){
@@ -21,7 +20,6 @@ public class SearchEngineOD {
         StateSearchMAFactory.searchMultiAgentState = searchMultiAgentState;
         //make second option for comparator
         frontier = new PriorityQueue<int[][]>(5, Comparator.comparingInt(SearchMAState::getFCost));
-        came_from = new HashMap<>();
         path_normal = new ArrayDeque<>();
     }
 
@@ -71,6 +69,7 @@ public class SearchEngineOD {
         HashMap<Integer, int[]> intermediate_came_from_standard = new HashMap<>();
         HashMap<Integer, int[]> standard_came_from_intermediate = new HashMap<>();
         HashMap<Integer, int[]> intermediate_came_from_intermediate = new HashMap<>();
+        StateSearchMAFactory.createStatesCameFrom();
 
         ArrayDeque<int[][] > path_to_test = new ArrayDeque<>();
         ArrayDeque<int[]> path = new ArrayDeque<>();
@@ -85,7 +84,7 @@ public class SearchEngineOD {
         //StateSearchMAFactory.putCostSoFar(next_state);
         //StateSearchMAFactory.mark_state_inqueue(next_state,true);
 
-        StateSearchMAFactory.updateCameFromPrevCell2(came_from, next_state, next_state);
+        StateSearchMAFactory.updateCameFromPrevCell2(next_state, next_state);
 
         //init state with dummy variables
         int[][] current_state = null;
@@ -117,18 +116,21 @@ public class SearchEngineOD {
                     }
                 }
 
+
                 if (StateSearchMAFactory.isGoal(SearchMAState.getStateCoordinates(current_state))){
                     //this.path = path;
                     path_normal.add(SearchMAState.getStateCoordinates(current_state));
-                    int[] next_key = came_from.get(SearchMAState.getStateCoordinates(current_state));
+
+
+                    int[] next_key = StateSearchMAFactory.getCameFrom(SearchMAState.getStateCoordinates(current_state));
                     path_normal.add(next_key);
                     int[] next_key2;
                     boolean removed;
-                    while (came_from.get(next_key) != this.getStartCoordinatesOfGroup()){
+                    while (StateSearchMAFactory.getCameFrom(next_key) != this.getStartCoordinatesOfGroup()){
                         next_key2 = next_key;
-                        next_key = came_from.get(next_key);
+                        next_key = StateSearchMAFactory.getCameFrom(next_key);
                         path_normal.add(next_key);
-                        removed = came_from.remove(next_key2, next_key);
+                        removed = StateSearchMAFactory.removeCameFrom(next_key2, next_key);
                         /*         to remove
                         if(Coordinates.getRow(0, next_key) == 3 && Coordinates.getCol(0, next_key) == 5  ){
                             start_to_add_to_del = true;
@@ -207,7 +209,9 @@ public class SearchEngineOD {
                             }
                             prev_standard_state = intermediate_came_from_standard .get(intermadiate_state_key);
                             //intermediate_came_from_standard.remove(intermadiate_state, prev_standard_state);
-                            StateSearchMAFactory.updateCameFromPrevCell(came_from, state, prev_standard_state);
+                            StateSearchMAFactory.updateCameFromPrevCell(state, prev_standard_state);
+
+                            StateSearchMAFactory.updateCameFromPrevCell(state, prev_standard_state);
                                  //how to prune
                             frontier.add(state);
                                 //StateSearchMAFactory.putCostSoFar(state);

@@ -42,7 +42,7 @@ public final class GroupSearch {
     public SearchTaskResult runAgentsSearchMA(SearchScheduled sched_group, int[] conflicting_group, int[][][] conflicting_paths) throws IOException {
         int[] start_group_agents = sched_group.getTotalGroup()[SearchScheduled.START_GROUP_AGENTS];
         setSearchState(StateSearchMAFactory.SearchState.AGENTS_ONLY);
-        setNextTrackedAgents(start_group_agents);
+        setNextTracked(start_group_agents);
 
 
         SearchTaskResult searchTaskResult = getSearchMATaskResult(start_group_agents, conflicting_group, conflicting_paths);
@@ -59,7 +59,7 @@ public final class GroupSearch {
     public SearchTaskResult runAgentsBoxesSearchMA(SearchScheduled sched_group, int[] conflicting_group, int[][][] conflicting_paths) throws IOException {
         int[] start_group = sched_group.getTotalGroup()[SearchScheduled.INDEX_OF_GROUP];
         setSearchState(StateSearchMAFactory.SearchState.AGENTS_AND_BOXES);
-        setNextTrackedAgents(start_group);
+        setNextTracked(start_group);
 
         SearchTaskResult searchTaskResult = getSearchMATaskResult(start_group, conflicting_group, conflicting_paths);
         searchTaskResult.setTotalGroup(sched_group.getTotalGroup());
@@ -93,13 +93,14 @@ public final class GroupSearch {
     }
 
 
-    private void setNextTrackedAgents(int[] start_group_agents) {
+    private void setNextTracked(int[] start_group_agents) {
         Set<Integer> agents_to_schedule = new HashSet<>();
         for (int start_group_agent : start_group_agents) {
             agents_to_schedule.add(start_group_agent);
         }
 
         TrackedGroups trackedGroups;
+        /*
         if (this.root_tracked_group.getAgentsScheduledIds().containsAll(agents_to_schedule)){
             trackedGroups = new TrackedGroups(agents_to_schedule, new HashSet<>());
             trackedGroups.initIdsIndexes(start_group_agents , new int[0]);
@@ -108,6 +109,11 @@ public final class GroupSearch {
         }else {
             throw new IllegalArgumentException("agent id unknown");
         }
+        */
+        trackedGroups = new TrackedGroups(agents_to_schedule, new HashSet<>());
+        trackedGroups.initIdsIndexes(start_group_agents , new int[0]);
+        this.conflict_avoidance_checking_rules.setTrackedGroups(trackedGroups);
+        this.in_process_tracked_groups.add(trackedGroups);
     }
     //called by GroupIndependenceDetection
     public SearchTaskResult runGroupSearch(SearchScheduled sched_group, int[] conflicting_group, int[][][] conflicting_paths) throws IOException {

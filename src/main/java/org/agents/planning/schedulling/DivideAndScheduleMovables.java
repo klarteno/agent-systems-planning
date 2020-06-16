@@ -198,8 +198,16 @@ public class DivideAndScheduleMovables {
                         Box box = MapFixedObjects.getBoxByID(next_box);
                         ArrayList<int[]> goals_sloved = agents_to_solved_goals.get(agent.getNumberMark());
                         int[] last_goal = goals_sloved.get(goals_sloved.size() - 1); //check last goal solved if matches the box
-                        if (Coordinates.getRow(last_goal) == Coordinates.getRow(box.getNeighbourGoal())
-                            && Coordinates.getCol(last_goal) == Coordinates.getCol(box.getNeighbourGoal())
+                        int[] goal = box.getNeighbourGoal();
+                        int[] goal2 = box.getCoordinates();
+
+                        if (  ( Coordinates.getRow(last_goal) == Coordinates.getRow(box.getNeighbourGoal())
+                            && Coordinates.getCol(last_goal) == Coordinates.getCol(box.getNeighbourGoal()))
+                            ||
+                                ( Coordinates.getRow(last_goal) == Coordinates.getRow(box.getCoordinates())
+                                        && Coordinates.getCol(last_goal) == Coordinates.getCol(box.getCoordinates()))
+
+
                         ){
                             boolean is_changed = agent.updatePositionCoordinates();
 
