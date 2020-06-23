@@ -25,9 +25,6 @@ public class SearchEngineSA {
         searchTaskResult.setGroup(new int[]{searched_mark_id});             //StateSearchSAFactory.getStartGroup()
         searchTaskResult.addStartCoordinates(StateSearchSAFactory.getStartCoordinatesOfGroup());
         searchTaskResult.addGoalCoordinates(StateSearchSAFactory.getGoalsCoordinatesOfGroup());
-        ArrayList<int[]> last_conflicts = new ArrayList<>();
-        last_conflicts.add(new int[0]);
-        searchTaskResult.addLastConflict(last_conflicts);
 
         return searchTaskResult;
     }

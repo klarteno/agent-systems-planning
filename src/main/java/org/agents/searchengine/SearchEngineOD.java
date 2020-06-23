@@ -4,6 +4,7 @@ import org.agents.Utils;
 import org.agents.markings.Coordinates;
 import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
 import org.agents.planning.conflicts.dto.SimulationConflict;
+import org.agents.planning.schedulling.SearchScheduled;
 
 import java.io.IOException;
 import java.util.*;
@@ -13,15 +14,37 @@ public class SearchEngineOD {
     private static PriorityQueue<int[][]> frontier;
     ArrayDeque<int[]> path_normal;
 
-    public SearchEngineOD(int[] start_group, ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules , StateSearchMAFactory.SearchState searchMultiAgentState){
-        StateSearchMAFactory.setStartGroup(start_group);
-        StateSearchMAFactory.setAvoidanceCheckingRules(conflictAvoidanceCheckingRules);
+    public SearchEngineOD(SearchScheduled scheduling_group, ConflictAvoidanceCheckingRules conflictAvoidanceCheckingRules , StateSearchMAFactory.SearchState searchMultiAgentState){
+        int[] start_coordinates;
+
+        int[] goals_coordinates = scheduling_group.getGoals_coordinates();
+        HashMap<Integer, ArrayList<int[]>> goals_neighbours = scheduling_group.getGoals_neighbours();
+        int[] start_group = scheduling_group.getTotalGroup()[SearchScheduled.INDEX_OF_GROUP];
 
         StateSearchMAFactory.searchMultiAgentState = searchMultiAgentState;
+        switch (searchMultiAgentState)
+        {
+            case AGENTS_ONLY:
+                start_coordinates = scheduling_group.getStart_coordinates();
+                break;
+            case AGENTS_AND_BOXES:
+                start_coordinates = scheduling_group.getStart_coordinates_agts_boxes();
+                int[] index_boxes = scheduling_group.getIndexBoxes();
+                StateSearchMAFactory.setIndexBoxes(index_boxes);
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + searchMultiAgentState);
+        }
+        
+        StateSearchMAFactory.setAvoidanceCheckingRules(conflictAvoidanceCheckingRules);
+
+        StateSearchMAFactory.setStartGroup(start_group, start_coordinates, goals_coordinates, goals_neighbours);
+        
         //make second option for comparator
         frontier = new PriorityQueue<int[][]>(5, Comparator.comparingInt(SearchMAState::getFCost));
         path_normal = new ArrayDeque<>();
     }
+
 
     public int[] getStartCoordinatesOfGroup(){
         return StateSearchMAFactory.getStartCoordinatesGroup();
@@ -36,9 +59,6 @@ public class SearchEngineOD {
         searchTaskResult.setGroup(StateSearchMAFactory.getStartGroup());
         searchTaskResult.addStartCoordinates(this.getStartCoordinatesOfGroup());
         searchTaskResult.addGoalCoordinates(this.getGoalsCoordinatesOfGroup());
-        ArrayList<int[]> last_conflicts = new ArrayList<>();
-        last_conflicts.add(new int[0]);
-        searchTaskResult.addLastConflict(last_conflicts);
 
         return searchTaskResult;
     }
@@ -57,8 +77,6 @@ public class SearchEngineOD {
     }
 
     public void runOperatorDecomposition() throws IOException {
-        assert this.getStartCoordinatesOfGroup().length == this.getGoalsCoordinatesOfGroup().length;
-        assert this.getStartCoordinatesOfGroup().length == this.getGoalsCoordinatesOfGroup().length;
         assert ( this.getStartCoordinatesOfGroup().length % Coordinates.getLenght() )== 0;
         assert this.getStartCoordinatesOfGroup().length/Coordinates.getLenght() > 1;
 
@@ -78,13 +96,13 @@ public class SearchEngineOD {
         //StateSearchMAFactory.createCostSoFar();
         StateSearchMAFactory.createClosedSet();
 
-        int[][] next_state = StateSearchMAFactory.createStandardState(this.getStartCoordinatesOfGroup(), 0);
+        int[][] next_state = StateSearchMAFactory.createStartState(this.getStartCoordinatesOfGroup(), 0);
         int[] prev_standard_state;
         frontier.add(next_state);
         //StateSearchMAFactory.putCostSoFar(next_state);
         //StateSearchMAFactory.mark_state_inqueue(next_state,true);
 
-        StateSearchMAFactory.updateCameFromPrevCell2(next_state, next_state);
+        StateSearchMAFactory.updateCameFromPrevCell2(next_state, StateSearchMAFactory.createDummyState());
 
         //init state with dummy variables
         int[][] current_state = null;
@@ -105,7 +123,6 @@ public class SearchEngineOD {
                 //path.push(SearchMAState.getStateCoordinates(current_state));
                 path_to_test.push(current_state);
 
-               
                 int[] state_to_test = SearchMAState.getStateCoordinates(current_state);
 
                 if(Coordinates.getRow(0, state_to_test) == 3 && Coordinates.getCol(0, state_to_test) == 10  ){
@@ -115,9 +132,8 @@ public class SearchEngineOD {
                         start_to_add_to_del1 = true;
                     }
                 }
-
-
-                if (StateSearchMAFactory.isGoal(SearchMAState.getStateCoordinates(current_state))){
+/*
+if (StateSearchMAFactory.isGoal(SearchMAState.getStateCoordinates(current_state))){
                     //this.path = path;
                     path_normal.add(SearchMAState.getStateCoordinates(current_state));
 
@@ -135,9 +151,36 @@ public class SearchEngineOD {
                         if(Coordinates.getRow(0, next_key) == 3 && Coordinates.getCol(0, next_key) == 5  ){
                             start_to_add_to_del = true;
                             standard_states_expanded_to_del.add(next_key);
+                        }
+            }
+            path_normal.add(this.getStartCoordinatesOfGroup());
+
+            this.path = path_normal;
+
+            return;
+        }
+
+* */
+
+                if (StateSearchMAFactory.isGoal(SearchMAState.getStateCoordinates(current_state))){
+                    //this.path = path;
+                    path_normal.add(SearchMAState.getStateCoordinates(current_state));
+                    int[] next_key = StateSearchMAFactory.getCameFrom(SearchMAState.getStateCoordinates(current_state));
+
+                    int[] next_key2;
+                    boolean removed;
+                    while (!Arrays.equals(next_key, SearchMAState.getStateCoordinates(StateSearchMAFactory.getDummyState()))){
+                        path_normal.add(next_key);
+                        next_key = StateSearchMAFactory.getCameFrom(next_key);
+                        //next_key2 = next_key;
+                        //removed = StateSearchMAFactory.removeCameFrom(next_key2, next_key);
+                        /*         to remove
+                        if(Coordinates.getRow(0, next_key) == 3 && Coordinates.getCol(0, next_key) == 5  ){
+                            start_to_add_to_del = true;
+                            standard_states_expanded_to_del.add(next_key);
                         }*/
                     }
-                    path_normal.add(this.getStartCoordinatesOfGroup());
+                    //path_normal.add(this.getStartCoordinatesOfGroup());
 
                     this.path = path_normal;
 

@@ -1,3 +1,3 @@
 Hello runOperatorDecomposition
  
-current_state[0]: [0, 2, 10, 0, 6, 1, 0, 2, 10, 0, 6, 1] current_state[1]: [0, 2] frontier_size: 0
+current_state[0]: [0, 2, 10, 0, 6, 1, 0, 1, 10, 0, 7, 1] current_state[1]: [0, 0] frontier_size: 0

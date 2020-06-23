@@ -1,5 +1,6 @@
 package org.agents.searchengine;
 
+import org.agents.planning.conflicts.dto.SimulationConflict;
 import org.agents.planning.schedulling.TrackedGroups;
 
 import java.util.ArrayDeque;
@@ -14,9 +15,14 @@ public class SearchTaskResult {
 
     private final ArrayDeque<int[]> path;
     private int[] start_coordinates_of_group;
+
+    public int[] getGoals_coordinates_of_group() {
+        return goals_coordinates_of_group;
+    }
+
     private int[] goals_coordinates_of_group;
-    private int[] start_group;              //the marked ids that have the path resolved
-    private ArrayList<int[]> conflicts;     //conflict found during the search of the path
+    private int[] start_group;//the marked ids that have the path resolved
+    private ArrayList<SimulationConflict> conflicts;     //conflict found during the search of the path
     private int[][] total_group;
     private HashMap<Integer,int[]> agents_idxs_to_boxes_idxs; //agent indexes to bobes indexes from total group
     private UUID unique_id;
@@ -40,7 +46,7 @@ public class SearchTaskResult {
         this.start_group = startGroup;
     }
 
-    public void addLastConflict(ArrayList<int[]> last_conflicts) {
+    public void addLastConflict(ArrayList<SimulationConflict> last_conflicts) {
         this.conflicts.addAll(last_conflicts);
     }
 

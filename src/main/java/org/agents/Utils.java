@@ -140,4 +140,14 @@ public final class Utils {
 
 
 
+    public static int[] concatanateArr(int[] agts_state, int[] boxes_pos) {
+        int[] group_pos = Arrays.copyOf(agts_state,agts_state.length + boxes_pos.length);
+        int _index = 0;
+        for (int i = agts_state.length; i < group_pos.length; i++) {
+            group_pos[i] = boxes_pos[_index++];
+        }
+        return group_pos;
+    }
+
+
 }

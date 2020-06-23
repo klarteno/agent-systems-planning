@@ -9,14 +9,16 @@ public enum SearchMAState {
     ARRAYPOS,
     ARRAYCOSTS;
 
+
     enum Costs {
         COST_G,
         COST_F;
     };
+    private static int[][] dummy_state ;
 
     static int[][] createDummyState(int number_movables) {
         //int[] dummy_state123 = new int[number_movables * Coordinates.getLenght() + SearchMAState.Costs.values().length];
-        int[][] dummy_state = new int[SearchMAState.values().length][];
+        dummy_state = new int[SearchMAState.values().length][];
 
         dummy_state[getLocationIndex()] = new int[number_movables * Coordinates.getLenght()];
         dummy_state[getCostsIndex()] = new int[Costs.values().length];
@@ -29,6 +31,11 @@ public enum SearchMAState {
 
         return dummy_state;
     }
+
+    public static int[][] getDummyState(int number_of_movables) {
+        return dummy_state;
+    }
+
 
     static int[][] createStartState(ArrayDeque<int []> movables) {
         //int[] dummy_state123 = new int[number_movables * Coordinates.getLenght() + SearchMAState.Costs.values().length];
@@ -67,8 +74,8 @@ public enum SearchMAState {
         int [][] state = new int[SearchMAState.getPropsLenth()][];
         state[getLocationIndex()] = cell_coordinates; //will represent a tuple of the form :(time,y_coord,x_coord)
 
-         state[getCostsIndex()] = new int[SearchMAState.Costs.values().length];
-         setCostG(state, total_gcost);
+        state[getCostsIndex()] = new int[SearchMAState.Costs.values().length];
+        setCostG(state, total_gcost);
         setCostF(state, f_value);
 
         return state;

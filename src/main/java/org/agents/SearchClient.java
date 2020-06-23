@@ -1,6 +1,6 @@
 package org.agents;
 
-import org.agents.markings.Color;
+ import org.agents.markings.Color;
 
 import java.io.BufferedReader;
 import java.util.HashMap;
@@ -104,7 +104,7 @@ public final class SearchClient {
 
             if(parsingState == ParsingState.END){
                 System.out.println("# end map parsing"+line.toString());
-                break;
+                 break;
             }
         }
      }

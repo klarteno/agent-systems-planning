@@ -3,10 +3,11 @@ package org.agents.planning.schedulling;
 import org.agents.Agent;
 import org.agents.Box;
 import org.agents.MapFixedObjects;
+import org.agents.markings.Coordinates;
+import org.agents.searchengine.StateSearchMAFactory;
 
-import java.util.ArrayDeque;
-import java.util.HashMap;
-import java.util.UUID;
+import java.io.Serializable;
+import java.util.*;
 
 public class SearchScheduled {
     //final int INDEX_OF_BOXES = 2;
@@ -18,9 +19,8 @@ public class SearchScheduled {
     private HashMap<Integer,int[]> agents_idxs_to_boxes_idxs;
     private UUID unique_id;
 
-
     public static final int NEXT_GOAL_TO_BOX = 0;
-
+    private int[] index_boxes;
 
     public SearchScheduled() { }
 
@@ -29,6 +29,21 @@ public class SearchScheduled {
     }
 
     public int[][] getTotalGroup(int[][] totalGroup)  { return this.total_group; }
+
+    private static  int[] group_marks_ids;
+
+    private static int[] start_coordinates;
+
+    private static int[] start_coordinates_agt_boxes;
+
+
+    private static int[] goals_coordinates;
+
+    private static HashMap<Integer, ArrayList<int[]>> goals_neighbours;
+
+    static StateSearchMAFactory.SearchState searchMultiAgentState = StateSearchMAFactory.SearchState.AGENTS_ONLY;
+
+
 
     void setAgentsIdxsToBoxesIdxs(HashMap<Integer,int[]> agentsIdxs_to_boxesIdxs) {
         this.agents_idxs_to_boxes_idxs = agentsIdxs_to_boxesIdxs;
@@ -58,6 +73,33 @@ public class SearchScheduled {
     //group independence detection to refactor
     public void setGroup(int[] group){
         this.total_group[INDEX_OF_GROUP] = group;
+    }
+
+
+    public int[] getIndexBoxes(){
+        if(this.index_boxes == null){
+            index_boxes = new int[this.total_group[INDEX_OF_GROUP].length - this.total_group[INDEX_OF_AGENTS].length];
+        }else {
+            return index_boxes;
+        }
+
+        int[] group = this.total_group[INDEX_OF_GROUP];
+        int[] agents = this.total_group[INDEX_OF_AGENTS];
+        Set<Integer> agts = new HashSet<Integer>();
+
+        for (int agent : agents) {
+            agts.add(agent);
+        }
+
+
+        int index = 0;
+        for (int idx = 0; idx < group.length; idx++) {
+            if( !agts.contains(group[idx]) ){
+                index_boxes[index++] = idx;
+            }
+        }
+
+        return this.index_boxes;
     }
 
     public HashMap<Integer,int[]> getAgentstIdxsToBoxesIdxs() {
@@ -115,5 +157,153 @@ public class SearchScheduled {
 
                 break;
         }
+    }
+
+
+
+    public void setStartGroup( StateSearchMAFactory.SearchState searchMultiAgentState) {
+        int[] start_group = this.getTotalGroup()[SearchScheduled.INDEX_OF_GROUP];
+        group_marks_ids = start_group;
+        int[] idx_agt = this.getTotalGroup()[SearchScheduled.INDEX_OF_AGENTS];
+        int start_boxes_length = start_group.length - idx_agt.length;
+
+
+        switch (searchMultiAgentState){
+            case AGENTS_ONLY:
+                this.agentsOnly(this.getTotalGroup()[SearchScheduled.INDEX_OF_AGENTS]);
+                group_marks_ids = this.getTotalGroup()[SearchScheduled.INDEX_OF_AGENTS];
+                break;
+            case AGENTS_AND_BOXES:
+                this.agentsAndBoxes(start_group, start_boxes_length);
+                break;
+        }
+    }
+
+    private void agentsOnly(int[] start_group) {
+        start_coordinates = new int[start_group.length * Coordinates.getLenght()];
+        goals_coordinates = new int[start_group.length * Coordinates.getLenght()];
+
+        int coordinate_start = 0;
+        ///Arrays.stream(start_group).parallel().
+        Agent agent;
+        Box box;
+        int[] movable_coordinate;
+        int movable_number = 0;
+        int[] goal_cordinate;
+
+        for (int movable_id : start_group) {
+
+            Serializable next_movable = MapFixedObjects.getByMarkNo(movable_id);
+            if (next_movable instanceof Agent) {
+                agent = (Agent) next_movable;
+                movable_coordinate = agent.getCoordinates();
+                ArrayList<int[]> goals_list = new ArrayList<>();
+                goal_cordinate = agent.getGoalStopPosition();
+                    if(goals_neighbours == null )goals_neighbours = new HashMap<>();
+                    int[] goal_cordinate_2 = agent.getNextGoal();
+
+                    while( !Arrays.equals(goal_cordinate_2, Coordinates.getEmptyInstance())){
+                        goals_list.add(goal_cordinate_2);
+                        goal_cordinate_2 = agent.getNextGoal();
+                    }
+                    goals_neighbours.put(movable_number, goals_list);
+                    movable_number++;
+                    for (int j = 0; j < Coordinates.getLenght(); j++) {
+                        start_coordinates[coordinate_start] = movable_coordinate[j];
+                        goals_coordinates[coordinate_start++] = goal_cordinate[j];
+                    }
+
+            } else if (next_movable instanceof Box) {
+                box = (Box) next_movable;
+                movable_coordinate = box.getCoordinates();
+                goal_cordinate = box.getGoalPosition();
+
+                for (int j = 0; j < Coordinates.getLenght(); j++) {
+                    start_coordinates[coordinate_start] = movable_coordinate[j];
+                    goals_coordinates[coordinate_start++] = goal_cordinate[j];
+                }
+            }
+            //coordinate_index += Coordinates.getLenght();
+        }
+    }
+
+    private void agentsAndBoxes(int[] start_group, int start_boxes_length) {
+        start_coordinates = new int[start_group.length * Coordinates.getLenght()];
+        goals_coordinates = new int[start_boxes_length * Coordinates.getLenght()];
+
+        int coordinate_start = 0;
+        int coordinate_goal = 0;
+
+        ///Arrays.stream(start_group).parallel().
+        Agent agent;
+        Box box;
+        int[] movable_coordinate;
+        int movable_number = 0;
+        int[] goal_cordinate;
+
+        for (int movable_id : start_group) {
+
+            Serializable next_movable = MapFixedObjects.getByMarkNo(movable_id);
+            if (next_movable instanceof Agent) {
+                agent = (Agent) next_movable;
+                movable_coordinate = agent.getCoordinates();
+                ArrayList<int[]> goals_list = new ArrayList<>();
+                if(goals_neighbours == null )goals_neighbours = new HashMap<>();
+                int[] goal_cordinate_2 = agent.getNextGoal();
+
+                while( !Arrays.equals(goal_cordinate_2, Coordinates.getEmptyInstance())){
+                    goals_list.add(goal_cordinate_2);
+                    goal_cordinate_2 = agent.getNextGoal();
+                }
+                goals_neighbours.put(movable_number, goals_list);
+                movable_number++;
+                for (int j = 0; j < Coordinates.getLenght(); j++) {
+                    start_coordinates[coordinate_start++] = movable_coordinate[j];
+                 }
+
+            } else if (next_movable instanceof Box) {
+                box = (Box) next_movable;
+                movable_coordinate = box.getCoordinates();
+                goal_cordinate = box.getGoalPosition();
+
+                for (int j = 0; j < Coordinates.getLenght(); j++) {
+                    start_coordinates[coordinate_start++] = movable_coordinate[j];
+                 }
+                for (int j = 0; j < Coordinates.getLenght(); j++) {
+                     goals_coordinates[coordinate_goal++] = goal_cordinate[j];
+                }
+            }
+            //coordinate_index += Coordinates.getLenght();
+        }
+    }
+
+
+    public int[] getGroup_marks_ids() {
+        return group_marks_ids;
+    }
+
+    public int[] getStart_coordinates() {
+        return start_coordinates;
+    }
+
+    public int[] getStart_coordinates_agts_boxes() {
+        return start_coordinates_agt_boxes;
+    }
+
+    public void setStart_coordinates_agts_boxes(int[] startCoordinates) {
+        int __number_movables = startCoordinates.length/Coordinates.getLenght();
+        for (int i = 0; i <__number_movables ; i++) {
+            Coordinates.setTime(i,startCoordinates,0);
+        }
+
+        start_coordinates_agt_boxes = startCoordinates;
+    }
+
+    public int[] getGoals_coordinates() {
+        return goals_coordinates;
+    }
+
+    public HashMap<Integer, ArrayList<int[]>> getGoals_neighbours() {
+        return goals_neighbours;
     }
 }

@@ -144,7 +144,7 @@ public final class MovablesScheduling {
         index = 0;
         int[] agents_group_ids = new  int[this.agents_scheduled_ids.size()];
         for (Integer ag_id : this.agents_scheduled_ids ){
-            agents_group_ids[index] = ag_id;
+             agents_group_ids[index] = ag_id;
         }
 
         return getMatchedAgentsBoxesIndexes2( agents_group_ids, box_group_ids, this.agents_ids_to_boxes_ids);
@@ -175,6 +175,8 @@ public final class MovablesScheduling {
     private static SearchScheduled getMatchedAgentsBoxesIndexes2(int[] agents_group_ids, int[] box_group_ids, HashMap<Integer, Set<Integer>> agents_ids_to_boxes_ids){
 
         SearchScheduled searchScheduled = new SearchScheduled();
+
+
 
         int[][]  total_group = new int[3][];
         searchScheduled.setTotalGroup(total_group);

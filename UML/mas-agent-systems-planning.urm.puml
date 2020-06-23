@@ -1,0 +1,1123 @@
+@startuml
+package org.agents.planning {
+  class GroupIndependenceDetection {
+    - colided_ids : int[]
+    - conflict_avoidance_checking_rules : ConflictAvoidanceCheckingRules
+    - conflict_avoidance_table : ConflictAvoidanceTable
+    - first_collide : int {static}
+    - group_search_strategy : GroupSearch
+    - pathProcessing : PathProcessing
+    - scheduling_group : SearchScheduled
+    - second_collide : int {static}
+    + GroupIndependenceDetection(trackedGroups : TrackedGroups)
+    - getFirstColide() : int
+    - getSecondColide() : int
+    - isColide() : boolean
+    + runIndependenceDetection() : boolean
+  }
+  class GroupSearch {
+    - conflict_avoidance_checking_rules : ConflictAvoidanceCheckingRules
+    - in_process_tracked_groups : ArrayDeque<TrackedGroups>
+    - root_tracked_group : TrackedGroups
+    - scheduling_group : SearchScheduled
+    - search_state : SearchState
+    - search_task_independence_detection : SearchTaskResult
+    + GroupSearch(trackedGroups : TrackedGroups)
+    + getConflictAvoidanceCheckingRules() : ConflictAvoidanceCheckingRules
+    - getSearchMATaskResult(sched_group : SearchScheduled, conflicting_group : int[], conflicting_paths : int[][][]) : SearchTaskResult
+    + runAgentsBoxesSearchMA(sched_group : SearchScheduled, conflicting_group : int[], conflicting_paths : int[][][]) : SearchTaskResult
+    + runAgentsSearchMA(sched_group : SearchScheduled, conflicting_group : int[], conflicting_paths : int[][][]) : SearchTaskResult
+    + runGroupIndependenceDetection(sched_group : SearchScheduled) : SearchTaskResult
+    - runGroupIndependenceDetection(sched_group : SearchScheduled, conflicting_group : int[], conflicting_paths : int[][][]) : SearchTaskResult
+    + runGroupSearch(sched_group : SearchScheduled, conflicting_group : int[], conflicting_paths : int[][][]) : SearchTaskResult
+    - setNextTracked(start_group_agents : int[])
+    - setSearchState(searchState : SearchState)
+    - setUpIndependenceDetection()
+  }
+  class SearchStrategy {
+    ~ avoidanceCheckingRules : ConflictAvoidanceCheckingRules
+    - movablesScheduling : MovablesScheduling
+    + SearchStrategy(movablesScheduling : MovablesScheduling, synchronised_time : Synchronization)
+    + getPathsSequencial() : ArrayDeque<ListIterator<String>>
+    + runDescenteralizedSearch() : TaskScheduled
+    + runSearch(searchEngine : SearchEngineSA, movable_id : int) : SearchTaskResult
+  }
+}
+package org.agents.action {
+  abstract class Action {
+    - agentLocation : int[]
+    - newAgentLocation : int[]
+    - type : ActionType
+    # Action(type : ActionType, agentLocation : int[], newAgentLocation : int[])
+    + EveryBox(agentLocation : int[], exceptAction : Action) : List<Action> {static}
+    + EveryMove(agentLocation : int[], exceptAction : Action) : Stack<Action> {static}
+    + getAgentLocation() : int[]
+    + getNewAgentLocation() : int[]
+    + getOpposite() : Action {abstract}
+    + getType() : ActionType
+    + isOpposite(Action) : boolean {abstract}
+    + toString() : String {abstract}
+  }
+  enum ActionType {
+    + MOVE {static}
+    + PULL {static}
+    + PUSH {static}
+    + SKIP {static}
+    + valueOf(name : String) : ActionType {static}
+    + values() : ActionType[] {static}
+  }
+  class CellLocation {
+    + CellLocation()
+    - getX(point : long) : int {static}
+    - getY(point : long) : int {static}
+    - point(x : int, y : int) : long {static}
+  }
+  ~class ConflictingPair {
+    + ConflictingPair(x : short, y : short)
+  }
+  ~class CoordinateOf3 {
+    + CoordinateOf3(x : byte, y : byte, z : byte)
+  }
+  enum Direction {
+    + EAST {static}
+    + EVERY : Direction[] {static}
+    + NORTH {static}
+    + NORTH_EAST {static}
+    + NORTH_WEST {static}
+    + SOUTH {static}
+    + SOUTH_EAST {static}
+    + SOUTH_WEST {static}
+    + WAIT {static}
+    + WEST {static}
+    + getDirectionsFrom(from_cell : int[], destination_cell : int[]) : Direction {static}
+    + getDirectionsFrom(from_cell_locations : int[], destination_cell_locations : int[], index_agents : int[]) : Direction[] {static}
+    + getDirectionsFrom(from_row : int, from_col : int, to_row : int, to_col : int) : Direction {static}
+    + getDirectionsFromOf(from_cell_locations : int[], destination_cell_locations : int[], all_coordinates : boolean) : Direction[] {static}
+    + getNextCellFrom(position_cell : int[])
+    + getOpposite() : Direction
+    + isOpposite(d1 : Direction, d2 : Direction) : boolean {static}
+    + toString() : String
+    + valueOf(name : String) : Direction {static}
+    + values() : Direction[] {static}
+  }
+  class Location {
+    - cell_coordinates : int[]
+    + Location(cell_coordinates : int[])
+    + getCoordinates() : int[]
+    + getX() : int
+    + getY() : int
+    + newLocation(cell_position : int[], next_direction : Direction) : int[] {static}
+  }
+  class MoveAction {
+    - direction : Direction
+    + MoveAction(next_direction : Direction, cell_position : int[])
+    + getOpposite() : Action
+    + isOpposite(action : Action) : boolean
+    + toString() : String
+  }
+  ~class Pair2 {
+    - pair : int
+    + Pair2(x : short, y : short)
+    + getFirst() : short
+    + getPair() : int
+    + getSecond() : short
+  }
+  ~class PairOf3 {
+    - pair : int
+    + PairOf3(x : byte, y : byte, z : byte)
+    + getFirst() : byte
+    + getPair() : int
+    + getSecond() : byte
+    + getThird() : byte
+  }
+  class PullAction {
+    - agentDir : Direction
+    - boxDir : Direction
+    - boxLocation : int[]
+    - newBoxLocation : int[]
+    + PullAction(agentDir : Direction, boxDir : Direction, location : int[])
+    # getAgentDir() : Direction
+    # getBoxDir() : Direction
+    + getOpposite() : Action
+    + isOpposite(action : Action) : boolean
+    + toString() : String
+  }
+  class PushAction {
+    - agentDir : Direction
+    - boxDir : Direction
+    - boxLocation : int[]
+    - newBoxLocation : int[]
+    + PushAction(agentDir : Direction, boxDir : Direction, location : int[])
+    # getAgentDir() : Direction
+    # getBoxDir() : Direction
+    + getOpposite() : Action
+    + isOpposite(action : Action) : boolean
+    + toString() : String
+  }
+}
+package org.agents {
+  class Agent {
+    - coordinates : int[]
+    - goal_stop_coordinates : int[]
+    - goals : ArrayDeque<int[]>
+    - markings_field : int[]
+    - solved_goals : ArrayList<int[]>
+    + Agent(number_mark : int, color_mark : int)
+    + addGoalPosition(next_goal_cell : int[])
+    + getColor() : int
+    + getColumnPosition() : int
+    + getCoordinates() : int[]
+    + getGoalStopPosition() : int[]
+    + getNextGoal() : int[]
+    + getNumberMark() : int
+    + getRowPosition() : int
+    + getSolvedStatus() : SolvedStatus
+    + getTimePosition() : int
+    + setCoordinatesPosition(pos_coordinates : int[])
+    + setCoordinatesPosition(row : int, col : int)
+    + setGoalStopPosition(goal : int[])
+    + setGoalStopPosition(goal_row : int, goal_column : int)
+    + setSolvedStatus(stepSolved : SolvedStatus)
+    + setTimePosition(step_time : int)
+    + updatePositionCoordinates() : boolean
+    - valid(pos : int) : boolean
+  }
+  class Box {
+    - COST_G : int {static}
+    - COST_HEURISTIC : int {static}
+    - box_costs : int[]
+    - box_goal_coordinates : int[]
+    - box_object : int[]
+    - box_object_coordinates : int[]
+    - neighbour_position : int[]
+    + Box(letter_mark : char, color_mark : int)
+    + addNeighbourGoal(next_goal_cell : int[])
+    + getColor() : int
+    + getColumnPosition() : int
+    + getCoordinates() : int[]
+    + getCostHeuristic() : int
+    + getGoalPosition() : int[]
+    + getLetterMark() : int
+    + getNeighbourGoal() : int[]
+    + getRowPosition() : int
+    + getSolvedStatus() : SolvedStatus
+    + getTimeStep() : int
+    + setColumnPosition(pos : int)
+    + setGoalPosition(goal_row : int, goal_column : int)
+    + setRowPosition(pos : int)
+    + setSolvedStatus(solvedStatus : SolvedStatus) : boolean
+    + setTimeStep(step_time : int)
+    - valid(pos : int) : boolean
+  }
+  class MapFixedObjects {
+    + MAX_COL : int {static}
+    + MAX_ROW : int {static}
+    - agents_ids : HashMap<Integer, Agent> {static}
+    - agents_store : Agent[] {static}
+    - boxes_ids : HashMap<Integer, Box> {static}
+    - boxes_store : Box[] {static}
+    - colors_of_agents : HashMap<Integer, ArrayDeque<Agent>> {static}
+    - colors_of_boxes : HashMap<Integer, ArrayDeque<Box>> {static}
+    + goals : HashMap<Character, int[]> {static}
+    - markings_ids : HashMap<Integer, Serializable>
+    - tracked_marking_ids : HashMap<Integer, Integer>
+    - walls : boolean[][] {static}
+    + MapFixedObjects()
+    + getAgents() : LinkedList<Agent> {static}
+    + getAgentsByColor(color_no : Integer) : ArrayDeque<Agent> {static}
+    + getAgentsMarks() : Set<Integer> {static}
+    + getAllBoxesIds() : Set<Integer> {static}
+    + getAllIdsMarks() : Set<Integer> {static}
+    + getBoxByID(box_id : Integer) : Box {static}
+    + getBoxes() : Set<Box> {static}
+    + getBoxesIDsByColor(color_no : Integer) : ArrayDeque<Box> {static}
+    + getBoxesIDsByColor(key_color : Integer, keySet : Set<Integer>) : ArrayDeque<Integer> {static}
+    + getBoxesMarks() : Set<Integer> {static}
+    + getByAgentMarkId(mark_id : int) : Agent {static}
+    + getByBoxMarkId(id : int) : Box {static}
+    + getByMarkNo(movable_id : int) : Serializable {static}
+    + getByMarkNo(movable_ids : int[]) : ArrayDeque<Serializable> {static}
+    + getIndexFor(movable_id : int) : int
+    + getManhattenHeuristic(cell_coordinates : int[], goal_coordinates : int[]) : int {static}
+    - getMarkingsIndexes() : HashMap<Integer, Integer>
+    - getMovableObject(movable_id : int) : Serializable
+    + getNeighbours(coordinates : int[], color_movable : Color) : ArrayDeque<int[]> {static}
+    + getNeighbours(coordinates : int[], mark_id : int) : ArrayDeque<int[]> {static}
+    + getNeighboursMA(position_to_expand : int[], time_deadline : int) : LinkedList<int[]> {static}
+    + getNextBoxBy(color : int) : Optional<Box> {static}
+    + getNumerOfAgents() : int {static}
+    + getNumerOfBoxes() : int {static}
+    - getTrackedMarkingsIDs() : Set<Integer>
+    + getWalls() : boolean[][] {static}
+    + isEmptyCell(cell_position : int[]) : boolean {static}
+    + isFreeCell(cell : int[], mark_id : int) : boolean {static}
+    + setAgents(agents : Agent[]) : boolean {static}
+    + setBoxes(boxes : Box[]) : boolean {static}
+    + setMovables(agents_ : Agent[], boxes_ : Box[]) {static}
+    + setUpTrackedMovables(agents : Agent[], boxes : Box[])
+    + setWalls(walls_marks : boolean[][]) {static}
+    - updateAgentsByColor() : HashMap<Integer, ArrayDeque<Agent>> {static}
+    - updateBoxesByColor() : HashMap<Integer, ArrayDeque<Box>> {static}
+  }
+  class SearchClient {
+    ~ colors : HashMap<String, Color>
+    ~ goal_map_marks : Vector<char[]>
+    ~ maxCol_map : int
+    ~ pattern_colors_headers : Pattern {static}
+    ~ pattern_end_headers : Pattern {static}
+    ~ pattern_goal_map_headers : Pattern {static}
+    ~ pattern_initial_map_headers : Pattern {static}
+    ~ pattern_text_headers : Pattern {static}
+    ~ row_map_no_ : int
+    ~ rows_init_map_marks : Vector<char[]>
+    ~ serverMessages : BufferedReader
+    + SearchClient(serverMessages : BufferedReader)
+    + initObjects() : MapFixedObjects
+    + initObjects(rows_init_map_marks : Vector<char[]>, goal_map_marks : Vector<char[]>, colors : HashMap<String, Color>, maxCol_map : int) : MapFixedObjects
+    + parse()
+    - parse_map_data(maxCol_map_no : int, rows_map_marks : Vector<char[]>, line : String) : int
+  }
+  ~enum ParsingState {
+    + COLORS {static}
+    + END {static}
+    + GOAL_MAP {static}
+    + INIT_MAP {static}
+    + NOTHING {static}
+    + valueOf(name : String) : ParsingState {static}
+    + values() : ParsingState[] {static}
+  }
+  class Utils {
+    + Utils()
+    + getOrderedColectionOf(array : ArrayList<Integer>) : int[] {static}
+    + isTheRightCoordinatesToLog(pos_coordinates : int[], time0 : int, row_0 : int, col_0 : int, row_1 : int, col_1 : int) : boolean {static}
+    + logAppendToFile(fileName : String, current_state : int[][], size : int) {static}
+    + logAppendToFile(logFileName : String, str_message : String) {static}
+    + logStartForFile(fileName : String) {static}
+    + maxIndexOf(array : int[]) : int {static}
+    + min(array : int[]) : int {static}
+    + min2(array : int[]) : int {static}
+    + minIndexOf(array : int[]) : int {static}
+    + minIndexOf(array : int[], from_idexes : Integer[]) : int {static}
+  }
+}
+package org.agents.searchengine {
+  class PathProcessing {
+    + MoveAction : String {static}
+    + PullAction : String {static}
+    + PushAction : String {static}
+    - clock_time : int
+    + PathProcessing()
+    - getBoxMoves(agent : Agent, agent_cell : int[], box_path : ArrayDeque<int[]>) : ArrayList<String>
+    + getMAAgentBoxesMoves(searchTaskResult : SearchTaskResult) : ArrayList<String[]>
+    - getMAAgentMoves(path : ArrayDeque<int[]>) : ArrayList<String>
+    + getMAAgentMoves(path : ArrayDeque<int[]>, index_agents : int[]) : ArrayList<String[]>
+    + getValidAgentsGoalCoordinates(searchTaskResult : SearchTaskResult) : int[]
+    + get_moves_agent_goal(agent : Agent, searchEngine : SearchEngineSA) : ArrayList<String>
+    + get_moves_agent_goal(agent : Agent, searchEngineSANormal : SearchEngineSANormal) : ArrayList<String>
+    + outputPathsMA(agents_paths : ArrayDeque<int[]>) : ArrayList<String[]>
+    + resetTimeSteps(new_path_one : ArrayDeque<int[]>)
+    - selectCellForAgent(next_neighbours : Stream<int[]>) : int[]
+  }
+  class SearchEngineOD {
+    - frontier : PriorityQueue<int[][]> {static}
+    - path : ArrayDeque<int[]>
+    ~ path_normal : ArrayDeque<int[]>
+    + SearchEngineOD(scheduling_group : SearchScheduled, conflictAvoidanceCheckingRules : ConflictAvoidanceCheckingRules, searchMultiAgentState : SearchState)
+    + getGoalsCoordinatesOfGroup() : int[]
+    + getHeuristic(cell_coordinates : int[], goal_coordinates : int[]) : int {static}
+    + getPath() : SearchTaskResult
+    + getPathCost() : int
+    + getStartCoordinatesOfGroup() : int[]
+    + isPathFound() : boolean
+    + runOperatorDecomposition()
+  }
+  class SearchEngineSA {
+    - COST_NEXT_CELL : int {static}
+    - conflict_avoidance_checking_rules : ConflictAvoidanceCheckingRules {static}
+    - frontier : PriorityQueue<int[][]> {static}
+    - path_found : ArrayDeque<int[]>
+    ~ searched_mark_id : int {static}
+    + SearchEngineSA(conflictAvoidanceCheckingRules : ConflictAvoidanceCheckingRules)
+    ~ getCostCoordinate(cell_coordinate : int[], new_g_cost : int) : int {static}
+    ~ getHeuristic(cell_coordinate : int[], goal_coordinate : int[]) : int {static}
+    + getPath() : SearchTaskResult
+    + getPathCost() : int
+    - getProcessedPath() : ArrayDeque<int[]>
+    + isPathFound() : boolean
+    + runAstar(agent : Agent)
+    + runAstar(box : Box)
+    - runAstar(mark_id : int, start_coordinates : int[], goal_coordinates : int[])
+  }
+  enum SearchMAState {
+    + ARRAYCOSTS {static}
+    + ARRAYPOS {static}
+    ~ createDummyState(number_movables : int) : int[][] {static}
+    + createNew(cell_coordinates : int[], total_gcost : int, f_value : int) : int[][] {static}
+    ~ createStartState(movables : ArrayDeque<int[]>) : int[][] {static}
+    + getColumn(index_pos : int, pos : int[]) : int {static}
+    - getCostsIndex() : int {static}
+    + getFCost(state : int[][]) : int {static}
+    + getGCost(state : int[][]) : int {static}
+    - getLocationIndex() : int {static}
+    + getPositionHashed(state : int[][]) : int {static}
+    - getPropsLenth() : int {static}
+    + getRow(index_pos : int, pos : int[]) : int {static}
+    + getStateCoordinates(state : int[][]) : int[] {static}
+    + getStateUpdatedOf(prev_state : int[][], coordinates_index : int, cell_coordinates : int[], time_step : int, total_gcost : int, f_value : int) : int[] {static}
+    + getTime(index_pos : int, pos : int[]) : int {static}
+    + getTimeStep(movable_index : int, state : int[][]) : int {static}
+    + getXCoordinate(movable_index : int, state : int[][]) : int {static}
+    + getYCoordinate(movable_index : int, state : int[][]) : int {static}
+    - setCostF(state : int[][], f_value : int) {static}
+    - setCostG(state : int[][], total_gcost : int) {static}
+    + setTimeStep(state : int[][], time_step : int) {static}
+    + valueOf(name : String) : SearchMAState {static}
+    + values() : SearchMAState[] {static}
+  }
+  ~enum Costs {
+    + COST_F {static}
+    + COST_G {static}
+    + valueOf(name : String) : Costs {static}
+    + values() : Costs[] {static}
+  }
+  enum SearchSAState {
+    + ARRAYCOSTS {static}
+    + ARRAYPOS {static}
+    + createDummyState() : int[][] {static}
+    + createNew(cell_coordinates : int[], total_gcost : int, f_value : int) : int[][] {static}
+    - getCostsIndex() : int {static}
+    + getFCost(state : int[][]) : int {static}
+    + getGCost(state : int[][]) : int {static}
+    - getLocationIndex() : int {static}
+    + getPositionHashed(state : int[][]) : int {static}
+    - getPropsLenth() : int {static}
+    + getStateCoordinates(state : int[][]) : int[] {static}
+    + getTimeStep(state : int[][]) : int {static}
+    + getXCoordinate(state : int[][]) : int {static}
+    + getYCoordinate(state : int[][]) : int {static}
+    - setCostF(state : int[][], f_value : int) {static}
+    - setCostG(state : int[][], total_gcost : int) {static}
+    + valueOf(name : String) : SearchSAState {static}
+    + values() : SearchSAState[] {static}
+  }
+  class SearchTaskResult {
+    + INDEX_OF_AGENTS : int {static}
+    + INDEX_OF_GROUP : int {static}
+    + START_GROUP_AGENTS : int {static}
+    - agents_idxs_to_boxes_idxs : HashMap<Integer, int[]>
+    - conflicts : ArrayList<int[]>
+    - goals_coordinates_of_group : int[]
+    - index_agents : int[]
+    - path : ArrayDeque<int[]>
+    - start_coordinates_of_group : int[]
+    - start_group : int[]
+    - total_group : int[][]
+    - tracked_groups : TrackedGroups
+    - unique_id : UUID
+    + SearchTaskResult(path : ArrayDeque<int[]>)
+    + addGoalCoordinates(goalsCoordinatesOfGroup : int[])
+    + addLastConflict(last_conflicts : ArrayList<int[]>)
+    + addStartCoordinates(startCoordinatesOfGroup : int[])
+    + getAgentstIdxsToBoxesIdxs() : HashMap<Integer, int[]>
+    + getPath() : ArrayDeque<int[]>
+    + getStartGroupAgents() : int[]
+    + getTotalGroup() : int[][]
+    + getUUID(uniqueID : UUID) : UUID
+    + setAgentstIdxsToBoxesIdxs(agentsIdxsToBoxesIdxs : HashMap<Integer, int[]>)
+    + setGroup(startGroup : int[])
+    + setIndexAgents(indexAgents : int[])
+    + setTotalGroup(totalGroup : int[][])
+    + setTrackedGroup(trackedGroups : TrackedGroups)
+    + setUUID(uniqueID : UUID)
+  }
+  class StateSearchMAFactory {
+    ~ COST_NEXT_CELL : int {static}
+    + F_COST : int {static}
+    + G_COST : int {static}
+    + IN_HEAP : int {static}
+    ~ STATE_INTERMEDIATE : int {static}
+    ~ STATE_STANDARD : int {static}
+    - agent_boxes_to_avoid : HashMap<Integer, Set<Integer>> {static}
+    - all_agents_indexes : HashMap<Integer, Integer> {static}
+    - all_agents_to_boxes : HashMap<Integer, Set<Integer>> {static}
+    - all_boxes_indexes : HashMap<Integer, Integer> {static}
+    - all_boxes_to_agents : HashMap<Integer, Set<Integer>> {static}
+    - came_from : HashMap<int[], int[]> {static}
+    - closed_states : int[][][][] {static}
+    - closed_states_MA : HashMap<Integer, Integer> {static}
+    - conflict_avoidance_checking_rules : ConflictAvoidanceCheckingRules {static}
+    - cost_so_far : int[][][][] {static}
+    - goals_coordinates : int[] {static}
+    - goals_neighbours : HashMap<Integer, ArrayList<int[]>> {static}
+    - group_marks_ids : int[] {static}
+    - heuristic_intermediate_coordinates_output : int[] {static}
+    - heuristic_standard_coordinates_output : int[] {static}
+    - index_boxes : int[] {static}
+    - index_map_cells : int[][] {static}
+    - index_positions_to_agent_boxes_to_avoid : int[] {static}
+    - intermediate_node_costs : int[][] {static}
+    - list_boxes_coord_to_avoid : ArrayList<HashMap<Integer, int[]>> {static}
+    ~ number_of_movables : int {static}
+    ~ searchMultiAgentState : SearchState {static}
+    - standard_node_costs : int[][] {static}
+    - start_coordinates : int[] {static}
+    - state : int[][] {static}
+    + StateSearchMAFactory()
+    - addPullConstraint(box_index : Integer, pull_move_cell : int[], standard_to_conflicts : ArrayList<SimulationConflict>) {static}
+    + addToClosedSet(state : int[][]) {static}
+    + addToClosedTimeSet(state : int[][]) {static}
+    + avoidCoordinate(searchMultiAgentState : SearchState, neighbours : LinkedList<int[]>, coordinates_to_avoid : int[])
+    + createClosedSet() {static}
+    + createClosedTimeSet() {static}
+    + createDummyState() : int[][] {static}
+    + createStartState(cell_coordinates : int[], total_gcost : int) : int[][] {static}
+    + createStatesCameFrom() {static}
+    + expandIntermediateState(state : int[][], standard_to_conflicts : ArrayList<SimulationConflict>) : ArrayDeque<int[][]> {static}
+    + expandIntermediateStateWithAgents(pos_coordinates : int[], intermediate_node_costs : int[][], standard_to_conflicts : ArrayList<SimulationConflict>) : ArrayDeque<int[][]> {static}
+    + expandIntermediateStateWithAgentsAndBoxes(pos_coordinates : int[], intermediate_node_costs : int[][], standard_to_conflicts : ArrayList<SimulationConflict>) : ArrayDeque<int[][]> {static}
+    + expandStandardState(state : int[][], standard_to_conflicts : ArrayList<SimulationConflict>) : ArrayDeque<int[][]> {static}
+    - expandStandardStateForAgentsAndBoxesMultiple(pos_coordinates : int[], g_cost : int, f_cost : int, standard_to_conflicts : ArrayList<SimulationConflict>) : ArrayDeque<int[][]> {static}
+    + expandStandardStateWithAgents(pos_coordinates : int[], standard_node_costs : int[][], standard_to_conflicts : ArrayList<SimulationConflict>) : ArrayDeque<int[][]> {static}
+    + expandStandardStateWithAgentsAndBoxes(pos_coordinates : int[], standard_node_costs : int[][], standard_to_conflicts : ArrayList<SimulationConflict>) : ArrayDeque<int[][]> {static}
+    - expandStateStartingWithAgents(index_to_expand : int, pos_coordinates : int[], standard_node_costs : int[][], standard_to_conflicts : ArrayList<SimulationConflict>) : ArrayDeque<int[][]> {static}
+    + expandStateStartingWithBoxes(coord_to_expand : int, pos_coordinates : int[], waiting_candidates : ArrayList<Integer>, intermediate_node_costs : int[][], standard_to_conflicts : ArrayList<SimulationConflict>) : ArrayDeque<int[][]> {static}
+    - getBoxesCoordToAvoid(index_to_expand : int) : HashMap<Integer, int[]> {static}
+    + getBoxesToAvoid(index_to_expand : int, position_to_expand : int[], pos_coordinates : int[]) : HashMap<Integer, int[]>
+    + getCameFrom(stateCoordinates : int[]) : int[] {static}
+    + getCellCoordinates(state : int[][]) : int[] {static}
+    + getGCost(state : int[][]) : int {static}
+    + getGoalsCoordinatesGroup() : int[] {static}
+    + getHeuristcOf(cell_coordinates : int[]) : int {static}
+    + getHeuristcsMovablesOf(cell_coordinates : int[], heuristic_coordinates_output : int[]) : int {static}
+    + getHeuristic(cell_coordinates : int[], goal_coordinates : int[]) : int {static}
+    + getHeuristic(y : int, x : int, y_goal : int, x_goal : int) : int {static}
+    + getStartCoordinatesGroup() : int[] {static}
+    + getStartGroup() : int[] {static}
+    - getStateHeuristcManhatten(cell_coordinates : int[]) : int {static}
+    - getTimeStep(movable_index : int, state : int[][]) : int {static}
+    - getXCoordinate(movable_index : int, state : int[][]) : int {static}
+    - getYCoordinate(movable_index : int, state : int[][]) : int {static}
+    + initIntermediateNodeCosts() {static}
+    + initStandardNodeCosts() {static}
+    + isGoal(state_coordinates : int[]) : boolean {static}
+    + isInClosedSet(state : int[][]) : boolean {static}
+    + isInClosedTimeSet(coordinates : int[]) : boolean {static}
+    + isInCostSoFarUnused(next_pos : int[]) : boolean {static}
+    + isIntermediateNode(pos_coordinates : int[]) : boolean {static}
+    + isStandardNode(pos_coordinates : int[]) : boolean {static}
+    + putCostSoFarUnused(state : int[][]) {static}
+    + removeCameFrom(next_key2 : int[], next_key : int[]) : boolean {static}
+    + setAvoidanceCheckingRules(conflictAvoidanceCheckingRules : ConflictAvoidanceCheckingRules) {static}
+    + setConflictsStandardStateExpansion(index_to_expand : int, pos_coordinates : int[], cell_pos_neighbour : int[], standard_to_conflicts : ArrayList<SimulationConflict>) {static}
+    - setConflictsStandardStateExpansionForAgentsAndBoxesMultiple(indexes_to_expand : ArrayList<Integer>, pos_coordinates : int[], cell_pos_neighbours : ArrayList<int[]>, standard_to_conflicts : ArrayList<SimulationConflict>) {static}
+    + setIndexBoxes(indexBoxes : int[]) {static}
+    + setStartGroup(start_group : int[], startCoordinates : int[], goalsCoordinates : int[], goalsNeighbours : HashMap<Integer, ArrayList<int[]>>) {static}
+    - setUpAgentsWithBoxesFromGroup() {static}
+    - setUpBoxesCoordToAvoid() {static}
+    + updateCameFromPrevCell(came_from : HashMap<Integer, int[]>, state : int[][], previouse_coordinates : int[][]) {static}
+    + updateCameFromPrevCell(state : int[][], previouse_coordinates : int[]) {static}
+    + updateCameFromPrevCell2(state : int[][], previouse_coordinates : int[][]) {static}
+    + updateIntermediateNodeCosts(state : int[][]) : int[][] {static}
+    + updateStandardNodeCosts(state : int[][]) : int[][] {static}
+    - validateNeighbourOfGoal(pos_coordinates : int[], index_to_expand : int, position_to_expand : int[], neighbours : LinkedList<int[]>) {static}
+  }
+  enum SearchState {
+    + AGENTS_AND_BOXES {static}
+    + AGENTS_ONLY {static}
+    + AVOIDING_GOALS {static}
+    + valueOf(name : String) : SearchState {static}
+    + values() : SearchState[] {static}
+  }
+  ~class StateSearchSAFactory {
+    + F_COST : int {static}
+    + G_COST : int {static}
+    + IN_HEAP : int {static}
+    - closed_states : int[][][] {static}
+    - cost_so_far : int[][][] {static}
+    - goals_coordinates : int[] {static}
+    - start_coordinates : int[] {static}
+    - state : int[][] {static}
+    ~ StateSearchSAFactory()
+    + addToClosedSet(state : int[][]) {static}
+    + createClosedSet() {static}
+    + createCostSoFar() {static}
+    + createDummyState() : int[][] {static}
+    + createState(cell_coordinates : int[], total_gcost : int, goal_coordinates : int[]) : int[][] {static}
+    + createState(cell_neighbour : int[], neighbour_gcost : int, f_value : int) : int[][] {static}
+    + getCellCoordinates(state : int[][]) : int[] {static}
+    + getCostSoFar(next_ : int[]) : int[] {static}
+    + getGCost(state : int[][]) : int {static}
+    + getGoalsCoordinatesOfGroup() : int[] {static}
+    + getStartCoordinatesOfGroup() : int[] {static}
+    - getTimeStep(state : int[][]) : int {static}
+    - getXCoordinate(state : int[][]) : int {static}
+    - getYCoordinate(state : int[][]) : int {static}
+    + isGoal(state_coordinates : int[], goal_coordinates : int[]) : boolean {static}
+    + isInClosedSet(coordinate : int[], new_g_cost : int) : boolean {static}
+    + isInClosedSetWithDeadline(coordinates : int[]) : boolean {static}
+    + isInCostSoFar(next_pos : int[]) : boolean {static}
+    + isInHeap(next_ : int[][]) : boolean {static}
+    + mark_state_inqueue(state : int[][], is_in_heap : boolean) {static}
+    + putCostSoFar(next_pos : int[], g_cost : int, f_cost : int, is_in_heap : boolean) {static}
+    + putCostSoFar(state : int[][]) {static}
+    + setGoalsCoordinatesOfGroup(goalCoordinates : int[]) {static}
+    + setStartCoordinatesGroup(startCoordinates : int[]) {static}
+    + updateCameFromPrevCell(came_from : HashMap<int[], int[]>, state : int[][], previouse_coordinates : int[][]) {static}
+  }
+}
+package org.agents.markings {
+  enum AgentField {
+    + COLOR_MARK_INDEX {static}
+    + NUMBER_MARK_INDEX {static}
+    + SOLVED_STATUS {static}
+    + createAgentField() : int[] {static}
+    + getColor(agent_object : int[]) : int {static}
+    - getLenght() : int {static}
+    + getNumber(agent_object : int[]) : int {static}
+    + getSolved(agent_object : int[]) : SolvedStatus {static}
+    + setColor(agent_object : int[], value : int) {static}
+    + setNumber(agent_object : int[], value : int) {static}
+    + setSolved(agent_object : int[], isSolved : SolvedStatus) : int {static}
+    + valueOf(name : String) : AgentField {static}
+    + values() : AgentField[] {static}
+  }
+  enum BoxField {
+    + COLOR_MARK_INDEX {static}
+    + LETTER_MARK_INDEX {static}
+    + SOLVED_STATUS {static}
+    + createBoxField() : int[] {static}
+    + getColor(box_object : int[]) : int {static}
+    - getLenght() : int {static}
+    + getLetter(box_object : int[]) : int {static}
+    + getSolved(box_object : int[]) : SolvedStatus {static}
+    + setColor(box_object : int[], value : int) {static}
+    + setLetter(box_object : int[], value : int) {static}
+    + setSolved(box_object : int[]) {static}
+    + setSolved(box_object : int[], isSolved : SolvedStatus) {static}
+    + valueOf(name : String) : BoxField {static}
+    + values() : BoxField[] {static}
+  }
+  enum Color {
+    + Blue {static}
+    + Brown {static}
+    + Cyan {static}
+    + Green {static}
+    + Grey {static}
+    + Lightblue {static}
+    + Orange {static}
+    + Pink {static}
+    + Purple {static}
+    + Red {static}
+    + geFromName(color_name : String) : Color {static}
+    + getColorCoded(color : Color) : int {static}
+    + getFrom(color_code : int) : Color {static}
+    + valueOf(name : String) : Color {static}
+    + values() : Color[] {static}
+  }
+  enum Coordinates {
+    + COLUMN {static}
+    + ROW {static}
+    + TIME {static}
+    + areEqual(coordinates_one : int[], coordinates_two : int[]) : boolean {static}
+    + areNeighbours(prev__ : int[], next__ : int[]) : boolean {static}
+    + areNeighbours(prev__ : int[], next__row : int, next__col : int) : boolean {static}
+    + areNeighbours(prev_row : int, prev_col : int, next_row : int, next_col : int) : boolean {static}
+    + createCoordinates() : int[] {static}
+    + createCoordinates(time_step : int, row_index : int, col_index : int) : int[] {static}
+    + getCol(index_pos : int, pos : int[]) : int {static}
+    + getCol(pos : int[]) : int {static}
+    + getCoordinatesAt(index : int, pos_coordinates : int[]) : int[] {static}
+    + getEmptyInstance() : int[] {static}
+    + getLenght() : int {static}
+    + getNeighboursByIndexRanges(cell_pos : int[], index_agents : int[], agents_idx_to_boxes_idx : HashMap<Integer, int[]>, output_pairs : ArrayList<int[]>) : boolean {static}
+    + getNumberOfCoordinates(goal_coordinates : int[]) : int {static}
+    + getRow(index_pos : int, pos : int[]) : int {static}
+    + getRow(pos : int[]) : int {static}
+    + getTime(index_pos : int, pos : int[]) : int {static}
+    + getTime(pos : int[]) : int {static}
+    + isValid(pos_coordinates : int[]) : boolean {static}
+    + setCol(index_pos : int, pos : int[], value : int) {static}
+    + setCol(pos : int[], value : int) {static}
+    + setCoordinateAtIndex(index : int, coordinates : int[], coordinate : int[]) {static}
+    + setRow(index_pos : int, pos : int[], value : int) {static}
+    + setRow(pos : int[], value : int) {static}
+    + setTime(index_pos : int, pos : int[], value : int) {static}
+    + setTime(pos : int[], value : int) {static}
+    + valueOf(name : String) : Coordinates {static}
+    + values() : Coordinates[] {static}
+  }
+  enum SolvedStatus {
+    + GOAL_FINAL_SOLVED {static}
+    + GOAL_STEP_SOLVED {static}
+    + IN_USE {static}
+    + NOT_SOLVED {static}
+    + get(gotSolved : SolvedStatus) : int {static}
+    + get(index : int) : SolvedStatus {static}
+    + valueOf(name : String) : SolvedStatus {static}
+    + values() : SolvedStatus[] {static}
+  }
+}
+package org.agents.searchengine.normal {
+  class SearchEngineSANormal {
+    - COST_NEXT_CELL : int {static}
+    - conflict_avoidance_checking_rules : ConflictAvoidanceCheckingRules {static}
+    - frontier : PriorityQueue<int[][]> {static}
+    - path : ArrayDeque<int[]>
+    ~ searched_mark_id : int {static}
+    + SearchEngineSANormal(conflictAvoidanceCheckingRules : ConflictAvoidanceCheckingRules)
+    ~ getCostCoordinate(cell_coordinate : int[], new_g_cost : int) : int {static}
+    ~ getHeuristic(cell_coordinate : int[], goal_coordinate : int[]) : int {static}
+    + getPath() : ArrayDeque<int[]>
+    + getPathCost() : int
+    + isPathFound() : boolean
+    + runAstar(agent : Agent)
+    + runAstar(box : Box)
+    - runAstar(mark_id : int, start_coordinates : int[], goal_coordinates : int[])
+  }
+  enum SearchSAStateNormal {
+    + ARRAYCOSTS {static}
+    + ARRAYPOS {static}
+    + createDummyState() : int[][] {static}
+    + createNew(cell_coordinates : int[], total_gcost : int, f_value : int) : int[][] {static}
+    - getCostsIndex() : int {static}
+    + getFCost(state : int[][]) : int {static}
+    + getGCost(state : int[][]) : int {static}
+    - getLocationIndex() : int {static}
+    + getPositionHashed(state : int[][]) : int {static}
+    - getPropsLenth() : int {static}
+    + getStateCoordinates(state : int[][]) : int[] {static}
+    + getTimeStep(state : int[][]) : int {static}
+    + getXCoordinate(state : int[][]) : int {static}
+    + getYCoordinate(state : int[][]) : int {static}
+    - setCostF(state : int[][], f_value : int) {static}
+    - setCostG(state : int[][], total_gcost : int) {static}
+    + valueOf(name : String) : SearchSAStateNormal {static}
+    + values() : SearchSAStateNormal[] {static}
+  }
+  ~enum Costs {
+    + COST_F {static}
+    + COST_G {static}
+    + valueOf(name : String) : Costs {static}
+    + values() : Costs[] {static}
+  }
+  ~class StateSearchSAFactoryNormal {
+    + F_COST : int {static}
+    + G_COST : int {static}
+    + IN_HEAP : int {static}
+    - closed_states : int[][][] {static}
+    - cost_so_far : int[][][] {static}
+    ~ searchState : SearchSAStateNormal
+    - state : int[][] {static}
+    ~ StateSearchSAFactoryNormal()
+    + addToClosedSet(state : int[][]) {static}
+    + createClosedSet() {static}
+    + createCostSoFar() {static}
+    + createDummyState() : int[][] {static}
+    + createState(cell_coordinates : int[], total_gcost : int, goal_coordinates : int[]) : int[][] {static}
+    + createState(cell_neighbour : int[], neighbour_gcost : int, f_value : int) : int[][] {static}
+    + getCellCoordinates(state : int[][]) : int[] {static}
+    + getCostSoFar(next_ : int[]) : int[] {static}
+    + getGCost(state : int[][]) : int {static}
+    - getTimeStep(state : int[][]) : int {static}
+    - getXCoordinate(state : int[][]) : int {static}
+    - getYCoordinate(state : int[][]) : int {static}
+    + isGoal(state_coordinates : int[], goal_coordinates : int[]) : boolean {static}
+    + isInClosedSet(coordinate : int[], new_g_cost : int) : boolean {static}
+    + isInClosedSetWithDeadline(coordinates : int[]) : boolean {static}
+    + isInCostSoFar(next_pos : int[]) : boolean {static}
+    + isInHeap(next_ : int[][]) : boolean {static}
+    + mark_state_inqueue(state : int[][], is_in_heap : boolean) {static}
+    + putCostSoFar(next_pos : int[], g_cost : int, f_cost : int, is_in_heap : boolean) {static}
+    + putCostSoFar(state : int[][]) {static}
+    + updateCameFromPrevCell(came_from : HashMap<int[], int[]>, state : int[][], previouse_coordinates : int[][]) {static}
+  }
+}
+package org.agents.planning.conflicts {
+  class ConflictAvoidanceCheckingRules {
+    - conflict_avoidance_table : ConflictAvoidanceTable
+    - illegal_paths_store : IllegalPathsStore
+    - search_state : SearchState
+    - task_scheduled_list : ArrayList<TaskScheduled>
+    + ConflictAvoidanceCheckingRules(trackedGroups : TrackedGroups)
+    + addPathsToTaskScheduledPahs(group1 : int[], group2 : int[], group_marks_total : int[], new_path_group : ArrayDeque<int[]>) : boolean
+    + addTaskScheduledPaths(taskScheduled : TaskScheduled)
+    + clearTaskScheduledList() : boolean
+    - discardConflictsMA(neighbours : ArrayDeque<int[]>, conflicts_avoidance : ArrayDeque<int[]>) : LinkedList<int[]> {static}
+    - getCheckConflictAvoidanceTable(coordinates : int[], next_cells : ArrayDeque<int[]>)
+    + getConflictsTable() : ConflictAvoidanceTable
+    - getConsistentHeuristic(mark_id : int, cost_time : int, cell_coordinates : int[], goal_coordinates : int[]) : int
+    - getConsistentHeuristic(mark_id : int, cost_time : int, y : int, x : int, y_goal : int, x_goal : int) : int
+    + getCostTimeCoordinate(mark_id : int, cell_coordinate : int[]) : int
+    + getFreeNeighboursMA(mark_id : int, coordinate : int[], conflicts_avoidance : ArrayDeque<int[]>) : LinkedList<int[]>
+    + getFreeNeighboursSA(coordinate : int[], mark_id : int) : ArrayDeque<int[]>
+    + getHeuristicOf(mark_id : int, cell_coordinate : int[], goal_coordinate : int[]) : int
+    + getHeuristicOf(mark_id : int, cost_time : int, y : int, x : int, y_goal : int, x_goal : int) : int
+    + getIllegalPathsStore() : IllegalPathsStore
+    - getManhattenHeuristic(cell_coordinates : int[], goal_coordinates : int[]) : int {static}
+    - getManhattenHeuristic(y : int, x : int, y_goal : int, x_goal : int) : int {static}
+    + getValidTasks() : ArrayList<TaskScheduled>
+    + removeTaskScheduledFor(group : int[]) : boolean
+    + replaceTaskScheduledFor(group : int[], new_path : ArrayDeque<int[]>) : boolean
+    + setIllegalPathsOfGroup(start_group : int[], conflicting_group : int[], conflicting_paths : int[][][])
+    + setNextConflictedMovables(colided_ids : int[]) : boolean
+    + setSearchState(searchState : SearchState) : boolean
+    + setTrackedGroups(trackedGroups : TrackedGroups)
+  }
+  enum SearchState {
+    + AVOID_PATH {static}
+    + CHECK_TIME_DEADLINE {static}
+    + NO_CHECK_CONFLICTS {static}
+    + valueOf(name : String) : SearchState {static}
+    + values() : SearchState[] {static}
+  }
+  class ConflictAvoidanceTable {
+    + CELL_MARK1_TO_AVOID : int {static}
+    + CELL_MARK2_TO_AVOID : int {static}
+    - group_set : DisjointSet
+    - pathsStoreQuerying : PathsStoreQuerying
+    - tracked_groups : TrackedGroups
+    + ConflictAvoidanceTable(movablesGroup : TrackedGroups)
+    + addMarkedPathAndPopped(path : ArrayDeque<int[]>, number_mark : int)
+    + addMarkedPathsFor(group_marks_total : int[], paths : ArrayDeque<int[]>)
+    + getAllPathsFromtable() : ArrayList[]
+    + getAllUnGroupedIDs() : int[]
+    + getAllUnGroupedIDsAsSet() : Set<Integer>
+    - getEdgeConflicts(prev_cell_location : int[], cell_location : int[], index : int) : boolean
+    + getGroupOf(mark_id : int) : Set<Integer>
+    + getMarkedPaths(group_marks : Set<Integer>) : int[][][]
+    + getMarkedPaths(group_marks : int[]) : int[][][]
+    + getMarkedPathsCloned(group_marks : int[]) : int[][][]
+    + getPathLenght(group__one : int[]) : int
+    + groupIDs(group_one : int[], group_two : int[]) : int[]
+    + groupIDs(mark_id1 : int, mark_id2 : int)
+    - isCellOrEdgeConflicts(cell_location : int[], prev_cell_location : int[], index : int) : boolean
+    + isNewConflict(group_one : int[], group_two : int[]) : boolean
+    + isUnGrouped(mark_id : int) : boolean
+    + removeCellConflicts(prev_cell_location : int[], path : ArrayDeque<int[]>)
+    + removeConflictsInPath(prev_cell_location : int[], path : ArrayDeque<int[]>, next_conflicts : ArrayList<int[]>) : int
+    + removeIllegalConflicts(prev_cell_location : int[], path : ArrayDeque<int[]>, illegal_paths : ArrayList<int[][][]>)
+    + replaceMarkedPathFor(group_marks : int[], group_paths : ArrayDeque<int[]>)
+    + replaceMarkedPathFor(mark_id : int, path : ArrayDeque<int[]>)
+    + setNextOverlapedMovables(colided_ids : int[]) : boolean
+    + setTrackedGroups(trackedGroups : TrackedGroups)
+  }
+  class IllegalPath {
+    - conflicting_group : int[]
+    - conflicting_paths_ordered : ArrayList<int[][][]>
+    - deadline_constraint : int[]
+    - is_checked : boolean
+    - paths_conflicts : ArrayList<SimulationConflict>
+    - start_group : int[]
+    - start_group_paths_ordered : ArrayList<int[][][]>
+    + IllegalPath(start_group : int[], conflictingGroup : int[], pathsConflicts : ArrayList<SimulationConflict>)
+    + addPaths(start_group_paths : int[][][], conflicting_paths : int[][][])
+    + getConflictingGroup() : int[]
+    + getDeadlineConstraint() : int[]
+    - getLatestTimeForConflictingPath() : int[]
+    + getPaths() : ArrayList<int[][][]>
+    + getStartGroup() : int[]
+    + setChecked(isChecked : boolean)
+    - setDeadlineConstraint() : int[]
+  }
+  class IllegalPathsStore {
+    - conflict_avoidance_table : ConflictAvoidanceTable
+    ~ ilegalPaths : LinkedList<IllegalPath>
+    + IllegalPathsStore(conflictAvoidanceTable : ConflictAvoidanceTable)
+    + addIlegalPath(illegalPath : IllegalPath)
+    ~ checkIllegalPath(mark_id : int) : ArrayList<int[][][]>
+    - getAllConflicts(mark_id : int, groups : int[]) : ArrayList<SimulationConflict>
+    + getConflicts(mark_ids : int[], groups : int[]) : ArrayList<SimulationConflict>
+    + getIllegalPath(mark_id : int) : IllegalPath
+    + pollNextIllegalPath() : IllegalPath
+    + removeAllIlegalPaths() : boolean
+  }
+  ~class PathsStoreQuerying {
+    - path_lenghs : int[]
+    - paths_columns : int
+    - paths_rows : int
+    - table_for_paths : int[][][]
+    - tracked_groups : TrackedGroups
+    ~ PathsStoreQuerying(trackedGroups : TrackedGroups)
+    + getAllOverlapsFor(first_path : int[][], second_path : int[][]) : ArrayDeque<int[]> {static}
+    + getFirstOverlapFor(first_path : int[][], second_path : int[][]) : int[] {static}
+    - getIndexFor(mark_id : int) : int
+    - getMergedGroupOfTwo(groups_marks : int[][]) : int[]
+    + getNumberOfPaths() : int
+    + getPathCloneFor(mark_id : int) : int[][]
+    - getPathFor(mark_id : int) : int[][]
+    + getPathLenght(mark_id : int) : int
+    + getPathsCloneForGroup(group_marks : int[]) : int[][][]
+    + getPathsColumnsNo() : int
+    + getPathsForGroup(group_marks : Set<Integer>) : int[][][]
+    + getPathsForGroup(group_marks : int[]) : int[][][]
+    + getPathsRowsNo() : int
+    + getTimeStep(mark_id : int, cell_location : int[]) : int
+    + isOverlap(first_path : int[][], second_path : int[][]) : boolean {static}
+    + removePath(group_marks : int[]) : boolean
+    + removePath(mark_id : int) : boolean
+    + setCellLocationOf(group_marks : int[], cell_locations : int[])
+    + setCellLocationOf(groups_marks : int[], paths : ArrayDeque<int[]>)
+    - setCellLocationOf(groups_marks : int[][], cell_locations : int[])
+    ~ setCellLocationOf(mark_id : int, cell_location : int[])
+    + setCellLocationOf(mark_id : int, path : ArrayDeque<int[]>)
+    + setUpTracked(trackedGroups : TrackedGroups)
+  }
+}
+package org.agents.planning.constraints {
+  class PullConstraint {
+    - box_index : int
+    ~ constraint_cells2 : HashMap<Integer, int[]>
+    + PullConstraint(boxIndex : int, movable_mark_id : int)
+    + addNextMoveCell(pull_move_cell : int[])
+    + getBox_index() : int
+    + getConstraint_cells() : ArrayList<int[]>
+    + getCoordinatesToAvoid() : ArrayList<int[]>
+    + getMaxTimeDeadline() : int[]
+  }
+}
+package org.agents.planning.schedulling {
+  class DivideAndScheduleMovables {
+    - agents_scheduled : ArrayList<Agent>
+    - agents_to_solved_goals : HashMap<Integer, ArrayList<int[]>> {static}
+    - boxes_ids : Set<Integer> {static}
+    - boxes_ids_scheduled : Set<Integer> {static}
+    - hungarian_algorithm : HungarianAlgorithmResizable
+    + DivideAndScheduleMovables(boxesIds : Set<Integer>)
+    + getAgentsScheduled(agents_to_schedule : LinkedList<Agent>) : MovablesScheduling
+    + getAgentsScheduledRandom(agents : LinkedList<Agent>) : ArrayDeque<Agent>
+    + getBoxesScheduled() : ArrayDeque<Box>
+    + getSearchResults() : TaskScheduled
+    + setAgentsGoalsFound(searchTaskResult : SearchTaskResult)
+    - setAgentsGoalsFound(start_group_agents : int[], path_found : ArrayDeque<int[]>)
+  }
+  class MovablesScheduling {
+    - agents_ids_to_boxes_ids : HashMap<Integer, Set<Integer>>
+    - agents_scheduled : ArrayList<Agent>
+    - agents_scheduled_ids : Set<Integer>
+    - boxes_scheduled : LinkedList<Box>
+    - boxes_scheduled_ids : Set<Integer>
+    + MovablesScheduling()
+    + getAgentsIds() : Set<Integer>
+    + getAgentsIdsToBoxesIds() : HashMap<Integer, Set<Integer>>
+    + getAgentsScheduled() : ArrayList<Agent>
+    + getBoxesIds() : Set<Integer>
+    + getBoxesScheduled() : LinkedList<Box>
+    + getMatchedAgentsBoxes(task_scheduled : TaskScheduled) : SearchScheduled
+    - getMatchedAgentsBoxesIndexes2(agents_group_ids : int[], box_group_ids : int[], agents_ids_to_boxes_ids : HashMap<Integer, Set<Integer>>) : SearchScheduled {static}
+    + getSearchResults() : TaskScheduled
+    + getStartGroupAgentsBoxes_ToSearch() : SearchScheduled
+    + getTrackedGroups() : TrackedGroups
+    + setAgentsScheduledSolvedResults(searchTaskResult : SearchTaskResult, final_agents_position : int[], solvedStatus : SolvedStatus) : boolean
+    + setUpPair(agent_id : Integer, box_target_id : Integer)
+  }
+  class SearchScheduled {
+    + INDEX_OF_AGENTS : int {static}
+    + INDEX_OF_GROUP : int {static}
+    + NEXT_GOAL_TO_BOX : int {static}
+    + START_GROUP_AGENTS : int {static}
+    - agents_idxs_to_boxes_idxs : HashMap<Integer, int[]>
+    - goals_coordinates : int[] {static}
+    - goals_neighbours : HashMap<Integer, ArrayList<int[]>> {static}
+    - group_marks_ids : int[] {static}
+    - index_boxes : int[]
+    ~ searchMultiAgentState : SearchState {static}
+    - start_coordinates : int[] {static}
+    - total_group : int[][]
+    - unique_id : UUID
+    + SearchScheduled()
+    - agentsAndBoxes(start_group : int[], start_boxes_length : int)
+    - agentsOnly(start_group : int[])
+    + getAgentstIdxsToBoxesIdxs() : HashMap<Integer, int[]>
+    + getGoals_coordinates() : int[]
+    + getGoals_neighbours() : HashMap<Integer, ArrayList<int[]>>
+    + getGroup() : int[]
+    + getGroup_marks_ids() : int[]
+    + getIndexBoxes() : int[]
+    - getIndexOfAgents() : int[]
+    - getStartGroupOfAgents() : int[]
+    + getStart_coordinates() : int[]
+    + getTotalGroup() : int[][]
+    + getTotalGroup(totalGroup : int[][]) : int[][]
+    + getUUID() : UUID
+    ~ setAgentsIdxsToBoxesIdxs(agentsIdxs_to_boxesIdxs : HashMap<Integer, int[]>)
+    + setGroup(group : int[])
+    + setStartGroup(searchMultiAgentState : SearchState)
+    + setState(nextGoalToBox : int)
+    - setStateGoals(nextGoalToBox : int, agt_id : int, box_id : int)
+    + setTotalGroup(totalGroup : int[][])
+    + setUUID(uniqueID : UUID)
+  }
+  class Synchronization {
+    - MAXIMUM_CLOCK_TIME : int {static}
+    - MINIMUM_CLOCK_TIME : int {static}
+    - agents_clocks : HashMap<Integer, ArrayList<Integer>>
+    - box_clocks : HashMap<Integer, ArrayList<Integer>>
+    - clock_central_time : AtomicInteger
+    + Synchronization()
+    + decreaseCentralTime(time_step : int) : int
+    + getCentralTime() : int
+    - getMinMaxTime(paths : HashMap<Integer, ArrayDeque<int[]>>) : int[]
+    + increaseCentralTime(time_step : int) : int
+    + processTaskScheduled(task : TaskScheduled)
+    + resetCentralTime()
+  }
+  class TaskScheduled {
+    - agents : ArrayList<Integer>
+    - agents_solved_mark_ids : ArrayList<Integer>
+    - agents_to_boxes : HashMap<Integer, ArrayDeque<Integer>>
+    - agents_to_paths : HashMap<Integer, ArrayDeque<int[]>>
+    - boxes : ArrayList<Integer>
+    - boxes_to_paths : HashMap<Integer, ArrayDeque<int[]>>
+    - clock_time : int
+    - group_marks_total : int[]
+    - group_marks_total_path : ArrayDeque<int[]>
+    + TaskScheduled()
+    + TaskScheduled(group_marks : int[], new_path : ArrayDeque<int[]>)
+    + add(agent : Agent, agent_path : ArrayDeque<int[]>)
+    + add(box : Box, box_path : ArrayDeque<int[]>)
+    + addAgents(agents_solved_mark_ids : ArrayList<Integer>)
+    + addAggentsBoxes(agents_to_boxes : HashMap<Integer, ArrayDeque<Integer>>)
+    + addClockTime(clockTime : int)
+    + addValidMovables(agts_total : ArrayList<Integer>, bxs_total : ArrayList<Integer>)
+    + getAgentsSolved(solvedStatus : SolvedStatus) : ArrayList<Integer>
+    + getAgentsToBoxes() : Set<Map.Entry<Integer, ArrayDeque<Integer>>>
+    + getAgentsToPaths() : HashMap<Integer, ArrayDeque<int[]>>
+    + getBoxesToPaths() : HashMap<Integer, ArrayDeque<int[]>>
+    + getClock_time() : int
+    + getGroupMarksSolved() : Set<Integer>
+    + getGroupsMarks() : int[]
+    + getGroupsTotalPath() : ArrayDeque<int[]>
+    + getValidAgents() : int[]
+    + getValidBoxes() : int[]
+    + isSchedulable() : boolean
+    + isTheSameGroupAs(group_test : int[]) : boolean
+    + replacePathsFor(group_marks : int[], new_path : ArrayDeque<int[]>)
+  }
+  class TrackedGroups {
+    - agents_scheduled_ids : Set<Integer>
+    - boxes_scheduled_ids : Set<Integer>
+    - ids_indexes : HashMap<Integer, Integer>
+    - movables_ids : Collection<Integer>
+    - ungrouped_movables : Set<Integer>
+    + TrackedGroups(agentsScheduledIds : Set<Integer>, boxesScheduledIds : Set<Integer>)
+    + getAgentsScheduledIds() : Set<Integer>
+    + getAllUnGroupedIDs() : Set<Integer>
+    + getBoxesScheduledIds() : Set<Integer>
+    + getGroupSize() : int
+    + getIndexFor(mark_id : int) : int
+    + getTrackedIds() : Collection<? extends Integer>
+    + initIdsIndexes(start_group_agents : int[], boxes : int[])
+    - initIdsIndexesRandom()
+  }
+}
+package org.agents.searchengine.heuristics.comparators {
+  class AgentConflictComparator {
+    + AgentConflictComparator()
+    + compare(getNumberAgentsConflicts1 : int, getNumberAgentsConflicts2 : int) : int
+  }
+}
+package org.agents.planning.conflicts.dto {
+  class CorridorConflict {
+    + CorridorConflict(mark_id_conflicted : int)
+    + getCoordinatesToAvoid() : ArrayList<int[]>
+    + getMaxTimeDeadline() : int[]
+  }
+  class EdgeConflict {
+    + COORDINATES_NUMBER : int {static}
+    + COORDINATE_END : int {static}
+    + COORDINATE_START : int {static}
+    ~ conflicted_ids_to_edges : HashMap<Integer, ArrayList<int[][]>>
+    + EdgeConflict(movable_mark_id : int)
+    + addConflictedEdge(mark_id_conflicted : int, coordinate_edge_start : int[], coordinates_edge_end : int[])
+    + getCoordinatesToAvoid() : ArrayList<int[]>
+    + getMaxTimeDeadline() : int[]
+    - getTimeEdgeEnd(edge : int[][]) : int {static}
+    - getTimeEdgeStart(edge : int[][]) : int {static}
+  }
+  class MovablesConflict {
+    - agent_id : int
+    - movable_id : int
+    + MovablesConflict(mark_id_conflicted : int)
+    + getCoordinatesToAvoid() : ArrayList<int[]>
+    + getMaxTimeDeadline() : int[]
+  }
+  abstract class SimulationConflict {
+    ~ mark_id_start_conflicts : HashMap<Integer, int[]>
+    ~ max_coordinate_deadline : int[]
+    ~ max_t_deadline : int
+    ~ movable_mark_id : int
+    ~ movable_mark_id_to_conflicted_ids : Set<Integer>
+    + SimulationConflict(movable_mark_id : int)
+    + getConflictedIds() : Set<Integer>
+    + getCoordinatesToAvoid() : ArrayList<int[]> {abstract}
+    + getMarkedId() : int
+    + getMaxTimeDeadline() : int[] {abstract}
+  }
+  class VertexConflict {
+    ~ conflicted_ids_to_cells : HashMap<Integer, ArrayList<int[]>>
+    + VertexConflict(movable_mark_id : int)
+    + addConflictedCell(mark_id_conflicted : int, coordinate_conflicted : int[])
+    + getCoordinatesToAvoid() : ArrayList<int[]>
+    + getMaxTimeDeadline() : int[]
+  }
+}
+GroupSearch -->  "-scheduling_group" SearchScheduled
+PullAction -->  "-agentDir" Direction
+MoveAction -->  "-direction" Direction
+IllegalPathsStore -->  "-ilegalPaths" IllegalPath
+PushAction -->  "-agentDir" Direction
+StateSearchMAFactory -->  "-conflict_avoidance_checking_rules" ConflictAvoidanceCheckingRules
+PathsStoreQuerying -->  "-tracked_groups" TrackedGroups
+MovablesScheduling -->  "-agents_scheduled" Agent
+Action -->  "-type" ActionType
+ActionType ..+ Action
+ConflictAvoidanceCheckingRules -->  "-illegal_paths_store" IllegalPathsStore
+GroupIndependenceDetection -->  "-conflict_avoidance_table" ConflictAvoidanceTable
+GroupSearch -->  "-search_task_independence_detection" SearchTaskResult
+SearchState ..+ StateSearchMAFactory
+StateSearchMAFactory -->  "-searchMultiAgentState" SearchState
+IllegalPathsStore -->  "-conflict_avoidance_table" ConflictAvoidanceTable
+SearchEngineSANormal -->  "-conflict_avoidance_checking_rules" ConflictAvoidanceCheckingRules
+ConflictAvoidanceCheckingRules -->  "-task_scheduled_list" TaskScheduled
+GroupIndependenceDetection -->  "-conflict_avoidance_checking_rules" ConflictAvoidanceCheckingRules
+ConflictAvoidanceTable -->  "-pathsStoreQuerying" PathsStoreQuerying
+ParsingState ..+ SearchClient
+SearchStrategy -->  "-avoidanceCheckingRules" ConflictAvoidanceCheckingRules
+SearchStrategy -->  "-movablesScheduling" MovablesScheduling
+SearchTaskResult -->  "-tracked_groups" TrackedGroups
+ConflictAvoidanceCheckingRules -->  "-conflict_avoidance_table" ConflictAvoidanceTable
+GroupIndependenceDetection -->  "-pathProcessing" PathProcessing
+Costs ..+ SearchSAStateNormal
+DivideAndScheduleMovables -->  "-agents_scheduled" Agent
+MovablesScheduling -->  "-boxes_scheduled" Box
+StateSearchSAFactoryNormal -->  "-searchState" SearchSAStateNormal
+GroupSearch -->  "-conflict_avoidance_checking_rules" ConflictAvoidanceCheckingRules
+GroupIndependenceDetection -->  "-scheduling_group" SearchScheduled
+SearchScheduled -->  "-searchMultiAgentState" SearchState
+GroupIndependenceDetection -->  "-group_search_strategy" GroupSearch
+Costs ..+ SearchMAState
+ConflictAvoidanceCheckingRules -->  "-search_state" SearchState
+SearchState ..+ ConflictAvoidanceCheckingRules
+ConflictAvoidanceTable -->  "-tracked_groups" TrackedGroups
+GroupSearch -->  "-search_state" SearchState
+Costs ..+ SearchSAState
+IllegalPath -->  "-paths_conflicts" SimulationConflict
+SearchEngineSA -->  "-conflict_avoidance_checking_rules" ConflictAvoidanceCheckingRules
+GroupSearch -->  "-root_tracked_group" TrackedGroups
+GroupSearch -->  "-in_process_tracked_groups" TrackedGroups
+ConflictingPair --|> Pair2 
+CoordinateOf3 --|> PairOf3 
+MoveAction --|> Action 
+PullAction --|> Action 
+PushAction --|> Action 
+CorridorConflict --|> SimulationConflict 
+CorridorConflict --|> SimulationConflict 
+EdgeConflict --|> SimulationConflict 
+EdgeConflict --|> SimulationConflict 
+MovablesConflict --|> SimulationConflict 
+MovablesConflict --|> SimulationConflict 
+VertexConflict --|> SimulationConflict 
+VertexConflict --|> SimulationConflict 
+PullConstraint --|> SimulationConflict 
+PullConstraint --|> SimulationConflict 
+@enduml
