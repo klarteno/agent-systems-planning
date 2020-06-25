@@ -5,6 +5,7 @@ import org.agents.markings.Coordinates;
 import org.agents.planning.conflicts.dto.SimulationConflict;
 import org.agents.planning.schedulling.TaskScheduled;
 import org.agents.planning.schedulling.TrackedGroups;
+import org.agents.searchengine.HeuristicMetricsSearch;
 
 import java.util.*;
 
@@ -41,6 +42,10 @@ public final class ConflictAvoidanceCheckingRules {
             return true;
         }
         return false;
+    }
+
+    public SearchState getSearchState(){
+        return this.search_state;
     }
 
     public boolean clearTaskScheduledList(){
@@ -170,7 +175,7 @@ public final class ConflictAvoidanceCheckingRules {
         else if(search_state == SearchState.CHECK_TIME_DEADLINE){
             int time_deadline_constraint = Coordinates.getTime(this.illegal_paths_store.getIllegalPath(mark_id).getDeadlineConstraint());
             int[] deadline_state = this.illegal_paths_store.getIllegalPath(mark_id).getDeadlineConstraint();
-            int cost_t = getManhattenHeuristic(coordinate, deadline_state);
+            int cost_t = HeuristicMetricsSearch.getManhattenHeuristic(coordinate, deadline_state);
             time_deadline_constraint -= cost_t;
             int coordinate_time_step = Coordinates.getTime(coordinate);
             if(time_deadline_constraint > 0 && coordinate_time_step < time_deadline_constraint){
@@ -202,7 +207,6 @@ public final class ConflictAvoidanceCheckingRules {
         return dirs;
     }
 
-
     private static LinkedList<int[]> discardConflictsMA(ArrayDeque<int[]> neighbours, ArrayDeque<int[]> conflicts_avoidance) {
         LinkedList<int[]> dirs = new LinkedList<>();
 
@@ -226,73 +230,12 @@ public final class ConflictAvoidanceCheckingRules {
         this.conflict_avoidance_table.removeCellConflicts(coordinates, next_cells);
     }
 
-    private static int getManhattenHeuristic(int y, int x, int y_goal, int x_goal) {
-        return Math.abs(y - y_goal) + Math.abs(x - x_goal);
-    }
-
-    private static int getManhattenHeuristic(int[] cell_coordinates, int[] goal_coordinates){
-        return Math.abs(Coordinates.getRow(cell_coordinates) - Coordinates.getRow(goal_coordinates)) + Math.abs(Coordinates.getCol(cell_coordinates) - Coordinates.getCol(goal_coordinates))  ;
-    }
-
-    private int getConsistentHeuristic(int mark_id, int cost_time, int y, int x, int y_goal, int x_goal) {
-        int[] deadline_state = this.illegal_paths_store.getIllegalPath(mark_id).getDeadlineConstraint();
-        int time_deadline_constraint = Coordinates.getTime(deadline_state);
-
-        int time_left = time_deadline_constraint - cost_time;
-        int row_deadline_state = Coordinates.getRow(deadline_state);
-        int col_deadline_state = Coordinates.getCol(deadline_state);
-
-        if (time_left <= 0){
-            return getManhattenHeuristic(y, x, y_goal,x_goal);
-        } else{
-            return time_left + getManhattenHeuristic(row_deadline_state, col_deadline_state, y_goal, x_goal);
-        }
-
-    }
-
-    //cost_time(s) is total cost of the path until now
-    private  int getConsistentHeuristic(int mark_id, int cost_time, int[] cell_coordinates, int[] goal_coordinates){
-        int[] deadline_state = this.illegal_paths_store.getIllegalPath(mark_id).getDeadlineConstraint();
-        int time_deadline_constraint = Coordinates.getTime(deadline_state);
-
-        int time_left = time_deadline_constraint - cost_time;
-        int row_deadline_state = Coordinates.getRow(deadline_state);
-        int col_deadline_state = Coordinates.getCol(deadline_state);
-
-        if (time_left <= 0){
-            return getManhattenHeuristic(cell_coordinates, goal_coordinates);
-        } else{
-            return time_left + getManhattenHeuristic(row_deadline_state, col_deadline_state, Coordinates.getRow(goal_coordinates), Coordinates.getCol(goal_coordinates));
-        }
-    }
-
-    public int getHeuristicOf(int mark_id, int cost_time, int y, int x, int y_goal, int x_goal) {
-        switch (this.search_state){
-            case CHECK_TIME_DEADLINE: return this.getConsistentHeuristic(mark_id, cost_time, y, x, y_goal, x_goal);
-            case NO_CHECK_CONFLICTS: return getManhattenHeuristic(y, x, y_goal, x_goal);
-            case AVOID_PATH: return getManhattenHeuristic(y, x, y_goal, x_goal);
-        }
-        return 0;
-
-    }
-
-    public int getHeuristicOf(int mark_id,  int[] cell_coordinate, int[] goal_coordinate){
-        int cost_time = Coordinates.getTime(cell_coordinate);
-
-        switch (this.search_state){
-            case CHECK_TIME_DEADLINE: return this.getConsistentHeuristic(mark_id, cost_time, cell_coordinate, goal_coordinate);
-            case NO_CHECK_CONFLICTS: return getManhattenHeuristic(cell_coordinate, goal_coordinate);
-            case AVOID_PATH: return getManhattenHeuristic(cell_coordinate, goal_coordinate);
-        }
-        return 0;
-    }
-
     public int getCostTimeCoordinate(int mark_id, int[] cell_coordinate) {
         switch (this.search_state){
             case CHECK_TIME_DEADLINE:
                 int[] deadline_coordinate = this.illegal_paths_store.getIllegalPath(mark_id).getDeadlineConstraint();
                 int time_deadline_constraint = Coordinates.getTime(deadline_coordinate);
-                int time_left = time_deadline_constraint - getManhattenHeuristic(cell_coordinate, deadline_coordinate);
+                int time_left = time_deadline_constraint - HeuristicMetricsSearch.getManhattenHeuristic(cell_coordinate, deadline_coordinate);
 
                 return time_left;
 
@@ -302,9 +245,8 @@ public final class ConflictAvoidanceCheckingRules {
 
         int[] deadline_coordinate = this.illegal_paths_store.getIllegalPath(mark_id).getDeadlineConstraint();
         int time_deadline_constraint = Coordinates.getTime(deadline_coordinate);
-        int time_left = time_deadline_constraint - getManhattenHeuristic(cell_coordinate, deadline_coordinate);
+        int time_left = time_deadline_constraint - HeuristicMetricsSearch.getManhattenHeuristic(cell_coordinate, deadline_coordinate);
 
         return time_left;
     }
-
 }

@@ -42,12 +42,10 @@ public final class GroupSearch {
         int[] start_group_agents = sched_group.getTotalGroup()[SearchScheduled.START_GROUP_AGENTS];
         int start_boxes_length = sched_group.getTotalGroup()[SearchScheduled.INDEX_OF_GROUP].length - start_group_agents.length;
 
-
         setSearchState(StateSearchMAFactory.SearchState.AGENTS_ONLY);
         setNextTracked(start_group_agents);
         this.scheduling_group = sched_group;
 
-        
         SearchTaskResult searchTaskResult = getSearchMATaskResult(sched_group, conflicting_group, conflicting_paths);
         searchTaskResult.setTotalGroup(sched_group.getTotalGroup());
         searchTaskResult.setAgentstIdxsToBoxesIdxs(sched_group.getAgentstIdxsToBoxesIdxs());
@@ -87,7 +85,6 @@ public final class GroupSearch {
             conflict_avoidance_checking_rules.setIllegalPathsOfGroup(start_group, conflicting_group, conflicting_paths);
         }
 
-
         scheduling_group.setStartGroup(this.search_state);
          SearchEngineOD searchEngineOD = new SearchEngineOD(scheduling_group,
                 this.conflict_avoidance_checking_rules, this.search_state);
@@ -95,9 +92,7 @@ public final class GroupSearch {
         int[] start_coordinates = searchEngineOD.getStartCoordinatesOfGroup();
         int[] goals_coordinates = searchEngineOD.getGoalsCoordinatesOfGroup();
 
-
         searchEngineOD.runOperatorDecomposition();
-
 
         SearchTaskResult searchTaskResult = searchEngineOD.getPath();
         searchTaskResult.setTrackedGroup(this.in_process_tracked_groups.pop());
@@ -167,11 +162,6 @@ public final class GroupSearch {
     }
 
     private SearchTaskResult runGroupIndependenceDetection(SearchScheduled sched_group, int[] conflicting_group, int[][][] conflicting_paths) throws IOException {
-    /*  * make coupled search from GroupIndependenceDetection to SearchEngineOD
-        *   objects SearchTaskResult,SearchScheduled remain the same acroos the running of GroupIndependenceDetection
-        *   only internals change
-        * */
-
         int[] start_group = sched_group.getTotalGroup()[SearchScheduled.INDEX_OF_GROUP];
         int[] agt = sched_group.getTotalGroup()[SearchScheduled.INDEX_OF_AGENTS];
         int start_boxes_length = start_group.length - agt.length;
@@ -183,16 +173,12 @@ public final class GroupSearch {
         illegalPathsStore.removeAllIlegalPaths();
         conflict_avoidance_checking_rules.setIllegalPathsOfGroup(start_group, conflicting_group, conflicting_paths);
 
-
-
         scheduling_group.setStartGroup( this.search_state);
         int[] start_coordinates = scheduling_group.getStart_coordinates();
         int[] goals_coordinates = scheduling_group.getGoals_coordinates();
         HashMap<Integer, ArrayList<int[]>> goals_neighbours = scheduling_group.getGoals_neighbours();
         SearchEngineOD searchEngineOD = new SearchEngineOD(sched_group,
                 this.conflict_avoidance_checking_rules, this.search_state);
-
-
 
         start_coordinates = searchEngineOD.getStartCoordinatesOfGroup();
         goals_coordinates = searchEngineOD.getGoalsCoordinatesOfGroup();
@@ -206,20 +192,17 @@ public final class GroupSearch {
         return this.search_task_independence_detection;
     }
 
-
     //SearchTaskResult to be used only by the GroupIndependenceDetection algorithm
     private void setUpIndependenceDetection(){
         ArrayDeque<int[]> path_empty = new ArrayDeque<>();
         this.search_task_independence_detection = new SearchTaskResult(path_empty);
     }
 
-
     public ConflictAvoidanceCheckingRules getConflictAvoidanceCheckingRules(){ return  this.conflict_avoidance_checking_rules; }
 
     private void setSearchState(StateSearchMAFactory.SearchState searchState) {
         this.search_state = searchState;
     }
-
 
     //used for when the agent stops on the goal and the goal is a box
     public void runPreProceesOfGoallState2(SearchTaskResult searchTaskResult) {
@@ -270,7 +253,6 @@ public final class GroupSearch {
                 }else {
                     std_state_found = true;
                 }
-
                 /* 1 2 3 4
                  intermediate_states: 9 8 7 6 5
                 */
@@ -288,16 +270,12 @@ public final class GroupSearch {
                 int[] position_to_expand = Coordinates.getCoordinatesAt(i, pos_coordinates);
                 LinkedList<int[]> __neighbours = conflict_avoidance_checking_rules.getFreeNeighboursMA(mark_id, position_to_expand, conflicts_avoidance);
 
-
                 if( __neighbours.contains(st) ) {
-
                     // keep st in intermediate_states
-
-
                 }else{
                     ArrayDeque<int [][]> next_state_nodes = new ArrayDeque<>();
 
-//replace st with one of the neighbour but only for one coordinate for one agent
+                    //replace st with one of the neighbour but only for one coordinate for one agent
                     int[] next_state_node;
                     for(int [] cell_pos : __neighbours){
                         next_state_node = Arrays.copyOf(pos_coordinates, pos_coordinates.length);
@@ -307,29 +285,20 @@ public final class GroupSearch {
                         int f_cost = 0;//close to goal
                         next_state_nodes.add(SearchMAState.createNew(next_state_node, g_cost, f_cost));
                     }
-
                 }
-
-
-
             }
         }
-
         standard_state = path_found.peek();
-
 
        if(intermediate_states.size() > 0){
            int[] st = intermediate_states.pop();
            int[] pos_coordinates = st;
-
            //SearchEngineOD searchEngineOD = new SearchEngineOD();
-               //LinkedList<int[]> path = searchEngineOD.expandFrom(standard_state, intermediate_states);
-
+           //LinkedList<int[]> path = searchEngineOD.expandFrom(standard_state, intermediate_states);
            //setConflictsStandardStateExpansion(coord_to_expand, pos_coordinates, cell_pos_neighbour, standard_to_conflicts);
        }else {
            throw new UnsupportedOperationException("ddddddd");
        }
-
     }
 
 
@@ -339,12 +308,10 @@ public final class GroupSearch {
         int[] agt_ids = searchTaskResult.getStartGroupAgents();
 
         int[] path_goal = path_found.pop();
-
         boolean std_state_found = false;
 
         int number_movables = path_goal.length / Coordinates.getLenght();
         ArrayDeque<int[]> intermediate_states = new ArrayDeque<>();
-
         intermediate_states.add(path_goal);
 
         int[] cell_neighbour = new int[0];
@@ -381,17 +348,12 @@ public final class GroupSearch {
         //add edge and vertex conflicts of agent to goal
         int[] pos_coordinates = path_found.peek();
 
-
-
-        //StateSearchMAFactory. set something for total_group
-        //make intermediate node with agents and boxes
         int[] boxes_pos = searchTaskResult.getGoals_coordinates_of_group();
 
         int[] int_pos = Utils.concatanateArr(path_goal, boxes_pos);
         int[] group_pos = Utils.concatanateArr(pos_coordinates, boxes_pos);
 
         standard_state[0] = Arrays.copyOf(group_pos, group_pos.length);
-
 
         for (int i = 0; i < path_goal.length / Coordinates.getLenght(); i++) {
             int time_step_agt = Coordinates.getTime(i, path_goal);
@@ -454,11 +416,14 @@ public final class GroupSearch {
             }
         }
 
-        int[][] intermediate_node_costs = StateSearchMAFactory.createIntermediateNodeCosts();
         ArrayDeque<int[][]> final_nodes = new ArrayDeque<>();
+        int[] index_boxes = searchTaskResult.getIndexBoxes();
+        StateSearchMAFactory.setIndexBoxes(index_boxes);
+        StateSearchMAFactory.heuristicMetricsSearch.initIntermediateNodeCosts();
+        //int[][] intermediate_node_costs = StateSearchMAFactory.heuristicMetricsSearch.createIntermediateNodeCosts();
 
         for (int[][] __pos : next_state_nodes){
-            ArrayDeque<int[][]> __next_nodes = StateSearchMAFactory.expandIntermediateStateWithAgentsAndBoxes(__pos[0], intermediate_node_costs, standard_to_conflicts);
+            ArrayDeque<int[][]> __next_nodes = StateSearchMAFactory.expandIntermediateStateWithAgentsAndBoxes(__pos[0], standard_to_conflicts);
             final_nodes.addAll(__next_nodes);
         }
 
@@ -466,18 +431,14 @@ public final class GroupSearch {
         //repeat until the result is standard node
         while (! StateSearchMAFactory.isStandardNode(final_nodes.peek()[0]) ){
             for (int[][] __pos : next_state_nodes){
-                ArrayDeque<int[][]> __next_nodes = StateSearchMAFactory.expandIntermediateStateWithAgentsAndBoxes(__pos[0], intermediate_node_costs, standard_to_conflicts);
+                ArrayDeque<int[][]> __next_nodes = StateSearchMAFactory.expandIntermediateStateWithAgentsAndBoxes(__pos[0], standard_to_conflicts);
                 final_nodes.addAll(__next_nodes);
             }
         }
-
 
         int[] state = final_nodes.peek()[0];
         StateSearchMAFactory.isStandardNode(state);
         path_found.push(path_goal);//put the end path state back in the whole path
     return state;
-
     }
-
-
 }

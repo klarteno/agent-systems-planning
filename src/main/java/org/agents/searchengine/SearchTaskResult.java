@@ -87,4 +87,16 @@ public class SearchTaskResult {
     public void setIndexAgents(int[] indexAgents) {
         this.index_agents = indexAgents;
     }
+
+    public int[] getIndexBoxes() {
+        int[] boxes_indexes = new int[agents_idxs_to_boxes_idxs.values().size()];
+        int index = 0;
+        for (Integer key : agents_idxs_to_boxes_idxs.keySet()){
+            int[] _index = agents_idxs_to_boxes_idxs.get(key);
+            for (int i = 0; i < _index.length; i++) {
+                boxes_indexes[index++] =_index[i];
+            }
+        }
+        return boxes_indexes;
+    }
 }

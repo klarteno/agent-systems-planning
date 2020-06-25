@@ -2,7 +2,10 @@ package org.agents.searchengine.normal;
 
 import org.agents.Agent;
 import org.agents.Box;
+import org.agents.markings.Coordinates;
 import org.agents.planning.conflicts.ConflictAvoidanceCheckingRules;
+import org.agents.planning.conflicts.IllegalPathsStore;
+import org.agents.searchengine.HeuristicMetricsSearch;
 
 import java.util.*;
 
@@ -34,14 +37,34 @@ public class SearchEngineSANormal {
     }
 
     static int getHeuristic(int[] cell_coordinate, int[] goal_coordinate) {
-        return conflict_avoidance_checking_rules.getHeuristicOf(searched_mark_id, cell_coordinate, goal_coordinate);
+        ConflictAvoidanceCheckingRules.SearchState search_state = conflict_avoidance_checking_rules.getSearchState();
+
+        int heuristic_value = 0;
+        switch (search_state){
+            case CHECK_TIME_DEADLINE :
+                IllegalPathsStore illegal_paths_store = conflict_avoidance_checking_rules.getIllegalPathsStore();
+                int cost_time = Coordinates.getTime(cell_coordinate);
+                int y = Coordinates.getRow(cell_coordinate);
+                int x = Coordinates.getCol(cell_coordinate);
+                int y_goal = Coordinates.getRow(goal_coordinate);
+                int x_goal = Coordinates.getCol(goal_coordinate);
+
+                heuristic_value = HeuristicMetricsSearch.getDeadLineHeuristic(illegal_paths_store, searched_mark_id, cost_time, y, x, y_goal, x_goal);
+                break;
+
+            case NO_CHECK_CONFLICTS :
+            case AVOID_PATH :
+                heuristic_value = HeuristicMetricsSearch.getManhattenHeuristic(cell_coordinate, goal_coordinate);
+                break;
+        }
+
+        return heuristic_value;
     }
 
     //gets an aproximation for a cell when expands in a time step that oversteps the time_deadline_constraint
     static int getCostCoordinate(int[] cell_coordinate, int new_g_cost) {
         return conflict_avoidance_checking_rules.getCostTimeCoordinate(searched_mark_id, cell_coordinate);
     }
-
 
     public void runAstar(Agent agent){
         assert agent != null;

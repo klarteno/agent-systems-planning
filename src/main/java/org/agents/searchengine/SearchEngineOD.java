@@ -125,43 +125,6 @@ public class SearchEngineOD {
 
                 int[] state_to_test = SearchMAState.getStateCoordinates(current_state);
 
-                if(Coordinates.getRow(0, state_to_test) == 3 && Coordinates.getCol(0, state_to_test) == 10  ){
-                    boolean start_to_add_to_del1;
-                    boolean start_to_add_to_del = true;
-                    if(Coordinates.getRow(1, state_to_test) == 5 && Coordinates.getCol(1, state_to_test) == 2  ){
-                        start_to_add_to_del1 = true;
-                    }
-                }
-/*
-if (StateSearchMAFactory.isGoal(SearchMAState.getStateCoordinates(current_state))){
-                    //this.path = path;
-                    path_normal.add(SearchMAState.getStateCoordinates(current_state));
-
-
-                    int[] next_key = StateSearchMAFactory.getCameFrom(SearchMAState.getStateCoordinates(current_state));
-                    path_normal.add(next_key);
-                    int[] next_key2;
-                    boolean removed;
-                    while (StateSearchMAFactory.getCameFrom(next_key) != this.getStartCoordinatesOfGroup()){
-                        next_key2 = next_key;
-                        next_key = StateSearchMAFactory.getCameFrom(next_key);
-                        path_normal.add(next_key);
-                        removed = StateSearchMAFactory.removeCameFrom(next_key2, next_key);
-                        /*         to remove
-                        if(Coordinates.getRow(0, next_key) == 3 && Coordinates.getCol(0, next_key) == 5  ){
-                            start_to_add_to_del = true;
-                            standard_states_expanded_to_del.add(next_key);
-                        }
-            }
-            path_normal.add(this.getStartCoordinatesOfGroup());
-
-            this.path = path_normal;
-
-            return;
-        }
-
-* */
-
                 if (StateSearchMAFactory.isGoal(SearchMAState.getStateCoordinates(current_state))){
                     //this.path = path;
                     path_normal.add(SearchMAState.getStateCoordinates(current_state));

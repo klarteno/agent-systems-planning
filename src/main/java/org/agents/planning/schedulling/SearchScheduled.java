@@ -33,17 +33,9 @@ public class SearchScheduled {
     private static  int[] group_marks_ids;
 
     private static int[] start_coordinates;
-
     private static int[] start_coordinates_agt_boxes;
-
-
     private static int[] goals_coordinates;
-
     private static HashMap<Integer, ArrayList<int[]>> goals_neighbours;
-
-    static StateSearchMAFactory.SearchState searchMultiAgentState = StateSearchMAFactory.SearchState.AGENTS_ONLY;
-
-
 
     void setAgentsIdxsToBoxesIdxs(HashMap<Integer,int[]> agentsIdxs_to_boxesIdxs) {
         this.agents_idxs_to_boxes_idxs = agentsIdxs_to_boxesIdxs;
@@ -74,7 +66,6 @@ public class SearchScheduled {
     public void setGroup(int[] group){
         this.total_group[INDEX_OF_GROUP] = group;
     }
-
 
     public int[] getIndexBoxes(){
         if(this.index_boxes == null){
@@ -154,12 +145,9 @@ public class SearchScheduled {
                     agent.addGoalPosition(next_goal_cell);
                     box.addNeighbourGoal( next_goal_cell);
                 }
-
                 break;
         }
     }
-
-
 
     public void setStartGroup( StateSearchMAFactory.SearchState searchMultiAgentState) {
         int[] start_group = this.getTotalGroup()[SearchScheduled.INDEX_OF_GROUP];
@@ -277,7 +265,6 @@ public class SearchScheduled {
         }
     }
 
-
     public int[] getGroup_marks_ids() {
         return group_marks_ids;
     }
@@ -295,7 +282,6 @@ public class SearchScheduled {
         for (int i = 0; i <__number_movables ; i++) {
             Coordinates.setTime(i,startCoordinates,0);
         }
-
         start_coordinates_agt_boxes = startCoordinates;
     }
 
