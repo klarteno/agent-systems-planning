@@ -9,17 +9,13 @@ import org.agents.planning.conflicts.IllegalPathsStore;
 import org.agents.planning.conflicts.dto.EdgeConflict;
 import org.agents.planning.conflicts.dto.SimulationConflict;
 import org.agents.planning.conflicts.dto.VertexConflict;
-import org.agents.planning.constraints.PullConstraint;
+import org.agents.searchengine.conflicts.ODConflicts;
 
 import java.io.Serializable;
 import java.util.*;
 
 public final class StateSearchMAFactory {
-    public static final int G_COST = 0;
-    public static final int F_COST = 1;
-    public static final int IN_HEAP = 2;
-
-    private static int [][] state;
+    private static int [][] start_state;
     private static int [][][][] cost_so_far;
 
     private static int [][][][] closed_states;
@@ -53,6 +49,9 @@ public final class StateSearchMAFactory {
     private static HashMap<Integer, Set<Integer>> agent_boxes_to_avoid;// //avoid boxes not of the agent color
     private static int[] index_positions_to_agent_boxes_to_avoid;
     private static ArrayList<HashMap<Integer,int[]>> list_boxes_coord_to_avoid;
+    private static ODConflicts od_conflicts;
+
+    private static ODNodeStructure od_node_structure;
 
     private static ConflictAvoidanceCheckingRules conflict_avoidance_checking_rules;
 
@@ -74,6 +73,10 @@ public final class StateSearchMAFactory {
 
     public static void setIndexBoxes(int[] indexBoxes) {
         index_boxes = indexBoxes;
+    }
+
+    public static ODNodeStructure getODNodeStructure() {
+        return od_node_structure;
     }
 
     public enum SearchState {
@@ -99,14 +102,18 @@ public final class StateSearchMAFactory {
         heuristicMetricsSearch = new HeuristicMetricsSearch(goals_coordinates);
         heuristicMetricsSearch.initStandardNodeCosts();
         heuristicMetricsSearch.initIntermediateNodeCosts();
-        //to remove from here
 
+        od_node_structure = new ODNodeStructure();
+        od_conflicts = new ODConflicts(group_marks_ids, od_node_structure);
     }
 
     public static int[] getStartGroup() {
         return group_marks_ids;
     }
 
+    public static ODConflicts getConflictsManager() {
+        return od_conflicts;
+    }
     //groups the agents and boxes by color
     public static void setUpAgentsWithBoxesFromGroup(){
         all_agents_indexes = new HashMap<>();//first is for position index , second is for color
@@ -172,7 +179,6 @@ public final class StateSearchMAFactory {
             }
             agent_boxes_to_avoid.put(agent_key1, boxes_indexes_to_avoid2);
         }
-
         setUpBoxesCoordToAvoid();
     }
 
@@ -212,12 +218,6 @@ public final class StateSearchMAFactory {
         return goals_coordinates;
     }
 
-    /*
-        public static void updateCost(HashMap<Integer, Integer> cost_so_far) {
-            cost_so_far.put(Arrays.hashCode(state[SearchState.ARRAYPOS]), state[ARRAYCOSTS][Costs.COST_G.ordinal()]);
-        }
-    */
-
     public static void createClosedSet() {
         closed_states_MA = new HashMap<>();
         //example of usage:
@@ -236,38 +236,6 @@ public final class StateSearchMAFactory {
                 index_map_cells[row_index][col_index] = counter_value++;
             }
         }
-    }
-
-    public static void putCostSoFarUnused(int[][] state) {
-        //assert SearchMAState.getGCost(state) > 0;
-        int y;
-        int x;
-        int[] coordinates = SearchMAState.getStateCoordinates(state);
-        for (int coordinate = 0; coordinate < coordinates.length/Coordinates.getLenght(); coordinate = coordinate + 1) {
-            y = Coordinates.getRow(coordinate, coordinates);
-            x = Coordinates.getCol(coordinate, coordinates);
-
-            cost_so_far[coordinate][y][x][G_COST] = SearchMAState.getGCost(state);
-            cost_so_far[coordinate][y][x][F_COST] = SearchMAState.getFCost(state);
-        }
-    }
-
-    public static boolean isInCostSoFarUnused(int[] next_pos) {
-        int y;
-        int x;
-        boolean is_present = false;
-        for (int coordinate = 0; coordinate < next_pos.length/Coordinates.getLenght(); coordinate = coordinate + 1) {
-            y = Coordinates.getRow(coordinate, next_pos);
-            x = Coordinates.getCol(coordinate, next_pos);
-
-            if (cost_so_far[coordinate][y][x][G_COST] > 0){
-                is_present = true;
-            }
-            else {
-                return false;
-            }
-        }
-        return is_present;
     }
 
     public static int[][] createDummyState() {
@@ -289,11 +257,11 @@ public final class StateSearchMAFactory {
                 switch (search_state){
                     case CHECK_TIME_DEADLINE :
                         IllegalPathsStore illegal_paths_store = conflict_avoidance_checking_rules.getIllegalPathsStore();
-                        heuristc_value = heuristicMetricsSearch.getHeuristcOfAGENTS_ONLY(illegal_paths_store, group_marks_ids, cell_coordinates);
+                        heuristc_value = heuristicMetricsSearch.getStatePosHeuristc(illegal_paths_store, group_marks_ids, cell_coordinates);
                         break;
 
                     case NO_CHECK_CONFLICTS :
-                    case AVOID_PATH : heuristc_value = heuristicMetricsSearch.getHeuristcOfAGENTS_ONLY(cell_coordinates);
+                    case AVOID_PATH : heuristc_value = heuristicMetricsSearch.getStatePosHeuristc(cell_coordinates);
                         break;
                 }
 
@@ -313,9 +281,9 @@ public final class StateSearchMAFactory {
 
                 break;
         }
-        state = SearchMAState.createNew(cell_coordinates, total_gcost, heuristc_value + total_gcost);
+        start_state = SearchMAState.createNew(cell_coordinates, total_gcost, heuristc_value + total_gcost);
 
-        return state;
+        return start_state;
     }
 
     public static int getGCost(int[][] state) {
@@ -329,7 +297,6 @@ public final class StateSearchMAFactory {
     public static void updateCameFromPrevCell(HashMap<Integer,int[]> came_from, int[][] state, int[][] previouse_coordinates) {
         came_from.put( Arrays.hashCode(getCellCoordinates(state)) , getCellCoordinates(previouse_coordinates));
     }
-
 
     public static void updateCameFromPrevCell(int[][] state, int[] previouse_coordinates) {
         came_from.put(getCellCoordinates(state), previouse_coordinates);
@@ -487,7 +454,6 @@ public final class StateSearchMAFactory {
     }
 
     public static boolean isInClosedTimeSet(int[] coordinates) {
-        int[] pos_coordinates = SearchMAState.getStateCoordinates(state);
         int coordinate_index = 0;
         int time_state = Coordinates.getTime(coordinate_index, coordinates);
         int y;
@@ -495,8 +461,8 @@ public final class StateSearchMAFactory {
         boolean is_present = false;
 
         for (int coordinate = 0; coordinate < number_of_movables; coordinate = coordinate + 1) {
-            y = Coordinates.getRow(coordinate, pos_coordinates);
-            x = Coordinates.getCol(coordinate, pos_coordinates);
+            y = Coordinates.getRow(coordinate, coordinates);
+            x = Coordinates.getCol(coordinate, coordinates);
 
             //the time_state can not decrease
             if (closed_states[coordinate][y][x][0] >= time_state) {
@@ -510,17 +476,7 @@ public final class StateSearchMAFactory {
 
 
     public static boolean isStandardNode(int[] pos_coordinates) {
-        int prev_time = Coordinates.getTime(0, pos_coordinates);
-        int next_time;
-
-        if(pos_coordinates.length > Coordinates.getLenght()){
-            for (int coordinate = 0; coordinate < number_of_movables; coordinate = coordinate + 1) {
-                next_time = Coordinates.getTime(coordinate, pos_coordinates);
-                if (prev_time != next_time)
-                    return false;
-            }
-        }
-        return true;
+       return od_node_structure.isStandardNode(pos_coordinates);
     }
 
     public static boolean isIntermediateNode(int[] pos_coordinates) {
@@ -531,13 +487,11 @@ public final class StateSearchMAFactory {
     //add it to the set of SimulationConflicts
     //edge conflict only for overstepped movable object
     //vertex conflicts for all others movable objects
-    public static void setConflictsStandardStateExpansion(int index_to_expand, int[] pos_coordinates, int[] cell_pos_neighbour, ArrayList<SimulationConflict> standard_to_conflicts){
+    public static void setConflictsStandardStateExpansion(int index_to_expand, int[] pos_coordinates, int[] cell_pos_neighbour){
         int row_neigbour = Coordinates.getRow(cell_pos_neighbour);
         int col_neigbour = Coordinates.getCol(cell_pos_neighbour);
         int time_neigbour = Coordinates.getTime(cell_pos_neighbour);
 
-        boolean found_e = false;
-        boolean found_v = false;
         for (int i = 0; i < number_of_movables; i++) {
             if(i == index_to_expand) continue;
 
@@ -549,70 +503,30 @@ public final class StateSearchMAFactory {
             if(time_coord == time_neigbour) continue;
 
             if ( row_coord == row_neigbour && col_coord == col_neigbour) {
-                int[] cell_pos_neighbour1;
-                if(standard_to_conflicts.size() > 0){
-                for (SimulationConflict simulationConflict : standard_to_conflicts) {
-                    if (simulationConflict instanceof EdgeConflict) {
-                        int mark_id_conflicted = simulationConflict.getMarkedId();
-                        if (mark_id_conflicted == group_marks_ids[i]) {
-                            found_e = true;
-                            cell_pos_neighbour1 = Coordinates.createCoordinates(time_coord, Coordinates.getRow(cell_pos_neighbour), Coordinates.getCol(cell_pos_neighbour));
-                            int[] position_to_expand = Coordinates.getCoordinatesAt(index_to_expand, pos_coordinates);
-                            Coordinates.setTime(position_to_expand, time_coord +1);
-                            //position_to_expand1 = Coordinates.createCoordinates( time_coord +1, Coordinates.getRow(position_to_expand), Coordinates.getCol(position_to_expand));
-                            ((EdgeConflict) simulationConflict).addConflictedEdge(group_marks_ids[index_to_expand], cell_pos_neighbour1, position_to_expand);
-                        }
-                    }
-                }
+                od_conflicts.setConflictsEdgeConflict(i, time_coord, index_to_expand, pos_coordinates, cell_pos_neighbour);
             }
-                if (!found_e) {
-                    EdgeConflict edge_conflict_found = new EdgeConflict(group_marks_ids[i]);
-                    cell_pos_neighbour1 = Coordinates.createCoordinates(time_coord, Coordinates.getRow(cell_pos_neighbour), Coordinates.getCol(cell_pos_neighbour));
-                    int[] position_to_expand = Coordinates.getCoordinatesAt(index_to_expand, pos_coordinates);
-                    Coordinates.setTime(position_to_expand, time_coord +1);
-                    //position_to_expand1 = Coordinates.createCoordinates( time_coord +1, Coordinates.getRow(position_to_expand), Coordinates.getCol(position_to_expand));
-                    ((EdgeConflict) edge_conflict_found).addConflictedEdge(group_marks_ids[index_to_expand], cell_pos_neighbour1, position_to_expand);//the time steps should be reversed
-
-                    standard_to_conflicts.add(edge_conflict_found);
-                }
-            found_e = false;
-            }
-
-            if(standard_to_conflicts.size() > 0){
-                for (SimulationConflict simulationConflict : standard_to_conflicts){
-                    if ( simulationConflict instanceof VertexConflict ){
-                        int mark_id_conflicted = simulationConflict.getMarkedId();
-                        if(mark_id_conflicted == group_marks_ids[i]){
-                            found_v = true;
-                            ((VertexConflict)simulationConflict).addConflictedCell(group_marks_ids[index_to_expand], cell_pos_neighbour);////the time steps should be increased
-                        }
-                    }
-                }
-            }if (!found_v) {
-                VertexConflict vertex_conflict_found = new VertexConflict(group_marks_ids[i]);
-                vertex_conflict_found.addConflictedCell(group_marks_ids[index_to_expand], cell_pos_neighbour);////the time steps should be increased
-                standard_to_conflicts.add(vertex_conflict_found);
-            }
-            found_v = false;
+            od_conflicts.setConflictsVertexConflict(i, index_to_expand, pos_coordinates, cell_pos_neighbour);
         }
     }
 
     //entry point of the operator decomposition algorithm
-    public static ArrayDeque<int[][]> expandStandardState(int[][] state, ArrayList<SimulationConflict> standard_to_conflicts) {
-
+    public static ArrayDeque<int[][]> expandStandardState(int[][] state) {
         int[] pos_coordinates = SearchMAState.getStateCoordinates(state);
         //int[] pos_coordinates = Arrays.copyOf(SearchMAState.getStateCoordinates(state),SearchMAState.getStateCoordinates(state).length);
         ArrayDeque<int[][]> __result = new ArrayDeque<>();
+
         switch (searchMultiAgentState)
         {
             case AGENTS_ONLY:
-                int[][] standard_node_costs = heuristicMetricsSearch.updateStandardNodeAGENTS_ONLY(state);
-                ArrayDeque<int[][]> __result__1 = expandStandardStateWithAgents(pos_coordinates, standard_node_costs, standard_to_conflicts);
+                heuristicMetricsSearch.setStandardNodeAGENTS_ONLY(state);
+                ArrayDeque<int[][]> __result__1 = expandStandardStateWithAgents(pos_coordinates);
                                     __result.addAll(__result__1);
                                     break;
             case AGENTS_AND_BOXES:
-                heuristicMetricsSearch.setAgentsCosts(state, searchMultiAgentState);
-                ArrayDeque<int[][]> __result__2 = expandStandardStateWithAgentsAndBoxes(pos_coordinates, standard_to_conflicts);
+                heuristicMetricsSearch.setsetStandardNodeAGENTS_AND_BOXES(state);
+                od_conflicts.setStandardToConflicts(pos_coordinates);
+
+                ArrayDeque<int[][]> __result__2 = expandStandardStateWithAgentsAndBoxes(pos_coordinates);
                                     __result.addAll(__result__2);
                                     break;
         }
@@ -620,30 +534,29 @@ public final class StateSearchMAFactory {
     }
 
     //entry point of the operator decomposition algorithm
-    public static ArrayDeque<int[][]> expandIntermediateState(int[][] state, ArrayList<SimulationConflict> standard_to_conflicts) {
-
+    public static ArrayDeque<int[][]> expandIntermediateState(int[][] state) {
         int[] pos_coordinates = SearchMAState.getStateCoordinates(state);
         ArrayDeque<int[][]> __result = new ArrayDeque<>();
 
         switch (searchMultiAgentState)
         {
             case AGENTS_ONLY:
-                int[][] intermediate_node_costs = heuristicMetricsSearch.updateIntermediateNodeAGENTS_ONLY(state);
-                __result.addAll(expandIntermediateStateWithAgents(pos_coordinates, intermediate_node_costs, standard_to_conflicts));
-                                break;
-            case AGENTS_AND_BOXES:
-                heuristicMetricsSearch.setAgentsCosts(state, searchMultiAgentState);
-                int g_cost = SearchMAState.getGCost(state);
-                heuristicMetricsSearch.setGcostBoxes(g_cost);
+                heuristicMetricsSearch.setStandardNodeAGENTS_ONLY(state);
 
-                ArrayDeque<int[][]> __result__ = expandIntermediateStateWithAgentsAndBoxes(pos_coordinates, standard_to_conflicts);
+                ArrayDeque<int[][]> _res = expandIntermediateStateWithAgents(pos_coordinates);
+                __result.addAll(_res);
+                break;
+            case AGENTS_AND_BOXES:
+                heuristicMetricsSearch.setsetStandardNodeAGENTS_AND_BOXES(state);
+                int g_cost = SearchMAState.getGCost(state);
+                ArrayDeque<int[][]> __result__ = expandIntermediateStateWithAgentsAndBoxes(pos_coordinates);
                                     __result.addAll(__result__);
-                                    break;
+                break;
         }
         return __result;
     }
 
-    public static ArrayDeque<int[][]> expandStandardStateWithAgents(int[] pos_coordinates, int[][] standard_node_costs, ArrayList<SimulationConflict> standard_to_conflicts) {
+    public static ArrayDeque<int[][]> expandStandardStateWithAgents(int[] pos_coordinates) {
         Random random = new Random();
         int index_to_expand = random.nextInt(number_of_movables);//or other heuristic to use instead of random
         /*
@@ -663,11 +576,13 @@ public final class StateSearchMAFactory {
         //validateNeighbourOfGoal(pos_coordinates, index_to_expand, position_to_expand, neighbours);
         //////////////
 
+
         for(int [] cell_pos_neighbour : neighbours){
-            setConflictsStandardStateExpansion(index_to_expand, pos_coordinates, cell_pos_neighbour, standard_to_conflicts);
+            setConflictsStandardStateExpansion(index_to_expand, pos_coordinates, cell_pos_neighbour);
 
             int[] next_state_node = Arrays.copyOf(pos_coordinates, pos_coordinates.length);
             Coordinates.setCoordinateAtIndex(index_to_expand, next_state_node, cell_pos_neighbour);
+            int[][] standard_node_costs = heuristicMetricsSearch.updateIntermediateNodeAGENTS_ONLY(next_state_node);
             next_state_nodes.add(SearchMAState.createNew(next_state_node, standard_node_costs[HeuristicMetricsSearch.G_COST][0], standard_node_costs[HeuristicMetricsSearch.F_COST][0]));
          }
 
@@ -691,7 +606,6 @@ public final class StateSearchMAFactory {
                 if (Coordinates.getRow(cell_pos_neighbour) == Coordinates.getRow(index_to_expand, prev_pos)  &&
                         Coordinates.getCol(cell_pos_neighbour) == Coordinates.getCol(index_to_expand, prev_pos)){
                     int[] __cell = neighbours.get(i);
-
                 }else {
                     indexes.add(i);
                 }
@@ -705,11 +619,10 @@ public final class StateSearchMAFactory {
     }
 
 
-    public static ArrayDeque<int [][]> expandIntermediateStateWithAgents(int[] pos_coordinates, int[][] intermediate_node_costs, ArrayList<SimulationConflict> standard_to_conflicts) {
+    public static ArrayDeque<int [][]> expandIntermediateStateWithAgents(int[] pos_coordinates) {
 
         int min_time = Integer.MAX_VALUE;
         ArrayList<Integer> coord_candidates = new ArrayList<>();
-        //int number__of__movables = pos_coordinates.length / Coordinates.getLenght();
 
         int __time ;
         for (int coordinate = 0; coordinate < number_of_movables; coordinate = coordinate + 1) {
@@ -736,39 +649,30 @@ public final class StateSearchMAFactory {
         ArrayDeque<int [][]> next_state_nodes = new ArrayDeque<>();
 
         if(index_to_expand > -1) {
-            ArrayDeque<int []> conflicts_avoidance = new ArrayDeque<>();
-
             int[] position_to_expand = Coordinates.getCoordinatesAt(index_to_expand, pos_coordinates);
             int mark_id = group_marks_ids[index_to_expand];
-
-            for ( SimulationConflict simulationConflict  : standard_to_conflicts ){
-                if(simulationConflict.getMarkedId() == mark_id ){
-                    ArrayList<int[]> coord = simulationConflict.getCoordinatesToAvoid();
-                    conflicts_avoidance.addAll(coord);
-                }
-            }
-
-        LinkedList<int[]> neighbours = conflict_avoidance_checking_rules.getFreeNeighboursMA(mark_id, position_to_expand, conflicts_avoidance);
+            ArrayDeque<int []> conflicts_avoidance = od_conflicts.getConflictsAvoidance( index_to_expand, pos_coordinates);
+            LinkedList<int[]> neighbours = conflict_avoidance_checking_rules.getFreeNeighboursMA(mark_id, position_to_expand, conflicts_avoidance);
 
         ////////////to test
         //validateNeighbourOfGoal(pos_coordinates, index_to_expand, position_to_expand, neighbours);
         //////////////
-
         for(int[] cell_pos_neighbour : neighbours){
             //it imposes the same constraints but not on the already expanded positions
-            setConflictsStandardStateExpansion(index_to_expand, pos_coordinates, cell_pos_neighbour, standard_to_conflicts);
+            setConflictsStandardStateExpansion(index_to_expand, pos_coordinates, cell_pos_neighbour);
         }
-            int[] next_state_node;
-            for(int [] cell_pos : neighbours){
-                next_state_node = Arrays.copyOf(pos_coordinates, pos_coordinates.length);
-                Coordinates.setCoordinateAtIndex(index_to_expand, next_state_node, cell_pos);
-                next_state_nodes.add(SearchMAState.createNew(next_state_node, intermediate_node_costs[HeuristicMetricsSearch.G_COST][0],
-                        intermediate_node_costs[HeuristicMetricsSearch.F_COST][0]));
-            }
+
+        int[] next_state_node;
+        for(int [] cell_pos : neighbours){
+            next_state_node = Arrays.copyOf(pos_coordinates, pos_coordinates.length);
+            Coordinates.setCoordinateAtIndex(index_to_expand, next_state_node, cell_pos);
+            int[][] intermediate_node_costs = heuristicMetricsSearch.updateIntermediateNodeAGENTS_ONLY(next_state_node);
+            next_state_nodes.add(SearchMAState.createNew(next_state_node, intermediate_node_costs[HeuristicMetricsSearch.G_COST][0],
+                    intermediate_node_costs[HeuristicMetricsSearch.F_COST][0]));
+        }
         }
         return next_state_nodes;
     }
-
 
     public HashMap<Integer, int[]> getBoxesToAvoid(int index_to_expand, int[] position_to_expand, int[] pos_coordinates){
         Set<Integer> boxes_indexes_to_avoid = agent_boxes_to_avoid.get(index_to_expand);
@@ -779,33 +683,14 @@ public final class StateSearchMAFactory {
             //boxes_to_avoid.add(__coord);
             boxes_coord_to_avoid.put(key,__coord);
         }
-
         return boxes_coord_to_avoid ;
     }
 
-    private static void addPullConstraint(Integer box_index, int[] pull_move_cell, ArrayList<SimulationConflict> standard_to_conflicts ){
-        //PullConstraint gets the cell set up expanded when the box index gets expanded in another node expansion
-        //if a box has multiple PullConstraints then the node expansion expands all the PullConstraints making a new node for each of them
-        boolean constraint_found = false;
-        for (SimulationConflict simulationConflict : standard_to_conflicts){
-            if(simulationConflict.getMarkedId() == group_marks_ids[box_index] && simulationConflict instanceof PullConstraint){
-                ((PullConstraint) simulationConflict).addNextMoveCell(pull_move_cell);
-                constraint_found = true;
-            }
-        }
-        if(!constraint_found){
-            PullConstraint pullConstraint = new PullConstraint(box_index, group_marks_ids[box_index]);
-            pullConstraint.addNextMoveCell(pull_move_cell);
-            standard_to_conflicts.add(pullConstraint);
-        }
-    }
-
-
     //TO USE
-    public static ArrayDeque<int[][]> expandStandardStateWithAgentsAndBoxes(int[] pos_coordinates, ArrayList<SimulationConflict> standard_to_conflicts) {
+    public static ArrayDeque<int[][]> expandStandardStateWithAgentsAndBoxes(int[] pos_coordinates) {
         //start with  expanding only agents
        Random random = new Random();
-        int index_to_expand = random.nextInt(all_agents_indexes.size());//or other heuristic to use instead of random
+       int index_to_expand = random.nextInt(all_agents_indexes.size());//or other heuristic to use instead of random
 
         //heuristic: choose the agent to move that is next to the closest box to the goal
         //heuristic: choose the agent to move that is closest to the closest box to the goal
@@ -815,11 +700,21 @@ public final class StateSearchMAFactory {
         int index_to_expand = minimum_index_of_h;
         */
 
-        return expandStateStartingWithAgents(index_to_expand, pos_coordinates, standard_to_conflicts);
+move to LinkedList<int[]> neighbours_agent = conflict_avoidance_checking_rules.getFreeNeighboursMA
+                below because  it depends on the agent
+        addPullConstraint if another agent is in the neighbourhood of the same color
+        HashMap<Integer, int[]> boxes_coord_to_avoid = getBoxesCoordToAvoid(index_to_expand);
+        for (Integer key: boxes_coord_to_avoid.keySet()){
+            Coordinates.setTime(boxes_coord_to_avoid.get(key), Coordinates.getTime(key ,pos_coordinates));
+        }
+        ArrayDeque<int []> conflicts_avoidance = od_conflicts.getConflictsAvoidance(index_to_expand, pos_coordinates);
+        conflicts_avoidance.addAll(boxes_coord_to_avoid.values());
+
+        return expandStateStartingWithAgents(index_to_expand, pos_coordinates);
     }
 
     //TO USE
-    public static ArrayDeque<int [][]> expandIntermediateStateWithAgentsAndBoxes(int[] pos_coordinates, ArrayList<SimulationConflict> standard_to_conflicts) {
+    public static ArrayDeque<int [][]> expandIntermediateStateWithAgentsAndBoxes(int[] pos_coordinates) {
 
         int min_time = Integer.MAX_VALUE;
         int __time ;
@@ -836,16 +731,10 @@ public final class StateSearchMAFactory {
             __time = Coordinates.getTime(coordinate, pos_coordinates);
             if(__time == min_time){
                 if(all_boxes_indexes.containsKey(coordinate)) {
-                    //if coordinate time does not corespond to a box with constraint : PullConstraint, VertexConflict, EdgeConflict then do not add candidates for exapansion
-                    int mark_id = group_marks_ids[coordinate];
+                    coord_candidates1 = od_conflicts.getCoordCandidates1(coordinate, pos_coordinates);
                     boolean non_waiting_found = true;
-                    for (SimulationConflict simulationConflict : standard_to_conflicts ){
-                        if( (simulationConflict instanceof PullConstraint || simulationConflict instanceof EdgeConflict) && simulationConflict.getMarkedId() == mark_id ){
-                            coord_candidates1.add(coordinate);
-                            non_waiting_found = false;
-                        }
-                    }
-                    
+
+                    if(coord_candidates1.size()>0) non_waiting_found = false;
                     if (non_waiting_found) waiting_candidates1.add(coordinate);
                     
                 }else if(all_agents_indexes.containsKey(coordinate)){
@@ -864,7 +753,6 @@ public final class StateSearchMAFactory {
             //minimum of heuristics by indexes from  coord_candidates
             //int minimum_index_of_h = Utils.minIndexOf(intermediate_node_costs[H_COSTS],coord_candidates);
             //coord_to_expand = minimum_index_of_h;
-
             int __index = random.nextInt(coord_candidates.length);//or other heuristic to use instead of random
             coord_to_expand = coord_candidates[__index];
         }
@@ -873,85 +761,28 @@ public final class StateSearchMAFactory {
                     if no more agents to expand left expand boxes and do not move them just increase time step
     * */
         if(coord_to_expand > -1 && all_agents_indexes.containsKey(coord_to_expand)) {
-            return expandStateStartingWithAgents(coord_to_expand, pos_coordinates, standard_to_conflicts);
-        }else{
-            return expandStateStartingWithBoxes(coord_to_expand, pos_coordinates, waiting_candidates, standard_to_conflicts);
-        }
 
+
+            return expandStateStartingWithAgents(coord_to_expand, pos_coordinates);
+        }else{
+            return expandStateStartingWithBoxes(coord_to_expand, pos_coordinates, waiting_candidates);
+        }
     }
 
-    /*
-    * 2 kind of constraints : one for boxes one for agents
-      agent moves from next cell of box than : constraint pull on the box
-    * */
-    /*if there is no box constrained to expand: expand only agents
-     *if no more agents to expand left expand boxes and do not move them just increase time step
-     * */
-    private static ArrayDeque<int[][]> expandStateStartingWithAgents(int index_to_expand, int[] pos_coordinates, ArrayList<SimulationConflict> standard_to_conflicts) {
+
+    private static ArrayDeque<int[][]> expandStateStartingWithAgents(int index_to_expand, int[] pos_coordinates) {
 
         ArrayDeque<int [][]> next_state_nodes = new ArrayDeque<>();
         int[] position_to_expand = Coordinates.getCoordinatesAt(index_to_expand, pos_coordinates);
         int mark_id = group_marks_ids[index_to_expand];
 
-        HashMap<Integer, int[]> boxes_coord_to_avoid = getBoxesCoordToAvoid(index_to_expand);
-
-        for (Integer key: boxes_coord_to_avoid.keySet()){
-             Coordinates.setTime(boxes_coord_to_avoid.get(key), Coordinates.getTime(key ,pos_coordinates));
-        }
-
-        ArrayDeque<int []> conflicts_avoidance = new ArrayDeque<>(); //transform it to verstex conflixts and edge conflicts
-        for ( SimulationConflict simulationConflict : standard_to_conflicts ){
-            if(simulationConflict.getMarkedId() == mark_id ){
-                ArrayList<int[]> coord = simulationConflict.getCoordinatesToAvoid();
-                conflicts_avoidance.addAll(coord);
-            }
-        }
-
-        conflicts_avoidance.addAll(boxes_coord_to_avoid.values());
+        ArrayDeque<int []> conflicts_avoidance = od_conflicts.getConflictsAvoidance(index_to_expand, pos_coordinates);
 
         LinkedList<int[]> neighbours_agent = conflict_avoidance_checking_rules.getFreeNeighboursMA(mark_id, position_to_expand, conflicts_avoidance);
         //////////to test
         //validateNeighbourOfGoal(pos_coordinates, index_to_expand, position_to_expand, neighbours_agent);
         ///////////
-        conflicts_avoidance.clear();
-
-        ArrayDeque<int[]> neighbours_to_remove = new ArrayDeque<>();
-
-        //check if the boxes to avoid were overstepped in the new step time
-        for(int[] neighbour_found : neighbours_agent){
-            Set<Integer> keys = boxes_coord_to_avoid.keySet();
-            for(Integer key_avoid : boxes_coord_to_avoid.keySet()){
-                int[] box_to_avoid = boxes_coord_to_avoid.get(key_avoid);
-                if( Coordinates.getRow(neighbour_found) == Coordinates.getRow(box_to_avoid) && Coordinates.getCol(neighbour_found) == Coordinates.getCol(box_to_avoid) ){
-                    //check for PULL constraints
-                    if(all_boxes_to_agents.containsKey(key_avoid)){
-                        for (Integer key_agent : all_boxes_to_agents.get(key_avoid)){
-                            //make  PULL constraints
-                            int agent_time = Coordinates.getTime(key_agent, pos_coordinates);
-                            int box_time_step = Coordinates.getTime(box_to_avoid);
-                            //if the agent is next to box : add  PULL as state neighbours
-                            //check if the agent has time steps left to pull the box and if yes add PULL constraint on box
-                            int agent_row = Coordinates.getRow(key_agent, pos_coordinates);
-                            int agent_col = Coordinates.getCol(key_agent, pos_coordinates);
-                            if(agent_time < Coordinates.getTime(neighbour_found) && Coordinates.areNeighbours(box_to_avoid, agent_row, agent_col)) {
-                                //make a pull constraint for the neighbour box
-                                int[] pull_move_cell = new int[]{agent_time + 1, agent_row, agent_col };
-                                addPullConstraint(key_avoid, pull_move_cell, standard_to_conflicts);
-                                //the PullConstraint imposes VertexConflicts for the other movables
-                                setConflictsStandardStateExpansion(key_avoid, pos_coordinates, pull_move_cell, standard_to_conflicts);
-                            }else{
-                                neighbours_to_remove.add(neighbour_found);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if(neighbours_to_remove.size() > 0){
-            while(!neighbours_to_remove.isEmpty())
-                neighbours_agent.remove(neighbours_to_remove.pop());
-        }
+       // conflicts_avoidance.clear();
 
         if(neighbours_agent.size() > 0){//if the size bigger then zero the agent moved
             Set<Integer> boxes_indexes = all_agents_to_boxes.get(index_to_expand);//get the box with the same color as the agent
@@ -966,49 +797,41 @@ public final class StateSearchMAFactory {
                 if(Coordinates.getTime(position_to_expand) == box_time_step && Coordinates.areNeighbours(position_to_expand, box_row, box_column) ) {
                     //make a pull constraint for the neighbour box
                     int[] pull_move_cell = new int[]{Coordinates.getTime(position_to_expand) + 1, Coordinates.getRow(position_to_expand), Coordinates.getCol(position_to_expand) };
-                    addPullConstraint(box_index, pull_move_cell, standard_to_conflicts);
+
+
+                    od_conflicts.addPullConstraint(box_index, pos_coordinates, pull_move_cell);
                     //the PullConstraint imposes VertexConflicts for the other movables
-                    setConflictsStandardStateExpansion(box_index, pos_coordinates, pull_move_cell, standard_to_conflicts);
+                    setConflictsStandardStateExpansion(box_index, pos_coordinates, pull_move_cell);
                 }
             }
 
             for(int [] cell_pos_neighbour : neighbours_agent){
-                setConflictsStandardStateExpansion(index_to_expand, pos_coordinates, cell_pos_neighbour, standard_to_conflicts);
+                setConflictsStandardStateExpansion(index_to_expand, pos_coordinates, cell_pos_neighbour);
 
                 int[] next_state_node = Arrays.copyOf(pos_coordinates, pos_coordinates.length);
                 Coordinates.setCoordinateAtIndex(index_to_expand, next_state_node, cell_pos_neighbour);
                 //pos_coordinates get g cost  pos_coordinates get f cost
-
-                int[][] standard_node_costs = heuristicMetricsSearch.getAgentsCostsBoxes();
-                next_state_nodes.add(SearchMAState.createNew(next_state_node, standard_node_costs[HeuristicMetricsSearch.G_COST][0],
-                        standard_node_costs[HeuristicMetricsSearch.F_COST][0]));
+                int[][] standard_node_costs = heuristicMetricsSearch.updateIntermediateNodeAGENTS_AND_BOXES(index_boxes, next_state_node);
+                next_state_nodes.add(SearchMAState.createNew(next_state_node,
+                        standard_node_costs[HeuristicMetricsSearch.G_COST][0], standard_node_costs[HeuristicMetricsSearch.F_COST][0]));
             }
         }
+
         return next_state_nodes;
     }
 
-
     //expand only for boxes
-    public static ArrayDeque<int [][]> expandStateStartingWithBoxes(int coord_to_expand, int[] pos_coordinates, ArrayList<Integer> waiting_candidates, ArrayList<SimulationConflict> standard_to_conflicts) {
+    public static ArrayDeque<int [][]> expandStateStartingWithBoxes(int coord_to_expand, int[] pos_coordinates, ArrayList<Integer> waiting_candidates) {
         ArrayDeque<int [][]> next_state_nodes = new ArrayDeque<>();
-        int[][] intermediate_node_costs = heuristicMetricsSearch.getBoxesCosts(index_boxes, pos_coordinates);
+
 
         if(coord_to_expand > -1 && all_boxes_indexes.containsKey(coord_to_expand)) {
             ArrayDeque<int []> conflicts_avoidance = new ArrayDeque<>();
             int[] to_expand = Coordinates.getCoordinatesAt(coord_to_expand, pos_coordinates);
             int mark_id = group_marks_ids[coord_to_expand];
 
-            ArrayDeque<int[]> constraint_moving = new ArrayDeque<>();
-            for ( SimulationConflict simulationConflict  : standard_to_conflicts ){
-                if(simulationConflict.getMarkedId() == mark_id ){
-                    if (simulationConflict instanceof PullConstraint){
-                        constraint_moving.addAll(((PullConstraint) simulationConflict).getConstraint_cells() );
-                    }else{
-                        ArrayList<int[]> coord = simulationConflict.getCoordinatesToAvoid();
-                        conflicts_avoidance.addAll(coord);
-                    }
-                }
-            }
+            conflicts_avoidance = od_conflicts.getConflictsAvoidance(coord_to_expand, pos_coordinates);
+            ArrayDeque<int[]> constraint_moving = od_conflicts.getConstraintMoving(coord_to_expand, pos_coordinates);
 
             LinkedList<int[]> neighbours = conflict_avoidance_checking_rules.getFreeNeighboursMA(mark_id, to_expand, conflicts_avoidance);
             conflicts_avoidance.clear();
@@ -1018,10 +841,10 @@ public final class StateSearchMAFactory {
 
             for(int[]  cell_pos_neighbour : neighbours){
                 //it imposes the same constraints but not on the already expanded positions
-                setConflictsStandardStateExpansion(coord_to_expand, pos_coordinates, cell_pos_neighbour, standard_to_conflicts);
+                setConflictsStandardStateExpansion(coord_to_expand, pos_coordinates, cell_pos_neighbour);
             }
 
-            if(neighbours.size()==0){
+            if(neighbours.size() == 0){
                 //box blocked can not move
                 Coordinates.setTime(to_expand,Coordinates.getTime(to_expand) + 1 );
                 neighbours.add(to_expand);
@@ -1031,7 +854,7 @@ public final class StateSearchMAFactory {
             for(int [] cell_pos : neighbours){
                 next_state_node = Arrays.copyOf(pos_coordinates, pos_coordinates.length);
                 Coordinates.setCoordinateAtIndex(coord_to_expand, next_state_node, cell_pos);
-
+                int[][] intermediate_node_costs = heuristicMetricsSearch.getBoxesCosts(index_boxes, next_state_node);
                 next_state_nodes.add(SearchMAState.createNew(next_state_node, intermediate_node_costs[HeuristicMetricsSearch.G_COST][0], intermediate_node_costs[HeuristicMetricsSearch.F_COST][0]));
             }
         }
@@ -1043,11 +866,13 @@ public final class StateSearchMAFactory {
                 for (Integer coord : waiting_candidates ){
                     Coordinates.setTime(coord, next_state_node, Coordinates.getTime(coord, pos_coordinates) + 1);
                }
+                int[][] intermediate_node_costs = heuristicMetricsSearch.getBoxesCosts(index_boxes, next_state_node);
                 next_state_nodes.add(SearchMAState.createNew(next_state_node, intermediate_node_costs[HeuristicMetricsSearch.G_COST][0], intermediate_node_costs[HeuristicMetricsSearch.F_COST][0]));
             }
         }
         return next_state_nodes;
     }
+
 
     public void avoidCoordinate(StateSearchMAFactory.SearchState searchMultiAgentState, LinkedList<int[]> neighbours, int[] coordinates_to_avoid){
         int number_of_movables = coordinates_to_avoid.length/Coordinates.getLenght();//to do divide goals__coordinates by the length of the coordinates
@@ -1198,7 +1023,7 @@ public final class StateSearchMAFactory {
         }
 
         for(int[] cell_pos_neighbour : neighbours_agent){
-            setConflictsStandardStateExpansion(index_to_expand, pos_coordinates, cell_pos_neighbour, standard_to_conflicts);
+            setConflictsStandardStateExpansion(index_to_expand, pos_coordinates, cell_pos_neighbour);
 
             int[] next_state_node = Arrays.copyOf(pos_coordinates, pos_coordinates.length);
             Coordinates.setCoordinateAtIndex(index_to_expand, next_state_node, cell_pos_neighbour);

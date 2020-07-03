@@ -13,16 +13,14 @@ public class HeuristicMetricsSearch {
 
     int[] goals_coordinates;
 
+    private int[][] standard_node_root_costs;
     private int[][] standard_node_costs;
     private int[][] intermediate_node_costs;
-    private int[][] intermediate_boxes_costs;
+    private int[][] intermediate_roote_node;
     private int[][] agent_node_costs;
-    private int g_cost_boxes;
 
     final static int STATE_STANDARD = 0;  //starndard node or intermediate node as in stanleys paper
     final static int STATE_INTERMEDIATE = 1; //intermediate state is when not all agents in the position advanced a time step
-
-
 
     public HeuristicMetricsSearch(int[] goalsCoordinates) {
         goals_coordinates = goalsCoordinates;
@@ -30,6 +28,13 @@ public class HeuristicMetricsSearch {
 
     public void initStandardNodeCosts() {
         int[] heuristic_standard_coordinates_output = new int[goals_coordinates.length / Coordinates.getLenght()];
+
+        standard_node_root_costs = new int[4][];
+        standard_node_root_costs[G_COST] = new int[1];
+        standard_node_root_costs[H_COST] = new int[1];
+        standard_node_root_costs[F_COST] = new int[1];
+        standard_node_root_costs[H_COSTS] = heuristic_standard_coordinates_output;
+
 
         standard_node_costs = new int[4][];
         standard_node_costs[G_COST] = new int[1];
@@ -53,58 +58,69 @@ public class HeuristicMetricsSearch {
         intermediate_node_costs[F_COST] = new int[1];
         intermediate_node_costs[H_COSTS] = heuristic_intermediate_coordinates_output;
 
-        intermediate_boxes_costs = new int[4][];
-        intermediate_boxes_costs[G_COST] = new int[1];
-        intermediate_boxes_costs[H_COST] = new int[1];
-        intermediate_boxes_costs[F_COST] = new int[1];
-        intermediate_boxes_costs[H_COSTS] = heuristic_intermediate_coordinates_output;
+        intermediate_roote_node = new int[4][];
+        intermediate_roote_node[G_COST] = new int[1];
+        intermediate_roote_node[H_COST] = new int[1];
+        intermediate_roote_node[F_COST] = new int[1];
+        intermediate_roote_node[H_COSTS] = heuristic_intermediate_coordinates_output;
+    }
+
+    public void setStandardNodeCosts(int[][] state) {
+        standard_node_root_costs[G_COST][0] = SearchMAState.getGCost(state);
+        standard_node_root_costs[H_COST][0] = SearchMAState.getFCost(state) - SearchMAState.getGCost(state);
+        standard_node_root_costs[F_COST][0] = SearchMAState.getFCost(state);
+    }
+
+    public void setStandardNodeAGENTS_ONLY(int[][] state) {
+        setStandardNodeCosts(state);
     }
 
 
-    public int[][] updateStandardNodeAGENTS_ONLY(int[][] state) {
-        //int f_cost = SearchMAState.getFCost(current_state) - COST_NEXT_CELL;
-        //int h_cost = StateSearchMAFactory.getHeuristcOf(SearchMAState.getStateCoordinates(current_state));
-        int g_cost = SearchMAState.getGCost(state) + COST_NEXT_CELL;
-        int h_cost = getHeuristcOfAGENTS_ONLY(SearchMAState.getStateCoordinates(state));
+    public int[][] updateIntermediateNodeAGENTS_ONLY(int[] next_state_node) {
+        int g_cost = standard_node_root_costs[G_COST][0] + COST_NEXT_CELL;
+        int h_cost = getStatePosHeuristc(next_state_node);
         int f_cost = h_cost + g_cost;
 
-        standard_node_costs[G_COST][0] = g_cost;
-        standard_node_costs[H_COST][0] = h_cost;
-        standard_node_costs[F_COST][0] = f_cost;
+        intermediate_node_costs[G_COST][0] = g_cost;
+        intermediate_node_costs[H_COST][0] = h_cost;
+        intermediate_node_costs[F_COST][0] = f_cost;
         //standard_node_costs[H_COSTS] = heuristic_standard_coordinates_output;
 
-        return standard_node_costs;
+        return intermediate_node_costs;
     }
-    public int[][] getAgentsCostsBoxes() {
-        return agent_node_costs;
+
+    public int[][] updateIntermediateNodeAGENTS_AND_BOXES(int[] index_boxes, int[] next_state_node) {
+        int g_cost = intermediate_roote_node[G_COST][0] + COST_NEXT_CELL;
+        int h_cost =  getHeuristcOfAGENTS_AND_BOXES(index_boxes, next_state_node);
+        int f_cost = h_cost + g_cost;
+
+        intermediate_node_costs[G_COST][0] = g_cost;
+        intermediate_node_costs[H_COST][0] = h_cost;
+        intermediate_node_costs[F_COST][0] = f_cost;
+        //standard_node_costs[H_COSTS] = heuristic_standard_coordinates_output;
+
+        return intermediate_node_costs;
     }
 
     //agent costs when the  searching combines the states of agents and boxes
-    public void setAgentsCosts(int[][] state, StateSearchMAFactory.SearchState searchMultiAgentState) {
-        int g_cost = SearchMAState.getGCost(state);
-        agent_node_costs[G_COST][0]= g_cost;
-        int f_cost = SearchMAState.getFCost(state);
-        agent_node_costs[F_COST][0] = f_cost;
-
-        agent_node_costs[H_COST][0] = standard_node_costs[F_COST][0] - standard_node_costs[G_COST][0];
+    public void setsetStandardNodeAGENTS_AND_BOXES(int[][] state) {
+        intermediate_roote_node[G_COST][0] = SearchMAState.getGCost(state);
+        intermediate_roote_node[H_COST][0] = SearchMAState.getFCost(state) - SearchMAState.getGCost(state);
+        intermediate_roote_node[F_COST][0] = SearchMAState.getFCost(state);
     }
 
     public int[][] getBoxesCosts(int[] index_boxes, int[] positiion_coordinates) {
         //int g_cost = SearchMAState.getGCost(state) + COST_NEXT_CELL;
-        int g_cost = this.g_cost_boxes ;
+        int g_cost = intermediate_roote_node[G_COST][0] + COST_NEXT_CELL;;
         int h_cost = getHeuristcOfAGENTS_AND_BOXES(index_boxes, positiion_coordinates);
         int f_cost = h_cost + g_cost;
 
-        intermediate_boxes_costs[G_COST][0] = g_cost;
-        intermediate_boxes_costs[H_COST][0] = h_cost;
-        intermediate_boxes_costs[F_COST][0] = f_cost;
+        intermediate_roote_node[G_COST][0] = g_cost;
+        intermediate_roote_node[H_COST][0] = h_cost;
+        intermediate_roote_node[F_COST][0] = f_cost;
         //intermediate_node_costs[H_COSTS] = heuristic_intermediate_coordinates_output;
 
-        return intermediate_boxes_costs;
-    }
-
-    public void setGcostBoxes(int g_cost) {
-        this.g_cost_boxes = g_cost;
+        return intermediate_roote_node;
     }
 
     public int[][] createIntermediateNodeCosts() {
@@ -129,7 +145,7 @@ public class HeuristicMetricsSearch {
 
     public int[][] updateIntermediateNodeAGENTS_ONLY(int[][] state) {
         int g_cost = SearchMAState.getGCost(state) + COST_NEXT_CELL;
-        int h_cost = getHeuristcOfAGENTS_ONLY(SearchMAState.getStateCoordinates(state));
+        int h_cost = getStatePosHeuristc(SearchMAState.getStateCoordinates(state));
         int f_cost = h_cost + g_cost;
 
         intermediate_node_costs[G_COST][0] = g_cost;
@@ -161,7 +177,7 @@ public class HeuristicMetricsSearch {
         return heuristc_value;
     }
 
-    public int getHeuristcOfAGENTS_ONLY(int[] cell_coordinates){
+    public int getStatePosHeuristc(int[] cell_coordinates){
         int heuristc_value = 0;
         int y;
         int x;
@@ -183,7 +199,7 @@ public class HeuristicMetricsSearch {
         return heuristc_value;
     }
 
-    public int getHeuristcOfAGENTS_ONLY(IllegalPathsStore illegal_paths_store, int[] group_marks_ids, int[] cell_coordinates){
+    public int getStatePosHeuristc(IllegalPathsStore illegal_paths_store, int[] group_marks_ids, int[] cell_coordinates){
         int heuristc_value = 0;
         int y;
         int x;
