@@ -483,6 +483,8 @@ public final class StateSearchMAFactory {
         return !isStandardNode(pos_coordinates);
     }
 
+
+
      //if neighbours contains one of the other mark_ids from standard node :
     //add it to the set of SimulationConflicts
     //edge conflict only for overstepped movable object
@@ -501,11 +503,11 @@ public final class StateSearchMAFactory {
 
             //do not impose constraints on the previouse expanded cell_positions
             if(time_coord == time_neigbour) continue;
-
             if ( row_coord == row_neigbour && col_coord == col_neigbour) {
                 od_conflicts.setConflictsEdgeConflict(i, time_coord, index_to_expand, pos_coordinates, cell_pos_neighbour);
-            }
+
             od_conflicts.setConflictsVertexConflict(i, index_to_expand, pos_coordinates, cell_pos_neighbour);
+            }
         }
     }
 
@@ -514,6 +516,7 @@ public final class StateSearchMAFactory {
         int[] pos_coordinates = SearchMAState.getStateCoordinates(state);
         //int[] pos_coordinates = Arrays.copyOf(SearchMAState.getStateCoordinates(state),SearchMAState.getStateCoordinates(state).length);
         ArrayDeque<int[][]> __result = new ArrayDeque<>();
+        od_conflicts.setStandardToConflicts(pos_coordinates);
 
         switch (searchMultiAgentState)
         {
@@ -524,7 +527,6 @@ public final class StateSearchMAFactory {
                                     break;
             case AGENTS_AND_BOXES:
                 heuristicMetricsSearch.setsetStandardNodeAGENTS_AND_BOXES(state);
-                od_conflicts.setStandardToConflicts(pos_coordinates);
 
                 ArrayDeque<int[][]> __result__2 = expandStandardStateWithAgentsAndBoxes(pos_coordinates);
                                     __result.addAll(__result__2);
@@ -699,17 +701,6 @@ public final class StateSearchMAFactory {
         //int maximum_index_of_h = Utils.maxIndexOf(standard_node_costs[H_COSTS]);
         int index_to_expand = minimum_index_of_h;
         */
-
-move to LinkedList<int[]> neighbours_agent = conflict_avoidance_checking_rules.getFreeNeighboursMA
-                below because  it depends on the agent
-        addPullConstraint if another agent is in the neighbourhood of the same color
-        HashMap<Integer, int[]> boxes_coord_to_avoid = getBoxesCoordToAvoid(index_to_expand);
-        for (Integer key: boxes_coord_to_avoid.keySet()){
-            Coordinates.setTime(boxes_coord_to_avoid.get(key), Coordinates.getTime(key ,pos_coordinates));
-        }
-        ArrayDeque<int []> conflicts_avoidance = od_conflicts.getConflictsAvoidance(index_to_expand, pos_coordinates);
-        conflicts_avoidance.addAll(boxes_coord_to_avoid.values());
-
         return expandStateStartingWithAgents(index_to_expand, pos_coordinates);
     }
 
@@ -731,10 +722,10 @@ move to LinkedList<int[]> neighbours_agent = conflict_avoidance_checking_rules.g
             __time = Coordinates.getTime(coordinate, pos_coordinates);
             if(__time == min_time){
                 if(all_boxes_indexes.containsKey(coordinate)) {
-                    coord_candidates1 = od_conflicts.getCoordCandidates1(coordinate, pos_coordinates);
+                    coord_candidates1 = od_conflicts.getCoordCandidates(coordinate, pos_coordinates);
                     boolean non_waiting_found = true;
 
-                    if(coord_candidates1.size()>0) non_waiting_found = false;
+                    if(coord_candidates1.size() > 0) non_waiting_found = false;
                     if (non_waiting_found) waiting_candidates1.add(coordinate);
                     
                 }else if(all_agents_indexes.containsKey(coordinate)){
@@ -776,6 +767,15 @@ move to LinkedList<int[]> neighbours_agent = conflict_avoidance_checking_rules.g
         int[] position_to_expand = Coordinates.getCoordinatesAt(index_to_expand, pos_coordinates);
         int mark_id = group_marks_ids[index_to_expand];
 
+
+        //get the boxes of different colour and add pull constraints if these are neighbours
+        HashMap<Integer, int[]> boxes_coord_to_avoid = getBoxesCoordToAvoid(index_to_expand);
+        for (Integer key: boxes_coord_to_avoid.keySet()){
+            Coordinates.setTime(boxes_coord_to_avoid.get(key), Coordinates.getTime(key ,pos_coordinates));
+        }
+        //ArrayDeque<int []> conflicts_avoidance = od_conflicts.getConflictsAvoidance(index_to_expand, pos_coordinates);
+        //conflicts_avoidance.addAll(boxes_coord_to_avoid.values());
+
         ArrayDeque<int []> conflicts_avoidance = od_conflicts.getConflictsAvoidance(index_to_expand, pos_coordinates);
 
         LinkedList<int[]> neighbours_agent = conflict_avoidance_checking_rules.getFreeNeighboursMA(mark_id, position_to_expand, conflicts_avoidance);
@@ -784,10 +784,43 @@ move to LinkedList<int[]> neighbours_agent = conflict_avoidance_checking_rules.g
         ///////////
        // conflicts_avoidance.clear();
 
+        //for boxes to avoid add pull constraint if or not other agents are neighbours
+        ArrayDeque<int[]> neighbours_to_remove = new ArrayDeque<>();
+
+        //check if the boxes to avoid were overstepped in the new step time
+        for(int[] neighbour_found : neighbours_agent){
+            for(Integer key_avoid : boxes_coord_to_avoid.keySet()){
+                int[] box_to_avoid = boxes_coord_to_avoid.get(key_avoid);
+                if( Coordinates.getRow(neighbour_found) == Coordinates.getRow(box_to_avoid) && Coordinates.getCol(neighbour_found) == Coordinates.getCol(box_to_avoid) ){
+                    //check for PULL constraints
+                    if(all_boxes_to_agents.containsKey(key_avoid)){
+                        for (Integer key_agent : all_boxes_to_agents.get(key_avoid)){
+                            //make  PULL constraints
+                            int agent_time = Coordinates.getTime(key_agent, pos_coordinates);
+                            int box_time_step = Coordinates.getTime(box_to_avoid);
+                            //if the agent is next to box : add  PULL as state neighbours
+                            //check if the agent has time steps left to pull the box and if yes add PULL constraint on box
+                            int agent_row = Coordinates.getRow(key_agent, pos_coordinates);
+                            int agent_col = Coordinates.getCol(key_agent, pos_coordinates);
+                            if(agent_time < Coordinates.getTime(neighbour_found) && Coordinates.areNeighbours(box_to_avoid, agent_row, agent_col)) {
+                                //make a pull constraint for the neighbour box
+                                int[] pull_move_cell = new int[]{agent_time + 1, agent_row, agent_col };
+                                od_conflicts.addPullConstraint(index_to_expand, key_avoid, pos_coordinates, pull_move_cell);
+                                //the PullConstraint imposes VertexConflicts for the other movables
+                                setConflictsStandardStateExpansion(key_avoid, pos_coordinates, pull_move_cell);
+                            }else{
+                                neighbours_to_remove.add(neighbour_found);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
         if(neighbours_agent.size() > 0){//if the size bigger then zero the agent moved
             Set<Integer> boxes_indexes = all_agents_to_boxes.get(index_to_expand);//get the box with the same color as the agent
             if(boxes_indexes == null)  boxes_indexes = new HashSet<>();
-
             for (Integer box_index : boxes_indexes ) {
                 int box_time_step = Coordinates.getTime(box_index, pos_coordinates);
                 int box_row = Coordinates.getRow(box_index, pos_coordinates);
@@ -798,10 +831,8 @@ move to LinkedList<int[]> neighbours_agent = conflict_avoidance_checking_rules.g
                     //make a pull constraint for the neighbour box
                     int[] pull_move_cell = new int[]{Coordinates.getTime(position_to_expand) + 1, Coordinates.getRow(position_to_expand), Coordinates.getCol(position_to_expand) };
 
-
-                    od_conflicts.addPullConstraint(box_index, pos_coordinates, pull_move_cell);
-                    //the PullConstraint imposes VertexConflicts for the other movables
-                    setConflictsStandardStateExpansion(box_index, pos_coordinates, pull_move_cell);
+                    int agent_index = index_to_expand;
+                    od_conflicts.addPullConstraint(agent_index, box_index, pos_coordinates, pull_move_cell);
                 }
             }
 
