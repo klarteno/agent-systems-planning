@@ -23,7 +23,7 @@ public class ODConflicts {
     //when expanding a standard state the tree rooted at this standard node colects all the conflicts for this tree in standard_to_conflicts
     ArrayList<SimulationConflict> standard_node_conflicts;
     HashMap<Integer, ArrayList<SimulationConflict>> standard_to_conflicts = new HashMap<>();
-    make intermediate_to_conflicts
+    HashMap<Integer, ArrayList<SimulationConflict>> node_to_conflicts = new HashMap<>();
     
     ODNodeStructure od_node_structure;
 
@@ -44,6 +44,16 @@ public class ODConflicts {
             }
     }
 
+    public ArrayList<SimulationConflict> setNodeConflicts(int[] current_pos){
+        int pos_key = Arrays.hashCode(current_pos);
+
+        ArrayList<SimulationConflict> node_conflicts = new ArrayList<>();
+        node_to_conflicts.put(pos_key, node_conflicts);
+
+        return node_conflicts ;
+    }
+
+
     public ArrayList<SimulationConflict> setStandardToConflicts(int[] current_pos){
         Optional<int[]> root_node = od_node_structure.getIntermediateNodeRoot(current_pos);
         int pos_key;
@@ -60,7 +70,18 @@ public class ODConflicts {
         return _standard_node_conflicts ;
     }
 
+    public ArrayList<SimulationConflict> getNodeConflicts(int[] current_pos){
+        int pos_key = Arrays.hashCode(current_pos);
+        ArrayList<SimulationConflict> node_conflicts;
+        if (node_to_conflicts.containsKey(pos_key)){
+            node_conflicts = node_to_conflicts.get(pos_key);
+        }else {
+            node_conflicts = new ArrayList<>();
+            node_to_conflicts.put(pos_key,node_conflicts);
+        }
 
+        return node_conflicts;
+    }
 
     public ArrayList<SimulationConflict> getStandardToConflicts(int[] current_pos){
         Optional<int[]> root_node = od_node_structure.getIntermediateNodeRoot(current_pos);
@@ -91,20 +112,19 @@ public class ODConflicts {
     }
 
     public void setConflictsEdgeConflict(int index_movable, int time_coord, int index_to_expand, int[] pos_coordinates, int[] cell_pos_neighbour){
-        ArrayList<SimulationConflict> standard_conflicts = getStandardToConflicts(pos_coordinates);
+        ArrayList<SimulationConflict> node_conflicts = getNodeConflicts(pos_coordinates);
 
-        int[] cell_pos_neighbour1;
+        int[] cell_pos_neighbour1 = Coordinates.createCoordinates(time_coord, Coordinates.getRow(cell_pos_neighbour), Coordinates.getCol(cell_pos_neighbour));
+        int[] position_to_expand = Coordinates.getCoordinatesAt(index_to_expand, pos_coordinates);
+        Coordinates.setTime(position_to_expand, time_coord + 1);
+
         boolean found_e = false;
-        if(standard_to_conflicts.size() > 0){
-            for (SimulationConflict simulationConflict : standard_conflicts) {
+        if(node_conflicts.size() > 0){
+            for (SimulationConflict simulationConflict : node_conflicts) {
                 if (simulationConflict instanceof EdgeConflict) {
                     int mark_id_conflicted = simulationConflict.getMarkedId();
                     if (mark_id_conflicted == group_marks_ids[index_movable]) {
                         found_e = true;
-                        cell_pos_neighbour1 = Coordinates.createCoordinates(time_coord, Coordinates.getRow(cell_pos_neighbour), Coordinates.getCol(cell_pos_neighbour));
-                        int[] position_to_expand = Coordinates.getCoordinatesAt(index_to_expand, pos_coordinates);
-                        Coordinates.setTime(position_to_expand, time_coord +1);
-                        //position_to_expand1 = Coordinates.createCoordinates( time_coord +1, Coordinates.getRow(position_to_expand), Coordinates.getCol(position_to_expand));
                         ((EdgeConflict) simulationConflict).addConflictedEdge(group_marks_ids[index_to_expand], cell_pos_neighbour1, position_to_expand);
                     }
                 }
@@ -112,26 +132,19 @@ public class ODConflicts {
         }
         if (!found_e) {
             EdgeConflict edge_conflict_found = new EdgeConflict(group_marks_ids[index_movable]);
-            cell_pos_neighbour1 = Coordinates.createCoordinates(time_coord, Coordinates.getRow(cell_pos_neighbour), Coordinates.getCol(cell_pos_neighbour));
-            int[] position_to_expand = Coordinates.getCoordinatesAt(index_to_expand, pos_coordinates);
-            Coordinates.setTime(position_to_expand, time_coord +1);
-            //position_to_expand1 = Coordinates.createCoordinates( time_coord +1, Coordinates.getRow(position_to_expand), Coordinates.getCol(position_to_expand));
-            ((EdgeConflict) edge_conflict_found).addConflictedEdge(group_marks_ids[index_to_expand], cell_pos_neighbour1, position_to_expand);//the time steps should be reversed
-
-            standard_conflicts.add(edge_conflict_found);
+            ((EdgeConflict) edge_conflict_found).addConflictedEdge(group_marks_ids[index_to_expand], cell_pos_neighbour1, position_to_expand);
+            node_conflicts.add(edge_conflict_found);
         }
     }
 
     public void setConflictsVertexConflict(int index_movable, int index_to_expand, int[] pos_coordinates,  int[] cell_pos_neighbour){
-        ArrayList<SimulationConflict> standard_conflicts = getStandardToConflicts(pos_coordinates);
+        ArrayList<SimulationConflict> node_conflicts = getNodeConflicts(pos_coordinates);
 
         boolean found_v = false;
-
-        if(standard_conflicts.size() > 0){
-            for (SimulationConflict simulationConflict : standard_conflicts){
+        if(node_conflicts.size() > 0){
+            for (SimulationConflict simulationConflict : node_conflicts){
                 if ( simulationConflict instanceof VertexConflict){
-                    int mark_id_conflicted = simulationConflict.getMarkedId();
-                    if(mark_id_conflicted == group_marks_ids[index_movable]){
+                    if(simulationConflict.getMarkedId() == group_marks_ids[index_movable]){
                         found_v = true;
                         ((VertexConflict)simulationConflict).addConflictedCell(group_marks_ids[index_to_expand], cell_pos_neighbour);////the time steps should be increased
                     }
@@ -140,16 +153,16 @@ public class ODConflicts {
         }if (!found_v) {
             VertexConflict vertex_conflict_found = new VertexConflict(group_marks_ids[index_movable]);
             vertex_conflict_found.addConflictedCell(group_marks_ids[index_to_expand], cell_pos_neighbour);////the time steps should be increased
-            standard_conflicts.add(vertex_conflict_found);
+            node_conflicts.add(vertex_conflict_found);
         }
     }
 
     public ArrayDeque<int[]> getConflictsAvoidance(int index_to_expand, int[] pos_coordinates){
-        ArrayList<SimulationConflict> standard_conflicts = getStandardToConflicts(pos_coordinates);
+        ArrayList<SimulationConflict> node_conflicts = getStandardToConflicts(pos_coordinates);
         int mark_id = group_marks_ids[index_to_expand];
 
         ArrayDeque<int []> conflicts_avoidance = new ArrayDeque<>();
-        for ( SimulationConflict simulationConflict : standard_conflicts ){
+        for ( SimulationConflict simulationConflict : node_conflicts ){
             if(simulationConflict.getMarkedId() == mark_id ){
                 ArrayList<int[]> coord = simulationConflict.getCoordinatesToAvoid();
                 conflicts_avoidance.addAll(coord);

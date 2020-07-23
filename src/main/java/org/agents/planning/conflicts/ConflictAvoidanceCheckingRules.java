@@ -198,7 +198,9 @@ public final class ConflictAvoidanceCheckingRules {
         }
         return next_cells;
     }
-
+    public LinkedList<int[]> getFreeNeighboursMA(int mark_id, int[] coordinate) {
+        return getFreeNeighboursMA(mark_id, coordinate, new ArrayDeque<int[]>());
+    }
 
     public LinkedList<int[]> getFreeNeighboursMA(int mark_id, int[] coordinate, ArrayDeque<int[]> conflicts_avoidance) {
         ArrayDeque<int[]> neighbours = getFreeNeighboursSA(coordinate, mark_id);

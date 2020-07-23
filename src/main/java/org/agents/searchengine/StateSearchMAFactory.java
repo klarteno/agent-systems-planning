@@ -489,7 +489,7 @@ public final class StateSearchMAFactory {
     //add it to the set of SimulationConflicts
     //edge conflict only for overstepped movable object
     //vertex conflicts for all others movable objects
-    public static void setConflictsStandardStateExpansion(int index_to_expand, int[] pos_coordinates, int[] cell_pos_neighbour){
+    public static void setConflictsNodeExpansion(int index_to_expand, int[] pos_coordinates, int[] cell_pos_neighbour){
         int row_neigbour = Coordinates.getRow(cell_pos_neighbour);
         int col_neigbour = Coordinates.getCol(cell_pos_neighbour);
         int time_neigbour = Coordinates.getTime(cell_pos_neighbour);
@@ -516,7 +516,7 @@ public final class StateSearchMAFactory {
         int[] pos_coordinates = SearchMAState.getStateCoordinates(state);
         //int[] pos_coordinates = Arrays.copyOf(SearchMAState.getStateCoordinates(state),SearchMAState.getStateCoordinates(state).length);
         ArrayDeque<int[][]> __result = new ArrayDeque<>();
-        od_conflicts.setStandardToConflicts(pos_coordinates);
+        od_conflicts.setNodeConflicts(pos_coordinates);
 
         switch (searchMultiAgentState)
         {
@@ -572,15 +572,18 @@ public final class StateSearchMAFactory {
         int[] position_to_expand = Coordinates.getCoordinatesAt(index_to_expand, pos_coordinates);
 
         int mark_id = group_marks_ids[index_to_expand];
-        LinkedList<int[]> neighbours = conflict_avoidance_checking_rules.getFreeNeighboursMA(mark_id, position_to_expand, new ArrayDeque<int[]>());
+        LinkedList<int[]> neighbours = conflict_avoidance_checking_rules.getFreeNeighboursMA(mark_id, position_to_expand);
 
         ////////////to test
         //validateNeighbourOfGoal(pos_coordinates, index_to_expand, position_to_expand, neighbours);
         //////////////
 
-
         for(int [] cell_pos_neighbour : neighbours){
-            setConflictsStandardStateExpansion(index_to_expand, pos_coordinates, cell_pos_neighbour);
+            setConflictsNodeExpansion(index_to_expand, pos_coordinates, cell_pos_neighbour);
+            it should not be the above because the chlidren nodes will share the conflicts
+            it should be :
+            setConflictsNodeExpansion(index_to_expand, next_state_node, cell_pos_neighbour);
+
 
             int[] next_state_node = Arrays.copyOf(pos_coordinates, pos_coordinates.length);
             Coordinates.setCoordinateAtIndex(index_to_expand, next_state_node, cell_pos_neighbour);
@@ -661,7 +664,7 @@ public final class StateSearchMAFactory {
         //////////////
         for(int[] cell_pos_neighbour : neighbours){
             //it imposes the same constraints but not on the already expanded positions
-            setConflictsStandardStateExpansion(index_to_expand, pos_coordinates, cell_pos_neighbour);
+            setConflictsNodeExpansion(index_to_expand, pos_coordinates, cell_pos_neighbour);
         }
 
         int[] next_state_node;
@@ -767,7 +770,6 @@ public final class StateSearchMAFactory {
         int[] position_to_expand = Coordinates.getCoordinatesAt(index_to_expand, pos_coordinates);
         int mark_id = group_marks_ids[index_to_expand];
 
-
         //get the boxes of different colour and add pull constraints if these are neighbours
         HashMap<Integer, int[]> boxes_coord_to_avoid = getBoxesCoordToAvoid(index_to_expand);
         for (Integer key: boxes_coord_to_avoid.keySet()){
@@ -807,7 +809,7 @@ public final class StateSearchMAFactory {
                                 int[] pull_move_cell = new int[]{agent_time + 1, agent_row, agent_col };
                                 od_conflicts.addPullConstraint(index_to_expand, key_avoid, pos_coordinates, pull_move_cell);
                                 //the PullConstraint imposes VertexConflicts for the other movables
-                                setConflictsStandardStateExpansion(key_avoid, pos_coordinates, pull_move_cell);
+                                setConflictsNodeExpansion(key_avoid, pos_coordinates, pull_move_cell);
                             }else{
                                 neighbours_to_remove.add(neighbour_found);
                             }
@@ -830,14 +832,13 @@ public final class StateSearchMAFactory {
                 if(Coordinates.getTime(position_to_expand) == box_time_step && Coordinates.areNeighbours(position_to_expand, box_row, box_column) ) {
                     //make a pull constraint for the neighbour box
                     int[] pull_move_cell = new int[]{Coordinates.getTime(position_to_expand) + 1, Coordinates.getRow(position_to_expand), Coordinates.getCol(position_to_expand) };
-
                     int agent_index = index_to_expand;
                     od_conflicts.addPullConstraint(agent_index, box_index, pos_coordinates, pull_move_cell);
                 }
             }
 
             for(int [] cell_pos_neighbour : neighbours_agent){
-                setConflictsStandardStateExpansion(index_to_expand, pos_coordinates, cell_pos_neighbour);
+                setConflictsNodeExpansion(index_to_expand, pos_coordinates, cell_pos_neighbour);
 
                 int[] next_state_node = Arrays.copyOf(pos_coordinates, pos_coordinates.length);
                 Coordinates.setCoordinateAtIndex(index_to_expand, next_state_node, cell_pos_neighbour);
@@ -872,7 +873,7 @@ public final class StateSearchMAFactory {
 
             for(int[]  cell_pos_neighbour : neighbours){
                 //it imposes the same constraints but not on the already expanded positions
-                setConflictsStandardStateExpansion(coord_to_expand, pos_coordinates, cell_pos_neighbour);
+                setConflictsNodeExpansion(coord_to_expand, pos_coordinates, cell_pos_neighbour);
             }
 
             if(neighbours.size() == 0){
@@ -1054,7 +1055,7 @@ public final class StateSearchMAFactory {
         }
 
         for(int[] cell_pos_neighbour : neighbours_agent){
-            setConflictsStandardStateExpansion(index_to_expand, pos_coordinates, cell_pos_neighbour);
+            setConflictsNodeExpansion(index_to_expand, pos_coordinates, cell_pos_neighbour);
 
             int[] next_state_node = Arrays.copyOf(pos_coordinates, pos_coordinates.length);
             Coordinates.setCoordinateAtIndex(index_to_expand, next_state_node, cell_pos_neighbour);
