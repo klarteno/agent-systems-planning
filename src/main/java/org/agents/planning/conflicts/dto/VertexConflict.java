@@ -10,6 +10,7 @@ public final class VertexConflict extends SimulationConflict{
 
     public VertexConflict(int movable_mark_id) {
         super(movable_mark_id);
+
         conflicted_ids_to_cells = new HashMap<>();
     }
 

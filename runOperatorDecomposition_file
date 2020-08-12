@@ -2,4 +2,4 @@ Hello runOperatorDecomposition
  
 current_state[0]: [0, 2, 8, 0, 8, 3] current_state[1]: [0, 6] frontier_size: 0
  
-current_state[0]: [0, 2, 8, 1, 8, 4] current_state[1]: [1, 8] frontier_size: 0
+current_state[0]: [1, 2, 7, 0, 8, 3] current_state[1]: [1, 8] frontier_size: 0

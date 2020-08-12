@@ -82,7 +82,6 @@ public class SearchEngineOD {
 
         StateSearchMAFactory.createStatesCameFrom();
 
-        ArrayDeque<int[][] > path_to_test = new ArrayDeque<>();
         ArrayDeque<int[]> path = new ArrayDeque<>();
 
         frontier.clear();
@@ -113,7 +112,6 @@ public class SearchEngineOD {
                 }
 
                 prev_state = current_state;
-                path_to_test.push(current_state);
 
                 if (StateSearchMAFactory.isGoal(SearchMAState.getStateCoordinates(current_state))){
                     path_normal.add(SearchMAState.getStateCoordinates(current_state));

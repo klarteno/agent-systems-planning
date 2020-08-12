@@ -270,7 +270,8 @@ public final class GroupSearch {
             for (int coord_to_expand = 0; coord_to_expand < number_movables; coord_to_expand++) {
                 //index of intermediate position found
                 cell_neighbour = Coordinates.getCoordinatesAt(coord_to_expand, next_coord);
-                StateSearchMAFactory.setConflictsNodeExpansion(coord_to_expand, group_pos, cell_neighbour);
+                int[] pos__to_expand = new int[0];
+                StateSearchMAFactory.od_conflicts.setConflictsNodeExpansion(coord_to_expand,pos__to_expand, group_pos, cell_neighbour);
             }
         }else {
             throw new UnsupportedOperationException("ddddddd");

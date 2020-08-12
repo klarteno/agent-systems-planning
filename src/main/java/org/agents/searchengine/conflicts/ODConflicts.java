@@ -6,7 +6,6 @@ import org.agents.planning.conflicts.dto.SimulationConflict;
 import org.agents.planning.conflicts.dto.VertexConflict;
 import org.agents.planning.constraints.PullConstraint;
 import org.agents.searchengine.ODNodeStructure;
-import org.agents.searchengine.SearchMAState;
 
 import java.util.*;
 
@@ -21,7 +20,7 @@ import java.util.*;
 public class ODConflicts {
     private final int[] group_marks_ids;
     //when expanding a standard state the tree rooted at this standard node colects all the conflicts for this tree in standard_to_conflicts
-    ArrayList<SimulationConflict> standard_node_conflicts;
+    ArrayList<SimulationConflict> _node_conflicts;
     HashMap<Integer, ArrayList<SimulationConflict>> standard_to_conflicts = new HashMap<>();
     HashMap<Integer, ArrayList<SimulationConflict>> node_to_conflicts = new HashMap<>();
     
@@ -35,7 +34,7 @@ public class ODConflicts {
     public boolean clear(){
             if(standard_to_conflicts.size()>0){
                 standard_to_conflicts.clear();
-                standard_node_conflicts.clear();
+                _node_conflicts.clear();
 
                 return true;
             }else {
@@ -44,11 +43,17 @@ public class ODConflicts {
             }
     }
 
-    public ArrayList<SimulationConflict> setNodeConflicts(int[] current_pos){
+    public ArrayList<SimulationConflict> getOrInitNodeConflicts(int[] current_pos){
         int pos_key = Arrays.hashCode(current_pos);
+        ArrayList<SimulationConflict> node_conflicts;
 
-        ArrayList<SimulationConflict> node_conflicts = new ArrayList<>();
-        node_to_conflicts.put(pos_key, node_conflicts);
+        if(!node_to_conflicts.containsKey(pos_key)){
+            node_conflicts = new ArrayList<>();
+            node_to_conflicts.put(pos_key, node_conflicts);
+            return node_conflicts;
+        }
+
+        node_conflicts = node_to_conflicts.get(pos_key);
 
         return node_conflicts ;
     }
@@ -82,23 +87,16 @@ public class ODConflicts {
 
         return node_conflicts;
     }
-
-    public ArrayList<SimulationConflict> getStandardToConflicts(int[] current_pos){
-        Optional<int[]> root_node = od_node_structure.getIntermediateNodeRoot(current_pos);
+    public ArrayList<SimulationConflict> getAvailableConflicts(int[] current_pos){
+        Optional<int[]> nodeParent = od_node_structure.getNodeParent(current_pos);
         int pos_key;
 
-        if(root_node.isPresent()){
-            pos_key = Arrays.hashCode(root_node.get());
-        }else {
-            pos_key = Arrays.hashCode(current_pos);
-        }
+        pos_key = nodeParent.map(Arrays::hashCode).orElseGet(() -> Arrays.hashCode(current_pos));
 
-        if(standard_to_conflicts.containsKey(pos_key)){
-            standard_node_conflicts = standard_to_conflicts.get(pos_key);
-            //Utils.logAppendToFile(logFileName, "standard_conflicts called line 162");
-            //Utils.logAppendToFile(logFileName, current_state,444);
+        if(node_to_conflicts.containsKey(pos_key)){
+            _node_conflicts = node_to_conflicts.get(pos_key);
         }
-        return standard_node_conflicts;
+        return _node_conflicts;
     }
 
     public void addConflict(int[] current_pos, ArrayList<SimulationConflict> standard_conflicts) {
@@ -111,11 +109,10 @@ public class ODConflicts {
         return standard_to_conflicts.get(prev_standard_state_key);
     }
 
-    public void setConflictsEdgeConflict(int index_movable, int time_coord, int index_to_expand, int[] pos_coordinates, int[] cell_pos_neighbour){
+    public void setConflictsEdgeConflict(int index_movable, int time_coord, int index_to_expand, int[] position_to_expand, int[] pos_coordinates, int[] cell_pos_neighbour){
         ArrayList<SimulationConflict> node_conflicts = getNodeConflicts(pos_coordinates);
 
         int[] cell_pos_neighbour1 = Coordinates.createCoordinates(time_coord, Coordinates.getRow(cell_pos_neighbour), Coordinates.getCol(cell_pos_neighbour));
-        int[] position_to_expand = Coordinates.getCoordinatesAt(index_to_expand, pos_coordinates);
         Coordinates.setTime(position_to_expand, time_coord + 1);
 
         boolean found_e = false;
@@ -137,7 +134,7 @@ public class ODConflicts {
         }
     }
 
-    public void setConflictsVertexConflict(int index_movable, int index_to_expand, int[] pos_coordinates,  int[] cell_pos_neighbour){
+    public void setConflictsVertexConflict(int index_movable, int index_to_expand, int[] pos_coordinates, int[] cell_pos_neighbour){
         ArrayList<SimulationConflict> node_conflicts = getNodeConflicts(pos_coordinates);
 
         boolean found_v = false;
@@ -158,21 +155,23 @@ public class ODConflicts {
     }
 
     public ArrayDeque<int[]> getConflictsAvoidance(int index_to_expand, int[] pos_coordinates){
-        ArrayList<SimulationConflict> node_conflicts = getStandardToConflicts(pos_coordinates);
+        ArrayList<SimulationConflict> node_conflicts = getAvailableConflicts(pos_coordinates);
         int mark_id = group_marks_ids[index_to_expand];
 
         ArrayDeque<int []> conflicts_avoidance = new ArrayDeque<>();
         for ( SimulationConflict simulationConflict : node_conflicts ){
             if(simulationConflict.getMarkedId() == mark_id ){
+
                 ArrayList<int[]> coord = simulationConflict.getCoordinatesToAvoid();
                 conflicts_avoidance.addAll(coord);
+               node_conflicts.remove(simulationConflict);
             }
         }
         return conflicts_avoidance;
     }
 
     public ArrayDeque<int[]> getConstraintMoving(int coord_movable ,int[] pos_coordinates){
-        ArrayList<SimulationConflict> standard_conflicts = getStandardToConflicts(pos_coordinates);
+        ArrayList<SimulationConflict> standard_conflicts = getAvailableConflicts(pos_coordinates);
         int mark_id = group_marks_ids[coord_movable];
 
         ArrayDeque<int[]> constraint_moving = new ArrayDeque<>();
@@ -186,6 +185,35 @@ public class ODConflicts {
 
         return constraint_moving;
     }
+
+    //if neighbours contains one of the other mark_ids from standard node :
+    //add it to the set of SimulationConflicts
+    //edge conflict only for overstepped movable object
+    //vertex conflicts for all others movable objects
+    public void setConflictsNodeExpansion(int index_to_expand, int[] position_to_expand, int[] pos_coordinates, int[] cell_pos_neighbour){
+        int row_neigbour = Coordinates.getRow(index_to_expand, pos_coordinates);
+        int col_neigbour = Coordinates.getCol(index_to_expand, pos_coordinates);
+        int time_neigbour = Coordinates.getTime(index_to_expand, pos_coordinates);
+
+        getOrInitNodeConflicts(pos_coordinates);
+
+        int number_of_movables = pos_coordinates.length/Coordinates.getLenght();
+        for (int i = 0; i < number_of_movables; i++) {
+            if(i == index_to_expand) continue;
+
+            int row_coord = Coordinates.getRow(i, pos_coordinates);
+            int col_coord = Coordinates.getCol(i, pos_coordinates);
+            int time_coord = Coordinates.getTime(i, pos_coordinates);
+
+            //do not impose constraints on the previouse expanded cell_positions
+            if(time_coord == time_neigbour) continue;
+            if ( row_coord == row_neigbour && col_coord == col_neigbour) {
+                setConflictsEdgeConflict(i, time_coord, index_to_expand, position_to_expand, pos_coordinates, cell_pos_neighbour);
+                setConflictsVertexConflict(i, index_to_expand, pos_coordinates, cell_pos_neighbour);
+            }
+        }
+    }
+
 
 
     public void setConflictsStandardVertexConflictExpansion(Integer unconstrained_index, int index_to_expand, int[] pos_coordinates, int[] cell_pos_neighbour){
@@ -212,7 +240,7 @@ public class ODConflicts {
 
     //the PullConstraint imposes VertexConflicts for the other movables and not edge constraint
     public void addPullConstraint(int agent_index, Integer box_index, int[] pos_coordinates, int[] pull_move_cell){
-        ArrayList<SimulationConflict> standard_conflicts = getStandardToConflicts(pos_coordinates);
+        ArrayList<SimulationConflict> standard_conflicts = getAvailableConflicts(pos_coordinates);
 
         //PullConstraint gets the cell set up expanded when the box index gets expanded in another node expansion
         //if a box has multiple PullConstraints then the node expansion expands all the PullConstraints making a new node for each of them
@@ -235,7 +263,7 @@ public class ODConflicts {
     }
 
     public Set<Integer> getCoordCandidates(int coordinate_movable, int[] pos_coordinates){
-        ArrayList<SimulationConflict> standard_conflicts = getStandardToConflicts(pos_coordinates);
+        ArrayList<SimulationConflict> standard_conflicts = getAvailableConflicts(pos_coordinates);
         Set<Integer> coord_candidates = new HashSet<>();
 
         //if coordinate time does not corespond to a box with constraint : PullConstraint, VertexConflict, EdgeConflict then do not add candidates for exapansion

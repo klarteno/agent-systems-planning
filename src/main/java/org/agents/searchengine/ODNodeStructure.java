@@ -31,9 +31,6 @@ public class ODNodeStructure {
         }
     }
 
-
-
-
     public void updateIntermediateFromStandard(int[] state, int[] previouse_state) {
         intermediate_came_from_standard.put( Arrays.hashCode(state), previouse_state);
     }
@@ -59,6 +56,18 @@ public class ODNodeStructure {
 
     public void updateIntermediateFromIntermediate(int[] state, int[] current_state) {
         intermediate_came_from_intermediate.put( Arrays.hashCode(state), current_state);
+    }
+    public Optional<int[]> getNodeParent(int[] current_pos) {
+        int _node_key = Arrays.hashCode(current_pos);
+        Optional<int[]> prev_node =  Optional.empty();
+
+        if(intermediate_came_from_intermediate.containsKey(_node_key)){
+            prev_node = Optional.ofNullable(intermediate_came_from_intermediate.get(_node_key));
+        }
+        else if(intermediate_came_from_standard.containsKey(_node_key)){
+            prev_node = Optional.ofNullable(intermediate_came_from_standard.get(_node_key));
+        }
+        return prev_node;
     }
 
     public Optional<int[]> getIntermediateNodeRoot(int[] _key_pos){
@@ -98,4 +107,6 @@ public class ODNodeStructure {
         return true;
 
     }
+
+
 }
